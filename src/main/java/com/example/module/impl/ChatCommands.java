@@ -71,7 +71,8 @@
 /*  83 */    private final DefaultGroupSetting webhookGroup = new DefaultGroupSetting("Webhook", this); public DefaultGroupSetting getWebhookGroup() { return this.webhookGroup; }
 /*  84 */    private final DefaultGroupSetting accountShareGroup = new DefaultGroupSetting("Account Share", this); public DefaultGroupSetting getAccountShareGroup() { return this.accountShareGroup; }
 /*  85 */    private final DefaultGroupSetting miscGroup = new DefaultGroupSetting("Misc", this); public DefaultGroupSetting getMiscGroup() { return this.miscGroup; }
-/*  86 */   private final KeybindSetting ptwKeybind = new KeybindSetting("PT/W Keybind", new Keybind(87, false, this::sendPtThenW)); public KeybindSetting getPtwKeybind() { return this.ptwKeybind; }
+/*  86 */    private final BooleanSetting miscEnabled = new BooleanSetting("Enable", true); public BooleanSetting getMiscEnabled() { return this.miscEnabled; }
+/*  87 */   private final KeybindSetting ptwKeybind = new KeybindSetting("PT/W Keybind", new Keybind(-1, false, this::sendPtThenW)); public KeybindSetting getPtwKeybind() { return this.ptwKeybind; }
 /*     */ 
 /*     */ 
 /*     */   
@@ -399,7 +400,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.ptwKeybind, (Setting)this.glorpWarp }); }
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
 /*     */   public String getCachedWebhookInput() { return this.cachedWebhookInput; }
@@ -429,7 +430,7 @@
 /* 491 */     String message = class_124.method_539(raw);
 /*     */     
 /* 493 */     if (this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null)
-/* 494 */       return;  if (((Boolean)this.glorpWarp.getValue()).booleanValue() && message.contains("Party > [MVP+] glorpiline: Entered a ")) {
+/* 494 */       return;  if (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.glorpWarp.getValue()).booleanValue() && message.contains("Party > [MVP+] glorpiline: Entered a ")) {
 /* 495 */       this.mc.field_1724.field_3944.method_45730("pc !pt glorpiline");
 /* 496 */       CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
 /*     */     } 
@@ -787,7 +788,7 @@
 /*     */   }
 /*     */   
 /*     */   private void sendPtThenW() {
-/* 825 */     if (!isEnabled())
+/* 825 */     if (!isEnabled() || !((Boolean)this.miscEnabled.getValue()).booleanValue())
 /* 826 */       return;  if (this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null)
 /*     */       return; 
 /* 828 */     this.mc.field_1724.field_3944.method_45730("pc !pt");
