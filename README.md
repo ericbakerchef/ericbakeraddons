@@ -1,4 +1,4 @@
-167% vibe coded rsm(https://github.com/rs-mod/rsm) module
+167% vibe coded [rsm](https://github.com/rs-mod/rsm) module
 
 
 
