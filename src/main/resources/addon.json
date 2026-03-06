@@ -1,6 +1,6 @@
 {
-  "id": "exampleaddon",
-  "name": "Example Addon",
-  "main": "com.example.ExampleAddon",
+  "id": "ericbakeraddons",
+  "name": "ericbakeraddons",
+  "main": "com.example.ericbakeraddons",
   "version": "1.0.0"
 }

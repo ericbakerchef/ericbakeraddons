@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "exampleaddon",
-  "version": "${version}",
-  "name": "Example Addon",
+  "id": "ericbakeraddons",
+  "version": "1.0.0",
+  "name": "ericbakeraddons",
   "description": "An example addon for RSM",
   "authors": [
     "ricedotwho"
@@ -11,7 +11,7 @@
   "environment": "client",
   "entrypoints": {
     "rsm": [
-      "com.example.ExampleAddon"
+      "com.example.ericbakeraddons"
     ]
   },
   "mixins": [
