@@ -34,7 +34,7 @@ public class TitaniumEsp extends Module {
     private static final Colour OUTLINE_COLOUR = new Colour(110, 210, 255, 180);
 
     private final class_310 mc = class_310.method_1551();
-    private final DefaultGroupSetting titaniumGroup = new DefaultGroupSetting("Titanium ESP", this);
+    private final DefaultGroupSetting titaniumGroup = new DefaultGroupSetting("ESP", this);
     private final BooleanSetting enable = new BooleanSetting("Enable", true);
     private final BooleanSetting tracer = new BooleanSetting("Tracer", true);
     private final List<class_2338> highlightedBlocks = new ArrayList<>();
@@ -84,7 +84,7 @@ public class TitaniumEsp extends Module {
             updateBlocks();
         }
 
-        class_2338 tracerTarget = null;
+        List<class_2338> tracerTargets = ((Boolean) this.tracer.getValue()).booleanValue() ? new ArrayList<>() : null;
         for (class_2338 pos : this.highlightedBlocks) {
             try {
                 class_238 box = new class_238(pos);
@@ -97,12 +97,12 @@ public class TitaniumEsp extends Module {
                 return;
             }
 
-            if (((Boolean) this.tracer.getValue()).booleanValue() && tracerTarget == null) {
-                tracerTarget = pos;
+            if (tracerTargets != null) {
+                tracerTargets.add(pos);
             }
         }
 
-        if (!((Boolean) this.tracer.getValue()).booleanValue() || tracerTarget == null) {
+        if (tracerTargets == null || tracerTargets.isEmpty()) {
             return;
         }
 
@@ -114,18 +114,20 @@ public class TitaniumEsp extends Module {
                 return;
             }
 
-            Object cameraPos = getCameraPos(event);
-            if (cameraPos == null) {
+            class_243 tracerStart = getTracerStart(event);
+            if (tracerStart == null) {
                 return;
             }
 
-            class_243 target = new class_243(
-                tracerTarget.method_10263() + 0.5D,
-                tracerTarget.method_10264() + 0.5D,
-                tracerTarget.method_10260() + 0.5D
-            );
-            Object lineTask = this.lineConstructor.newInstance(cameraPos, target, OUTLINE_COLOUR, OUTLINE_COLOUR, false);
-            this.addTaskMethod.invoke(null, lineTask);
+            for (class_2338 tracerTarget : tracerTargets) {
+                class_243 target = new class_243(
+                    tracerTarget.method_10263() + 0.5D,
+                    tracerTarget.method_10264() + 0.5D,
+                    tracerTarget.method_10260() + 0.5D
+                );
+                Object lineTask = this.lineConstructor.newInstance(tracerStart, target, OUTLINE_COLOUR, OUTLINE_COLOUR, false);
+                this.addTaskMethod.invoke(null, lineTask);
+            }
         } catch (ReflectiveOperationException ignored) {
             this.lineConstructor = null;
         }
@@ -213,11 +215,18 @@ public class TitaniumEsp extends Module {
         return null;
     }
 
-    private Object getCameraPos(Render3DEvent.Last event) {
+    private class_243 getTracerStart(Render3DEvent.Last event) {
         try {
             Object context = invokeNoArg(event, "getContext");
             Object camera = invokeNoArg(context, "camera", "getCamera");
-            return invokeNoArg(camera, "getPos", "getPosition");
+            Object cameraPos = invokeNoArg(camera, "getPos", "getPosition");
+            if (!(cameraPos instanceof class_243) || this.mc.field_1724 == null) {
+                return null;
+            }
+
+            class_243 eyePos = (class_243) cameraPos;
+            class_243 look = this.mc.field_1724.method_5828(1.0F);
+            return eyePos.method_1019(look.method_1029());
         } catch (ReflectiveOperationException ignored) {
             return null;
         }
