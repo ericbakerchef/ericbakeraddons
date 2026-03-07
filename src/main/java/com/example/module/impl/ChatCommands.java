@@ -1,10 +1,14 @@
 /*     */ package com.example.module.impl;
 /*     */ 
+/*     */ import com.ricedotwho.rsm.component.impl.Renderer3D;
+/*     */ import com.ricedotwho.rsm.data.Colour;
 /*     */ import com.ricedotwho.rsm.data.Keybind;
 /*     */ import com.ricedotwho.rsm.event.api.SubscribeEvent;
 /*     */ import com.ricedotwho.rsm.event.impl.game.ChatEvent;
+/*     */ import com.ricedotwho.rsm.event.impl.game.ClientTickEvent;
 /*     */ import com.ricedotwho.rsm.event.impl.game.ConnectionEvent;
 /*     */ import com.ricedotwho.rsm.event.impl.player.PlayerChatEvent;
+/*     */ import com.ricedotwho.rsm.event.impl.render.Render3DEvent;
 /*     */ import com.ricedotwho.rsm.module.Module;
 /*     */ import com.ricedotwho.rsm.module.api.Category;
 /*     */ import com.ricedotwho.rsm.module.api.ModuleInfo;
@@ -14,20 +18,30 @@
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.ButtonSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.KeybindSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.MultiBoolSetting;
+/*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.NumberSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.StringSetting;
 /*     */ import com.ricedotwho.rsm.utils.ChatUtils;
 /*     */ import java.net.URI;
 /*     */ import java.net.http.HttpClient;
 /*     */ import java.net.http.HttpRequest;
 /*     */ import java.net.http.HttpResponse;
+/*     */ import java.lang.reflect.Constructor;
+/*     */ import java.lang.reflect.Method;
 /*     */ import java.util.ArrayList;
+/*     */ import java.util.HashSet;
 /*     */ import java.util.LinkedHashMap;
 /*     */ import java.util.List;
 /*     */ import java.util.Locale;
+/*     */ import java.util.Set;
 /*     */ import java.util.concurrent.CompletableFuture;
 /*     */ import java.util.concurrent.TimeUnit;
 /*     */ import net.minecraft.class_124;
+/*     */ import net.minecraft.class_1937;
+/*     */ import net.minecraft.class_2338;
+/*     */ import net.minecraft.class_238;
+/*     */ import net.minecraft.class_243;
 /*     */ import net.minecraft.class_2561;
+/*     */ import net.minecraft.class_2680;
 /*     */ import net.minecraft.class_310;
 /*     */ import net.minecraft.class_5250;
 /*     */ 
@@ -48,6 +62,12 @@
 /*  58 */   private static final HttpClient REDIRECT_CLIENT = HttpClient.newBuilder()
 /*  59 */     .followRedirects(HttpClient.Redirect.ALWAYS)
 /*  60 */     .build();
+/*  61 */   private static final Colour TITANIUM_FILL_COLOUR = new Colour(80, 180, 255, 55);
+/*  62 */   private static final Colour TITANIUM_OUTLINE_COLOUR = new Colour(110, 210, 255, 180);
+/*  63 */   private static final Colour NODE_FILL_COLOUR = new Colour(192, 90, 255, 55);
+/*  64 */   private static final Colour NODE_OUTLINE_COLOUR = new Colour(210, 130, 255, 190);
+/*  65 */   private static final Colour CUSTOM_FILL_COLOUR = new Colour(255, 140, 80, 40);
+/*  66 */   private static final Colour CUSTOM_OUTLINE_COLOUR = new Colour(255, 180, 110, 180);
 /*     */   private record ScheduledLine(long delayMs, String command) {}
 /*     */   
 /*  65 */   private final class_310 mc = class_310.method_1551(); public class_310 getMc() { return this.mc; }
@@ -71,7 +91,14 @@
 /*  83 */    private final DefaultGroupSetting webhookGroup = new DefaultGroupSetting("Webhook", this); public DefaultGroupSetting getWebhookGroup() { return this.webhookGroup; }
 /*  84 */    private final DefaultGroupSetting accountShareGroup = new DefaultGroupSetting("Account Share", this); public DefaultGroupSetting getAccountShareGroup() { return this.accountShareGroup; }
 /*  85 */    private final DefaultGroupSetting miscGroup = new DefaultGroupSetting("Misc", this); public DefaultGroupSetting getMiscGroup() { return this.miscGroup; }
+/*  86 */    private final DefaultGroupSetting espGroup = new DefaultGroupSetting("ESP", this); public DefaultGroupSetting getEspGroup() { return this.espGroup; }
+/*  86 */    private final DefaultGroupSetting customHighlightGroup = new DefaultGroupSetting("Custom Highlight", this); public DefaultGroupSetting getCustomHighlightGroup() { return this.customHighlightGroup; }
 /*  86 */    private final BooleanSetting miscEnabled = new BooleanSetting("Enable", true); public BooleanSetting getMiscEnabled() { return this.miscEnabled; }
+/*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("Enable", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
+/*  88 */    private final BooleanSetting titaniumHighlightEnabled = new BooleanSetting("Titanium", true); public BooleanSetting getTitaniumHighlightEnabled() { return this.titaniumHighlightEnabled; }
+/*  89 */    private final BooleanSetting nodeHighlightEnabled = new BooleanSetting("Node", true); public BooleanSetting getNodeHighlightEnabled() { return this.nodeHighlightEnabled; }
+/*  90 */    private final BooleanSetting customHighlightEnabled = new BooleanSetting("Enable", true); public BooleanSetting getCustomHighlightEnabled() { return this.customHighlightEnabled; }
+/*  91 */    private final StringSetting customHighlightNames = new StringSetting("Names", ""); public StringSetting getCustomHighlightNames() { return this.customHighlightNames; }
 /*  87 */   private final KeybindSetting ptwKeybind = new KeybindSetting("PT/W Keybind", new Keybind(-1, false, this::sendPtThenW)); public KeybindSetting getPtwKeybind() { return this.ptwKeybind; }
 /*     */ 
 /*     */ 
@@ -88,7 +115,7 @@
 /* 103 */    private final BooleanSetting loginNotifierWebhookEnabled = new BooleanSetting("Enable Log in notifier", false); public BooleanSetting getLoginNotifierWebhookEnabled() { return this.loginNotifierWebhookEnabled; }
 /* 104 */    private final StringSetting loginNotifierWebhook = new StringSetting("Log in notifier", ""); public StringSetting getLoginNotifierWebhook() { return this.loginNotifierWebhook; }
 /* 105 */    private final BooleanSetting accountShareEnabled = new BooleanSetting("Enable", false); public BooleanSetting getAccountShareEnabled() { return this.accountShareEnabled; }
-/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
+/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private int titaniumTickCounter; private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
 /* 107 */   public ChatCommands() { this.copyMinecraftSsidButton = new ButtonSetting("Copy Minecraft SSID", "", () -> {
 /*     */           if (!((Boolean)this.accountShareEnabled.getValue()).booleanValue()) {
 /*     */             ChatUtils.chat(String.valueOf(class_124.field_1061) + "Account Share is disabled.", new Object[0]);
@@ -146,6 +173,8 @@
 /* 161 */     this.lastLoginNotifierEvent = "";
 /* 162 */     this.pendingSsidSend = false;
 /* 163 */     this.pendingSsidPayload = "";
+/* 164 */     this.titaniumTickCounter = 0;
+/* 165 */     this.titaniumRenderBridgeReady = initTitaniumRenderBridge();
 /*     */ 
 /*     */ 
 /*     */ 
@@ -353,7 +382,7 @@
 /* 368 */     this.otherCommandsSetting = new MultiBoolSetting("Other", this.otherCommands, new ArrayList<>(this.otherCommands));
 /*     */     
 /* 370 */     setGroup(new DefaultGroupSetting("Party Commands", this));
-/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.levelPrefixGroup, (Setting)this.webhookGroup, (Setting)this.accountShareGroup, (Setting)this.miscGroup });
+/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.levelPrefixGroup, (Setting)this.webhookGroup, (Setting)this.accountShareGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.customHighlightGroup });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -400,7 +429,9 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp }); }
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp });
+/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled });
+/* 424 */     this.customHighlightGroup.add(new Setting[] { (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
 /*     */   public String getCachedWebhookInput() { return this.cachedWebhookInput; }
@@ -493,6 +524,185 @@
 /*     */   }
 /*     */   
 /*     */   @SubscribeEvent
+/*     */   public void onClientTick(ClientTickEvent.End event) {
+/* 551 */     if (!isEnabled() || !((Boolean)this.espEnabled.getValue()).booleanValue()) {
+/* 552 */       this.titaniumBlocks.clear();
+/* 553 */       this.nodeBlocks.clear();
+/*     */       return;
+/*     */     }
+/* 556 */     this.titaniumTickCounter++;
+/* 557 */     if (this.titaniumTickCounter % 10 == 0) {
+/* 558 */       updateEspBlocks();
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   @SubscribeEvent
+/*     */   public void onRender3D(Render3DEvent.Last event) {
+/* 563 */     if (!isEnabled()) {
+/*     */       return;
+/*     */     }
+/* 566 */     if (!this.titaniumRenderBridgeReady) {
+/* 567 */       this.titaniumRenderBridgeReady = initTitaniumRenderBridge();
+/* 568 */       if (!this.titaniumRenderBridgeReady) {
+/*     */         return;
+/*     */       }
+/*     */     }
+/* 572 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
+/* 573 */       if (((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue() && this.titaniumBlocks.isEmpty()) {
+/* 574 */         updateEspBlocks();
+/*     */       }
+/* 576 */       if (((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue() && this.nodeBlocks.isEmpty()) {
+/* 577 */         updateEspBlocks();
+/*     */       }
+/* 579 */       renderBlockBoxes(this.titaniumBlocks, TITANIUM_FILL_COLOUR, TITANIUM_OUTLINE_COLOUR, (Boolean)this.titaniumHighlightEnabled.getValue());
+/* 580 */       renderBlockBoxes(this.nodeBlocks, NODE_FILL_COLOUR, NODE_OUTLINE_COLOUR, (Boolean)this.nodeHighlightEnabled.getValue());
+/*     */     }
+/* 582 */     renderCustomEntityBoxes();
+/*     */   }
+/*     */   
+/*     */   private void renderBlockBoxes(List<class_2338> blocks, Colour fill, Colour outline, Boolean enabled) {
+/* 586 */     if (enabled == null || !enabled.booleanValue() || blocks.isEmpty()) {
+/*     */       return;
+/*     */     }
+/* 589 */     for (class_2338 pos : blocks) {
+/*     */       try {
+/* 591 */         class_238 box = new class_238(pos);
+/* 592 */         Object filledTask = this.filledBoxConstructor.newInstance(new Object[] { box, fill, Boolean.valueOf(false) });
+/* 593 */         Object outlineTask = this.outlineBoxConstructor.newInstance(new Object[] { box, outline, Boolean.valueOf(false) });
+/* 594 */         this.addRenderTaskMethod.invoke(null, new Object[] { filledTask });
+/* 595 */         this.addRenderTaskMethod.invoke(null, new Object[] { outlineTask });
+/* 596 */       } catch (ReflectiveOperationException ignored) {
+/* 597 */         this.titaniumRenderBridgeReady = false;
+/*     */         return;
+/*     */       }
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private void renderCustomEntityBoxes() {
+/* 604 */     if (!((Boolean)this.customHighlightEnabled.getValue()).booleanValue() || this.mc.field_1687 == null) {
+/*     */       return;
+/*     */     }
+/* 607 */     Set<String> wantedNames = getConfiguredEntityNames();
+/* 608 */     if (wantedNames.isEmpty()) {
+/*     */       return;
+/*     */     }
+/* 611 */     Iterable<?> entities = getEntityIterable(this.mc.field_1687);
+/* 612 */     if (entities == null) {
+/*     */       return;
+/*     */     }
+/* 615 */     for (Object entity : entities) {
+/* 616 */       if (entity == null || entity == this.mc.field_1724) {
+/*     */         continue;
+/*     */       }
+/* 619 */       String name = getEntityDisplayName(entity);
+/* 620 */       if (name == null || !wantedNames.contains(name.toLowerCase(Locale.ROOT))) {
+/*     */         continue;
+/*     */       }
+/* 623 */       class_238 box = getEntityBox(entity);
+/* 624 */       if (box == null) {
+/*     */         continue;
+/*     */       }
+/*     */       try {
+/* 628 */         Object filledTask = this.filledBoxConstructor.newInstance(new Object[] { box, CUSTOM_FILL_COLOUR, Boolean.valueOf(false) });
+/* 629 */         Object outlineTask = this.outlineBoxConstructor.newInstance(new Object[] { box, CUSTOM_OUTLINE_COLOUR, Boolean.valueOf(false) });
+/* 630 */         this.addRenderTaskMethod.invoke(null, new Object[] { filledTask });
+/* 631 */         this.addRenderTaskMethod.invoke(null, new Object[] { outlineTask });
+/* 632 */       } catch (ReflectiveOperationException ignored) {
+/* 633 */         this.titaniumRenderBridgeReady = false;
+/*     */         return;
+/*     */       }
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private Set<String> getConfiguredEntityNames() {
+/* 641 */     Set<String> names = new HashSet<>();
+/* 642 */     String raw = (String)this.customHighlightNames.getValue();
+/* 643 */     if (raw == null || raw.isBlank()) {
+/* 644 */       return names;
+/*     */     }
+/* 646 */     String[] split = raw.split(",\\s+");
+/* 647 */     for (String part : split) {
+/* 648 */       String cleaned = class_124.method_539(part).trim().toLowerCase(Locale.ROOT);
+/* 649 */       if (!cleaned.isEmpty()) {
+/* 650 */         names.add(cleaned);
+/*     */       }
+/*     */     }
+/* 653 */     return names;
+/*     */   }
+/*     */   
+/*     */   private Iterable<?> getEntityIterable(class_1937 world) {
+/* 657 */     if (world == null) return null;
+/*     */     
+/* 659 */     if (this.worldEntitiesMethod == null) {
+/* 660 */       this.worldEntitiesMethod = tryResolveWorldEntitiesMethod(world);
+/*     */     }
+/* 662 */     if (this.worldEntitiesMethod == null) {
+/* 663 */       return null;
+/*     */     }
+/*     */     try {
+/* 666 */       Object result = this.worldEntitiesMethod.invoke(world, new Object[0]);
+/* 667 */       if (result instanceof Iterable) return (Iterable<?>)result; 
+/* 668 */     } catch (ReflectiveOperationException ignored) {}
+/*     */     
+/* 670 */     return null;
+/*     */   }
+/*     */   
+/*     */   private Method tryResolveWorldEntitiesMethod(class_1937 world) {
+/* 674 */     String[] candidates = { "iterateEntities", "getEntities", "method_18112", "method_18100" };
+/* 675 */     for (String name : candidates) {
+/*     */       try {
+/* 677 */         Method method = world.getClass().getMethod(name, new Class[0]);
+/* 678 */         if (Iterable.class.isAssignableFrom(method.getReturnType())) {
+/* 679 */           return method;
+/*     */         }
+/* 681 */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     } 
+/* 683 */     return null;
+/*     */   }
+/*     */   
+/*     */   private String getEntityDisplayName(Object entity) {
+/*     */     try {
+/* 688 */       Object text = invokeNoArg(entity, new String[] { "getName", "method_5477", "getDisplayName", "method_5476" });
+/* 689 */       if (text == null) return null; 
+/* 690 */       Object maybeString = invokeNoArg(text, new String[] { "getString", "method_30937" });
+/* 691 */       String name = (maybeString == null) ? String.valueOf(text) : String.valueOf(maybeString);
+/* 692 */       return class_124.method_539(name).trim();
+/* 693 */     } catch (ReflectiveOperationException ignored) {
+/* 694 */       return null;
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private class_238 getEntityBox(Object entity) {
+/* 699 */     if (entity == null) return null; 
+/* 700 */     if (this.entityBoundingBoxMethod == null) {
+/* 701 */       this.entityBoundingBoxMethod = resolveEntityBoundingBoxMethod(entity);
+/*     */     }
+/* 703 */     if (this.entityBoundingBoxMethod == null) {
+/* 704 */       return null;
+/*     */     }
+/*     */     try {
+/* 707 */       Object box = this.entityBoundingBoxMethod.invoke(entity, new Object[0]);
+/* 708 */       if (box instanceof class_238) return (class_238)box; 
+/* 709 */     } catch (ReflectiveOperationException ignored) {
+/* 710 */       this.entityBoundingBoxMethod = null;
+/*     */     } 
+/* 712 */     return null;
+/*     */   }
+/*     */   
+/*     */   private Method resolveEntityBoundingBoxMethod(Object entity) {
+/* 716 */     String[] candidates = { "getBoundingBox", "method_5829" };
+/* 717 */     for (String name : candidates) {
+/*     */       try {
+/* 719 */         Method method = entity.getClass().getMethod(name, new Class[0]);
+/* 720 */         if (class_238.class.isAssignableFrom(method.getReturnType())) {
+/* 721 */           return method;
+/*     */         }
+/* 723 */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     } 
+/* 725 */     return null;
+/*     */   }
+/*     */   
+/*     */   @SubscribeEvent
 /*     */   public void onPlayerChat(PlayerChatEvent event) {
 /* 552 */     if (!this.pendingSsidSend)
 /* 553 */       return;  if (!((Boolean)this.accountShareEnabled.getValue()).booleanValue())
@@ -545,6 +755,91 @@
 /*     */     
 /* 603 */     postToConfiguredWebhook((String)this.loginNotifierWebhook.getValue(), username + " Left " + username + ".");
 /* 604 */     this.lastLoginNotifierEvent = "leave";
+/*     */   }
+/*     */   
+/*     */   private void updateEspBlocks() {
+/* 608 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
+/* 609 */       this.titaniumBlocks.clear();
+/* 610 */       this.nodeBlocks.clear();
+/*     */       return;
+/*     */     }
+/* 613 */     class_1937 world = this.mc.field_1687;
+/* 614 */     class_2338 playerPos = this.mc.field_1724.method_24515();
+/* 615 */     int px = playerPos.method_10263();
+/* 616 */     int py = playerPos.method_10264();
+/* 617 */     int pz = playerPos.method_10260();
+/*     */     
+/* 619 */     this.titaniumBlocks.clear();
+/* 620 */     this.nodeBlocks.clear();
+/* 621 */     boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
+/* 622 */     boolean nodeOn = ((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue();
+/* 623 */     if (!titaniumOn && !nodeOn) {
+/*     */       return;
+/*     */     }
+/* 626 */     for (int x = px - 24; x <= px + 24; x++) {
+/* 627 */       for (int y = py - 16; y <= py + 16; y++) {
+/* 628 */         for (int z = pz - 24; z <= pz + 24; z++) {
+/* 629 */           class_2338 pos = new class_2338(x, y, z);
+/* 630 */           class_2680 state = world.method_8320(pos);
+/* 631 */           if (titaniumOn && isPolishedAndesite(state)) this.titaniumBlocks.add(pos); 
+/* 632 */           if (nodeOn && isPurpleTerracotta(state)) this.nodeBlocks.add(pos); 
+/*     */         } 
+/*     */       } 
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private boolean isPolishedAndesite(class_2680 state) {
+/* 639 */     if (state == null) return false; 
+/* 640 */     String stateText = String.valueOf(state).toLowerCase(Locale.ROOT);
+/* 641 */     if (stateText.contains("polished_andesite")) return true; 
+/* 642 */     String blockText = String.valueOf(state.method_26204()).toLowerCase(Locale.ROOT);
+/* 643 */     return blockText.contains("polished_andesite");
+/*     */   }
+/*     */   
+/*     */   private boolean isPurpleTerracotta(class_2680 state) {
+/* 647 */     if (state == null) return false; 
+/* 648 */     String stateText = String.valueOf(state).toLowerCase(Locale.ROOT);
+/* 649 */     if (stateText.contains("purple_terracotta")) return true; 
+/* 650 */     String blockText = String.valueOf(state.method_26204()).toLowerCase(Locale.ROOT);
+/* 651 */     return blockText.contains("purple_terracotta");
+/*     */   }
+/*     */   
+/*     */   private boolean initTitaniumRenderBridge() {
+/*     */     try {
+/* 656 */       Class<?> filledBoxClass = Class.forName("com.ricedotwho.rsm.utils.render.render3d.type.FilledBox");
+/* 657 */       Class<?> outlineBoxClass = Class.forName("com.ricedotwho.rsm.utils.render.render3d.type.OutlineBox");
+/* 658 */       Class<?> renderTaskClass = Class.forName("com.ricedotwho.rsm.utils.render.render3d.type.RenderTask");
+/* 659 */       this.filledBoxConstructor = findRenderTaskConstructor(filledBoxClass);
+/* 660 */       this.outlineBoxConstructor = findRenderTaskConstructor(outlineBoxClass);
+/* 661 */       this.addRenderTaskMethod = Renderer3D.class.getMethod("addTask", new Class[] { renderTaskClass });
+/* 662 */       return (this.filledBoxConstructor != null && this.outlineBoxConstructor != null);
+/* 663 */     } catch (ReflectiveOperationException ignored) {
+/* 664 */       return false;
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private Constructor<?> findRenderTaskConstructor(Class<?> taskClass) {
+/* 669 */     for (Constructor<?> constructor : taskClass.getConstructors()) {
+/* 670 */       Class<?>[] params = constructor.getParameterTypes();
+/* 671 */       if (params.length == 3 && params[1] == Colour.class && params[2] == boolean.class) {
+/* 672 */         return constructor;
+/*     */       }
+/*     */     } 
+/* 675 */     return null;
+/*     */   }
+/*     */   
+/*     */   private Object invokeNoArg(Object target, String... names) throws ReflectiveOperationException {
+/* 697 */     if (target == null) return null; 
+/* 698 */     ReflectiveOperationException last = null;
+/* 699 */     for (String name : names) {
+/*     */       try {
+/* 701 */         Method method = target.getClass().getMethod(name, new Class[0]);
+/* 702 */         return method.invoke(target, new Object[0]);
+/* 703 */       } catch (ReflectiveOperationException ex) {
+/* 704 */         last = ex;
+/*     */       } 
+/*     */     } 
+/* 707 */     throw last;
 /*     */   }
 /*     */   
 /*     */   private void registerCommand(int category, String trigger, String... lines) {
