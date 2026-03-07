@@ -2,7 +2,6 @@
 /*     */ 
 /*     */ import com.ricedotwho.rsm.component.impl.Renderer3D;
 /*     */ import com.ricedotwho.rsm.data.Colour;
-/*     */ import com.ricedotwho.rsm.data.Keybind;
 /*     */ import com.ricedotwho.rsm.event.api.SubscribeEvent;
 /*     */ import com.ricedotwho.rsm.event.impl.game.ChatEvent;
 /*     */ import com.ricedotwho.rsm.event.impl.game.ClientTickEvent;
@@ -16,7 +15,6 @@
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.group.DefaultGroupSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.BooleanSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.ButtonSetting;
-/*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.KeybindSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.MultiBoolSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.NumberSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.StringSetting;
@@ -28,7 +26,9 @@
 /*     */ import java.lang.reflect.Constructor;
 /*     */ import java.lang.reflect.Method;
 /*     */ import java.util.ArrayList;
+/*     */ import java.util.Collections;
 /*     */ import java.util.HashSet;
+/*     */ import java.util.IdentityHashMap;
 /*     */ import java.util.LinkedHashMap;
 /*     */ import java.util.List;
 /*     */ import java.util.Locale;
@@ -68,6 +68,11 @@
 /*  64 */   private static final Colour NODE_OUTLINE_COLOUR = new Colour(210, 130, 255, 190);
 /*  65 */   private static final Colour CUSTOM_FILL_COLOUR = new Colour(255, 140, 80, 40);
 /*  66 */   private static final Colour CUSTOM_OUTLINE_COLOUR = new Colour(255, 180, 110, 180);
+/*  67 */   private static final int ESP_SCAN_INTERVAL_TICKS = 10;
+/*  68 */   private static final int ESP_SCAN_IDLE_INTERVAL_TICKS = 40;
+/*  69 */   private static final byte MATCH_NONE = 0;
+/*  70 */   private static final byte MATCH_TITANIUM = 1;
+/*  71 */   private static final byte MATCH_NODE = 2;
 /*     */   private record ScheduledLine(long delayMs, String command) {}
 /*     */   
 /*  65 */   private final class_310 mc = class_310.method_1551(); public class_310 getMc() { return this.mc; }
@@ -99,7 +104,7 @@
 /*  89 */    private final BooleanSetting nodeHighlightEnabled = new BooleanSetting("Node", true); public BooleanSetting getNodeHighlightEnabled() { return this.nodeHighlightEnabled; }
 /*  90 */    private final BooleanSetting customHighlightEnabled = new BooleanSetting("Enable", true); public BooleanSetting getCustomHighlightEnabled() { return this.customHighlightEnabled; }
 /*  91 */    private final StringSetting customHighlightNames = new StringSetting("Names", ""); public StringSetting getCustomHighlightNames() { return this.customHighlightNames; }
-/*  87 */   private final KeybindSetting ptwKeybind = new KeybindSetting("PT/W Keybind", new Keybind(-1, false, this::sendPtThenW)); public KeybindSetting getPtwKeybind() { return this.ptwKeybind; }
+/*  87 */   private final Setting<?> ptwKeybind = createPtwKeybindSetting(); public Setting<?> getPtwKeybind() { return this.ptwKeybind; }
 /*     */ 
 /*     */ 
 /*     */   
@@ -115,7 +120,7 @@
 /* 103 */    private final BooleanSetting loginNotifierWebhookEnabled = new BooleanSetting("Enable Log in notifier", false); public BooleanSetting getLoginNotifierWebhookEnabled() { return this.loginNotifierWebhookEnabled; }
 /* 104 */    private final StringSetting loginNotifierWebhook = new StringSetting("Log in notifier", ""); public StringSetting getLoginNotifierWebhook() { return this.loginNotifierWebhook; }
 /* 105 */    private final BooleanSetting accountShareEnabled = new BooleanSetting("Enable", false); public BooleanSetting getAccountShareEnabled() { return this.accountShareEnabled; }
-/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private int titaniumTickCounter; private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
+/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private boolean espScanInitialized; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
 /* 107 */   public ChatCommands() { this.copyMinecraftSsidButton = new ButtonSetting("Copy Minecraft SSID", "", () -> {
 /*     */           if (!((Boolean)this.accountShareEnabled.getValue()).booleanValue()) {
 /*     */             ChatUtils.chat(String.valueOf(class_124.field_1061) + "Account Share is disabled.", new Object[0]);
@@ -454,6 +459,22 @@
 /* 447 */     return (instance != null && instance.isEnabled() && ((Boolean)instance.diamondBrackets.getValue()).booleanValue());
 /*     */   }
 /*     */   
+/*     */   private Setting<?> createPtwKeybindSetting() {
+/*     */     try {
+/* 452 */       Class<?> keybindClass = Class.forName("com.ricedotwho.rsm.data.Keybind");
+/* 453 */       Constructor<?> keybindConstructor = keybindClass.getConstructor(new Class[] { int.class, boolean.class, Runnable.class });
+/* 454 */       Object keybind = keybindConstructor.newInstance(new Object[] { Integer.valueOf(-1), Boolean.valueOf(false), (Runnable)this::sendPtThenW });
+/* 455 */       Class<?> keybindSettingClass = Class.forName("com.ricedotwho.rsm.ui.clickgui.settings.impl.KeybindSetting");
+/* 456 */       Constructor<?> keybindSettingConstructor = keybindSettingClass.getConstructor(new Class[] { String.class, keybindClass });
+/* 457 */       Object setting = keybindSettingConstructor.newInstance(new Object[] { "PT/W Keybind", keybind });
+/* 458 */       if (setting instanceof Setting) {
+/* 459 */         return (Setting)setting;
+/*     */       }
+/* 461 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */ 
+/* 463 */     return (Setting<?>)new ButtonSetting("PT/W Keybind", "", () -> ChatUtils.chat(String.valueOf(class_124.field_1061) + "PT/W keybind unavailable in this runtime.", new Object[0]));
+/*     */   }
+/*     */   
 /*     */   
 /*     */   @SubscribeEvent
 /*     */   public void onChat(ChatEvent event) {
@@ -526,13 +547,29 @@
 /*     */   @SubscribeEvent
 /*     */   public void onClientTick(ClientTickEvent.End event) {
 /* 551 */     if (!isEnabled() || !((Boolean)this.espEnabled.getValue()).booleanValue()) {
-/* 552 */       this.titaniumBlocks.clear();
-/* 553 */       this.nodeBlocks.clear();
+/* 552 */       clearEspData();
 /*     */       return;
 /*     */     }
-/* 556 */     this.titaniumTickCounter++;
-/* 557 */     if (this.titaniumTickCounter % 10 == 0) {
-/* 558 */       updateEspBlocks();
+/* 556 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
+/* 557 */       clearEspData();
+/*     */       return;
+/*     */     }
+/* 560 */     boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
+/* 561 */     boolean nodeOn = ((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue();
+/* 562 */     if (!titaniumOn && !nodeOn) {
+/* 563 */       clearEspData();
+/* 564 */       this.espScanInitialized = true;
+/*     */       return;
+/*     */     }
+/* 567 */     this.titaniumTickCounter++;
+/* 568 */     class_2338 playerPos = this.mc.field_1724.method_24515();
+/* 569 */     int px = playerPos.method_10263();
+/* 570 */     int py = playerPos.method_10264();
+/* 571 */     int pz = playerPos.method_10260();
+/* 572 */     boolean moved = (px != this.lastEspScanX || py != this.lastEspScanY || pz != this.lastEspScanZ);
+/* 573 */     int interval = moved ? ESP_SCAN_INTERVAL_TICKS : ESP_SCAN_IDLE_INTERVAL_TICKS;
+/* 574 */     if (!this.espScanInitialized || moved || this.titaniumTickCounter % interval == 0) {
+/* 575 */       updateEspBlocks();
 /*     */     }
 /*     */   }
 /*     */   
@@ -548,29 +585,25 @@
 /*     */       }
 /*     */     }
 /* 572 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
-/* 573 */       if (((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue() && this.titaniumBlocks.isEmpty()) {
-/* 574 */         updateEspBlocks();
+/* 573 */       if (((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue() && this.titaniumRenderTasks.isEmpty() && !this.titaniumBlocks.isEmpty()) {
+/* 574 */         rebuildRenderTasks(this.titaniumBlocks, this.titaniumRenderTasks, TITANIUM_FILL_COLOUR, TITANIUM_OUTLINE_COLOUR);
 /*     */       }
-/* 576 */       if (((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue() && this.nodeBlocks.isEmpty()) {
-/* 577 */         updateEspBlocks();
+/* 576 */       if (((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue() && this.nodeRenderTasks.isEmpty() && !this.nodeBlocks.isEmpty()) {
+/* 577 */         rebuildRenderTasks(this.nodeBlocks, this.nodeRenderTasks, NODE_FILL_COLOUR, NODE_OUTLINE_COLOUR);
 /*     */       }
-/* 579 */       renderBlockBoxes(this.titaniumBlocks, TITANIUM_FILL_COLOUR, TITANIUM_OUTLINE_COLOUR, (Boolean)this.titaniumHighlightEnabled.getValue());
-/* 580 */       renderBlockBoxes(this.nodeBlocks, NODE_FILL_COLOUR, NODE_OUTLINE_COLOUR, (Boolean)this.nodeHighlightEnabled.getValue());
+/* 579 */       renderBlockTasks(this.titaniumRenderTasks, (Boolean)this.titaniumHighlightEnabled.getValue());
+/* 580 */       renderBlockTasks(this.nodeRenderTasks, (Boolean)this.nodeHighlightEnabled.getValue());
 /*     */     }
 /* 582 */     renderCustomEntityBoxes();
 /*     */   }
 /*     */   
-/*     */   private void renderBlockBoxes(List<class_2338> blocks, Colour fill, Colour outline, Boolean enabled) {
-/* 586 */     if (enabled == null || !enabled.booleanValue() || blocks.isEmpty()) {
+/*     */   private void renderBlockTasks(List<Object> tasks, Boolean enabled) {
+/* 586 */     if (enabled == null || !enabled.booleanValue() || tasks.isEmpty()) {
 /*     */       return;
 /*     */     }
-/* 589 */     for (class_2338 pos : blocks) {
+/* 589 */     for (Object task : tasks) {
 /*     */       try {
-/* 591 */         class_238 box = new class_238(pos);
-/* 592 */         Object filledTask = this.filledBoxConstructor.newInstance(new Object[] { box, fill, Boolean.valueOf(false) });
-/* 593 */         Object outlineTask = this.outlineBoxConstructor.newInstance(new Object[] { box, outline, Boolean.valueOf(false) });
-/* 594 */         this.addRenderTaskMethod.invoke(null, new Object[] { filledTask });
-/* 595 */         this.addRenderTaskMethod.invoke(null, new Object[] { outlineTask });
+/* 591 */         this.addRenderTaskMethod.invoke(null, new Object[] { task });
 /* 596 */       } catch (ReflectiveOperationException ignored) {
 /* 597 */         this.titaniumRenderBridgeReady = false;
 /*     */         return;
@@ -615,19 +648,26 @@
 /*     */   }
 /*     */   
 /*     */   private Set<String> getConfiguredEntityNames() {
-/* 641 */     Set<String> names = new HashSet<>();
-/* 642 */     String raw = (String)this.customHighlightNames.getValue();
-/* 643 */     if (raw == null || raw.isBlank()) {
-/* 644 */       return names;
+/* 641 */     String raw = (String)this.customHighlightNames.getValue();
+/* 642 */     if (raw == null || raw.isBlank()) {
+/* 643 */       this.cachedCustomNamesRaw = "";
+/* 644 */       this.cachedCustomNames = Set.of();
+/* 645 */       return this.cachedCustomNames;
 /*     */     }
-/* 646 */     String[] split = raw.split(",\\s+");
-/* 647 */     for (String part : split) {
-/* 648 */       String cleaned = class_124.method_539(part).trim().toLowerCase(Locale.ROOT);
-/* 649 */       if (!cleaned.isEmpty()) {
-/* 650 */         names.add(cleaned);
+/* 647 */     if (raw.equals(this.cachedCustomNamesRaw)) {
+/* 648 */       return this.cachedCustomNames;
+/*     */     }
+/* 650 */     Set<String> names = new HashSet<>();
+/* 651 */     String[] split = raw.split("\\s*,\\s*");
+/* 652 */     for (String part : split) {
+/* 653 */       String cleaned = class_124.method_539(part).trim().toLowerCase(Locale.ROOT);
+/* 654 */       if (!cleaned.isEmpty()) {
+/* 655 */         names.add(cleaned);
 /*     */       }
 /*     */     }
-/* 653 */     return names;
+/* 658 */     this.cachedCustomNamesRaw = raw;
+/* 659 */     this.cachedCustomNames = names.isEmpty() ? Set.of() : Collections.unmodifiableSet(names);
+/* 660 */     return this.cachedCustomNames;
 /*     */   }
 /*     */   
 /*     */   private Iterable<?> getEntityIterable(class_1937 world) {
@@ -759,8 +799,7 @@
 /*     */   
 /*     */   private void updateEspBlocks() {
 /* 608 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
-/* 609 */       this.titaniumBlocks.clear();
-/* 610 */       this.nodeBlocks.clear();
+/* 609 */       clearEspData();
 /*     */       return;
 /*     */     }
 /* 613 */     class_1937 world = this.mc.field_1687;
@@ -774,6 +813,7 @@
 /* 621 */     boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
 /* 622 */     boolean nodeOn = ((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue();
 /* 623 */     if (!titaniumOn && !nodeOn) {
+/* 624 */       this.espScanInitialized = true;
 /*     */       return;
 /*     */     }
 /* 626 */     for (int x = px - 24; x <= px + 24; x++) {
@@ -781,27 +821,58 @@
 /* 628 */         for (int z = pz - 24; z <= pz + 24; z++) {
 /* 629 */           class_2338 pos = new class_2338(x, y, z);
 /* 630 */           class_2680 state = world.method_8320(pos);
-/* 631 */           if (titaniumOn && isPolishedAndesite(state)) this.titaniumBlocks.add(pos); 
-/* 632 */           if (nodeOn && isPurpleTerracotta(state)) this.nodeBlocks.add(pos); 
+/* 631 */           byte highlightMatch = getHighlightMatch(state);
+/* 632 */           if (titaniumOn && (highlightMatch & MATCH_TITANIUM) != 0) this.titaniumBlocks.add(pos); 
+/* 633 */           if (nodeOn && (highlightMatch & MATCH_NODE) != 0) this.nodeBlocks.add(pos); 
 /*     */         } 
 /*     */       } 
 /*     */     } 
+/* 637 */     this.lastEspScanX = px;
+/* 638 */     this.lastEspScanY = py;
+/* 639 */     this.lastEspScanZ = pz;
+/* 640 */     this.espScanInitialized = true;
+/* 641 */     rebuildRenderTasks(this.titaniumBlocks, this.titaniumRenderTasks, TITANIUM_FILL_COLOUR, TITANIUM_OUTLINE_COLOUR);
+/* 642 */     rebuildRenderTasks(this.nodeBlocks, this.nodeRenderTasks, NODE_FILL_COLOUR, NODE_OUTLINE_COLOUR);
 /*     */   }
 /*     */   
-/*     */   private boolean isPolishedAndesite(class_2680 state) {
-/* 639 */     if (state == null) return false; 
-/* 640 */     String stateText = String.valueOf(state).toLowerCase(Locale.ROOT);
-/* 641 */     if (stateText.contains("polished_andesite")) return true; 
-/* 642 */     String blockText = String.valueOf(state.method_26204()).toLowerCase(Locale.ROOT);
-/* 643 */     return blockText.contains("polished_andesite");
+/*     */   private void clearEspData() {
+/* 645 */     this.titaniumBlocks.clear();
+/* 646 */     this.nodeBlocks.clear();
+/* 647 */     this.titaniumRenderTasks.clear();
+/* 648 */     this.nodeRenderTasks.clear();
+/* 649 */     this.espScanInitialized = false;
 /*     */   }
 /*     */   
-/*     */   private boolean isPurpleTerracotta(class_2680 state) {
-/* 647 */     if (state == null) return false; 
-/* 648 */     String stateText = String.valueOf(state).toLowerCase(Locale.ROOT);
-/* 649 */     if (stateText.contains("purple_terracotta")) return true; 
-/* 650 */     String blockText = String.valueOf(state.method_26204()).toLowerCase(Locale.ROOT);
-/* 651 */     return blockText.contains("purple_terracotta");
+/*     */   private byte getHighlightMatch(class_2680 state) {
+/* 653 */     if (state == null) return MATCH_NONE; 
+/* 654 */     Object block = state.method_26204();
+/* 655 */     if (block == null) return MATCH_NONE; 
+/* 656 */     Byte cached = this.blockHighlightTypeCache.get(block);
+/* 657 */     if (cached != null) return cached.byteValue(); 
+/* 658 */     String blockText = String.valueOf(block).toLowerCase(Locale.ROOT);
+/* 659 */     byte match = MATCH_NONE;
+/* 660 */     if (blockText.contains("polished_diorite")) match = (byte)(match | MATCH_TITANIUM); 
+/* 661 */     if (blockText.contains("purple_terracotta")) match = (byte)(match | MATCH_NODE); 
+/* 662 */     this.blockHighlightTypeCache.put(block, Byte.valueOf(match));
+/* 663 */     return match;
+/*     */   }
+/*     */   
+/*     */   private void rebuildRenderTasks(List<class_2338> blocks, List<Object> outputTasks, Colour fill, Colour outline) {
+/* 667 */     outputTasks.clear();
+/* 668 */     if (blocks.isEmpty() || this.filledBoxConstructor == null || this.outlineBoxConstructor == null) {
+/*     */       return;
+/*     */     }
+/* 671 */     for (class_2338 pos : blocks) {
+/*     */       try {
+/* 673 */         class_238 box = new class_238(pos);
+/* 674 */         outputTasks.add(this.filledBoxConstructor.newInstance(new Object[] { box, fill, Boolean.valueOf(false) }));
+/* 675 */         outputTasks.add(this.outlineBoxConstructor.newInstance(new Object[] { box, outline, Boolean.valueOf(false) }));
+/* 676 */       } catch (ReflectiveOperationException ignored) {
+/* 677 */         outputTasks.clear();
+/* 678 */         this.titaniumRenderBridgeReady = false;
+/*     */         return;
+/*     */       } 
+/*     */     } 
 /*     */   }
 /*     */   
 /*     */   private boolean initTitaniumRenderBridge() {
