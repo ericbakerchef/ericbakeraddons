@@ -35,6 +35,8 @@
 /*     */ import java.util.Set;
 /*     */ import java.util.concurrent.CompletableFuture;
 /*     */ import java.util.concurrent.TimeUnit;
+/*     */ import java.util.regex.Matcher;
+/*     */ import java.util.regex.Pattern;
 /*     */ import net.minecraft.class_124;
 /*     */ import net.minecraft.class_1937;
 /*     */ import net.minecraft.class_2338;
@@ -75,6 +77,7 @@
 /*  71 */   private static final byte MATCH_NONE = 0;
 /*  72 */   private static final byte MATCH_TITANIUM = 1;
 /*  73 */   private static final byte MATCH_NODE = 2;
+/*  74 */   private static final Pattern HEALTH_FRACTION_PATTERN = Pattern.compile("(?<!\\d)(\\d+)\\s*/\\s*(\\d+)(?!\\d)");
 /*     */   private record ScheduledLine(long delayMs, String command) {}
 /*     */   
 /*  65 */   private final class_310 mc = class_310.method_1551(); public class_310 getMc() { return this.mc; }
@@ -103,12 +106,13 @@
 /*  86 */    private final BooleanSetting miscEnabled = new BooleanSetting("Enable", true); public BooleanSetting getMiscEnabled() { return this.miscEnabled; }
 /*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("Enable", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
 /*  88 */    private final BooleanSetting titaniumHighlightEnabled = new BooleanSetting("Titanium", true); public BooleanSetting getTitaniumHighlightEnabled() { return this.titaniumHighlightEnabled; }
-/*  89 */    private final BooleanSetting nodeHighlightEnabled = new BooleanSetting("Node", true); public BooleanSetting getNodeHighlightEnabled() { return this.nodeHighlightEnabled; }
+/*  89 */    private final BooleanSetting nodeHighlightEnabled = new BooleanSetting("End Nodes", true); public BooleanSetting getNodeHighlightEnabled() { return this.nodeHighlightEnabled; }
 /*  90 */    private final BooleanSetting tracerEnabled = new BooleanSetting("Tracer", true); public BooleanSetting getTracerEnabled() { return this.tracerEnabled; }
 /*  91 */    private final BooleanSetting tracerClosestOnly = new BooleanSetting("Closest only", false, () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public BooleanSetting getTracerClosestOnly() { return this.tracerClosestOnly; }
 /*  92 */    private final NumberSetting tracerThicknessPx = new NumberSetting("Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public NumberSetting getTracerThicknessPx() { return this.tracerThicknessPx; }
 /*  93 */    private final BooleanSetting customHighlightEnabled = new BooleanSetting("Enable", true); public BooleanSetting getCustomHighlightEnabled() { return this.customHighlightEnabled; }
 /*  94 */    private final StringSetting customHighlightNames = new StringSetting("Names", ""); public StringSetting getCustomHighlightNames() { return this.customHighlightNames; }
+/*  95 */    private final BooleanSetting customIgnoreZeroHealth = new BooleanSetting("Ignore 0 Health", true, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public BooleanSetting getCustomIgnoreZeroHealth() { return this.customIgnoreZeroHealth; }
 /*  95 */    private final BooleanSetting customTracerEnabled = new BooleanSetting("Tracer", false, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public BooleanSetting getCustomTracerEnabled() { return this.customTracerEnabled; }
 /*  96 */    private final BooleanSetting customTracerClosestOnly = new BooleanSetting("Closest only", false, () -> (((Boolean)this.customHighlightEnabled.getValue()).booleanValue() && ((Boolean)this.customTracerEnabled.getValue()).booleanValue())); public BooleanSetting getCustomTracerClosestOnly() { return this.customTracerClosestOnly; }
 /*  97 */    private final NumberSetting customTracerThicknessPx = new NumberSetting("Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", () -> (((Boolean)this.customHighlightEnabled.getValue()).booleanValue() && ((Boolean)this.customTracerEnabled.getValue()).booleanValue())); public NumberSetting getCustomTracerThicknessPx() { return this.customTracerThicknessPx; }
@@ -445,7 +449,7 @@
 /*     */     
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx });
-/* 424 */     this.customHighlightGroup.add(new Setting[] { (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customTracerEnabled, (Setting)this.customTracerClosestOnly, (Setting)this.customTracerThicknessPx }); }
+/* 424 */     this.customHighlightGroup.add(new Setting[] { (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.customTracerClosestOnly, (Setting)this.customTracerThicknessPx }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
 /*     */   public String getCachedWebhookInput() { return this.cachedWebhookInput; }
@@ -1160,12 +1164,29 @@
 /* 698 */       return false;
 /*     */     }
 /* 700 */     String normalized = class_124.method_539(nametag).toLowerCase(Locale.ROOT);
-/* 701 */     for (String wanted : wantedNames) {
-/* 702 */       if (wanted != null && !wanted.isEmpty() && normalized.contains(wanted)) {
-/* 703 */         return true;
+/* 701 */     if (((Boolean)this.customIgnoreZeroHealth.getValue()).booleanValue() && !hasPositiveHealthInNametag(normalized)) {
+/* 702 */       return false;
+/*     */     }
+/* 704 */     for (String wanted : wantedNames) {
+/* 705 */       if (wanted != null && !wanted.isEmpty() && normalized.contains(wanted)) {
+/* 706 */         return true;
 /*     */       }
 /*     */     } 
-/* 706 */     return false;
+/* 709 */     return false;
+/*     */   }
+/*     */   
+/*     */   private boolean hasPositiveHealthInNametag(String normalizedNametag) {
+/* 713 */     Matcher matcher = HEALTH_FRACTION_PATTERN.matcher(normalizedNametag);
+/* 714 */     while (matcher.find()) {
+/*     */       try {
+/* 716 */         int current = Integer.parseInt(matcher.group(1));
+/* 717 */         int max = Integer.parseInt(matcher.group(2));
+/* 718 */         if (max > 0) {
+/* 719 */           return (current > 0);
+/*     */         }
+/* 721 */       } catch (NumberFormatException numberFormatException) {}
+/*     */     } 
+/* 723 */     return true;
 /*     */   }
 /*     */   
 /*     */   private class_238 getEntityBox(Object entity) {
