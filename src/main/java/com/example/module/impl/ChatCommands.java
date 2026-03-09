@@ -21,6 +21,7 @@
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.NumberSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.StringSetting;
 /*     */ import com.ricedotwho.rsm.utils.ChatUtils;
+/*     */ import com.ricedotwho.rsm.utils.render.render2d.NVGUtils;
 /*     */ import java.net.URI;
 /*     */ import java.net.http.HttpClient;
 /*     */ import java.net.http.HttpRequest;
@@ -50,7 +51,6 @@
 /*     */ import net.minecraft.class_2561;
 /*     */ import net.minecraft.class_2680;
 /*     */ import net.minecraft.class_310;
-/*     */ import net.minecraft.class_332;
 /*     */ import net.minecraft.class_355;
 /*     */ import net.minecraft.class_634;
 /*     */ import net.minecraft.class_640;
@@ -89,9 +89,22 @@
 /*  73 */   private static final byte MATCH_NODE = 2;
 /*  74 */   private static final Pattern HEALTH_FRACTION_PATTERN = Pattern.compile("(?<!\\d)(\\d+)\\s*/\\s*(\\d+)(?!\\d)");
 /*  75 */   private static final Pattern COMMISSION_PERCENT_PATTERN = Pattern.compile("(?<!\\d)(\\d+(?:\\.\\d+)?)\\s*%");
-/*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 10;
+/*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 1;
+/*  77 */   private static final Colour COMMISSION_PANEL_FILL = new Colour(22, 18, 34, 185);
+/*  78 */   private static final Colour COMMISSION_PANEL_OUTLINE = new Colour(138, 104, 222, 235);
+/*  79 */   private static final Colour COMMISSION_TITLE_COLOUR = new Colour(222, 228, 255, 255);
+/*  80 */   private static final Colour COMMISSION_TEXT_DEFAULT = new Colour(245, 245, 255, 255);
+/*  81 */   private static final Colour COMMISSION_TEXT_PROGRESS = new Colour(255, 247, 120, 255);
+/*  82 */   private static final Colour COMMISSION_TEXT_DONE = new Colour(95, 217, 140, 255);
+/*  83 */   private static final Colour COMMISSION_TEXT_ZERO = new Colour(255, 96, 124, 255);
+/*  83 */   private static final Colour COMMISSION_PROGRESS_TRACK = new Colour(255, 255, 255, 36);
+/*  83 */   private static final Colour COMMISSION_PROGRESS_START = new Colour(201, 92, 143, 255);
+/*  83 */   private static final Colour COMMISSION_PROGRESS_END = new Colour(154, 122, 222, 255);
+/*  84 */   private static final Colour RSA_R_COLOUR = new Colour(178, 99, 223, 255);
+/*  85 */   private static final Colour RSA_S_COLOUR = new Colour(197, 123, 234, 255);
+/*  86 */   private static final Colour RSA_A_COLOUR = new Colour(215, 147, 244, 255);
 /*     */   private record ScheduledLine(long delayMs, String command) {}
-/*     */   private record CommissionOverlayMetrics(int boxWidth, int boxHeight, int lineHeight, int padding) {}
+/*     */   private record CommissionOverlayMetrics(float boxWidth, float boxHeight, float padding, float titleSize, float lineSize, float rsaSize, float lineGap, float barTopGap, float barHeight, float barRadius, float titleY, float bodyStartY, float rsaY, float radius, float outlineThickness) {}
 /*     */   
 /*  65 */   private final class_310 mc = class_310.method_1551(); public class_310 getMc() { return this.mc; }
 /*  66 */    private final LinkedHashMap<String, Integer> commandCategories = new LinkedHashMap<>(); public LinkedHashMap<String, Integer> getCommandCategories() { return this.commandCategories; }
@@ -144,6 +157,7 @@
 /*  91 */   private final BooleanSetting glorpWarp = new BooleanSetting("glorp warp", false); public BooleanSetting getGlorpWarp() { return this.glorpWarp; }
 /*  91 */   private Object commissionPeekKeybind;
 /*  91 */   private final List<String> commissionOverlayLines = new ArrayList<>();
+/*  91 */   private boolean commissionHeaderDetected;
 /*  91 */   private int commissionOverlayTickCounter;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Enabled", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
 /*  96 */    private final StringSetting webhookLink = new StringSetting("Webhook Link", ""); public StringSetting getWebhookLink() { return this.webhookLink; }
@@ -716,7 +730,7 @@
 /*     */   
 /*     */   @SubscribeEvent
 /*     */   public void onRender2D(Render2DEvent event) {
-/* 599 */     if (!isEnabled() || !shouldRenderCommissionOverlay() || this.mc.field_1772 == null) {
+/* 599 */     if (!isEnabled() || !shouldRenderCommissionOverlay()) {
 /*     */       return;
 /*     */     }
 /* 602 */     if (this.commissionOverlayLines.isEmpty()) {
@@ -743,15 +757,14 @@
 /*     */       return;
 /*     */     }
 /* 626 */     Runnable draw = () -> {
-/* 628 */         if (gfxObject instanceof class_332)
-/* 629 */           renderCommissionOverlay((class_332)gfxObject, 0, 0, metrics); 
+/* 628 */         renderCommissionOverlay(0.0F, 0.0F, metrics);
 /*     */       };
-/* 631 */     float width = (float)metrics.boxWidth();
-/* 632 */     float height = (float)metrics.boxHeight();
-/* 633 */     if (invokeDragRenderMethod("renderScaledGFX", gfxObject, draw, width, height)) {
+/* 631 */     float width = metrics.boxWidth();
+/* 632 */     float height = metrics.boxHeight();
+/* 633 */     if (invokeDragRenderMethod("renderScaled", gfxObject, draw, width, height)) {
 /*     */       return;
 /*     */     }
-/* 636 */     invokeDragRenderMethod("renderScaled", gfxObject, draw, width, height);
+/* 636 */     invokeDragRenderMethod("renderScaledGFX", gfxObject, draw, width, height);
 /*     */   }
 /*     */   
 /*     */   private boolean invokeDragRenderMethod(String methodName, Object gfxObject, Runnable draw, float width, float height) {
@@ -771,61 +784,153 @@
 /*     */   }
 /*     */   
 /*     */   private CommissionOverlayMetrics getCommissionOverlayMetrics() {
-/* 656 */     if (this.commissionOverlayLines.isEmpty() || this.mc.field_1772 == null) {
+/* 656 */     if (this.commissionOverlayLines.isEmpty()) {
 /* 657 */       return null;
 /*     */     }
-/* 659 */     int padding = 4;
-/* 660 */     int lineHeight = this.mc.field_1772.field_2000 + 2;
-/* 661 */     int maxWidth = 0;
-/* 662 */     for (String line : this.commissionOverlayLines) {
-/* 663 */       maxWidth = Math.max(maxWidth, this.mc.field_1772.method_1727(line));
+/* 659 */     float padding = 16.0F;
+/* 660 */     float titleSize = 19.0F;
+/* 661 */     float lineSize = 15.0F;
+/* 662 */     float rsaSize = 14.0F;
+/* 663 */     float lineGap = 12.0F;
+/* 664 */     float barTopGap = 6.0F;
+/* 665 */     float barHeight = 7.0F;
+/* 666 */     float footerGap = 16.0F;
+/* 667 */     float radius = 11.0F;
+/* 668 */     float barRadius = 3.5F;
+/* 669 */     float outlineThickness = 2.0F;
+/* 670 */     float minWidth = 270.0F;
+/* 671 */     float maxWidth = 0.0F;
+/* 668 */     for (int i = 0; i < this.commissionOverlayLines.size(); i++) {
+/* 669 */       String line = this.commissionOverlayLines.get(i);
+/* 670 */       float size = (i == 0) ? titleSize : lineSize;
+/* 671 */       maxWidth = Math.max(maxWidth, NVGUtils.getTextWidth(line, size, NVGUtils.ROBOTO));
 /*     */     }
-/* 665 */     int boxWidth = maxWidth + padding * 2;
-/* 666 */     int boxHeight = this.commissionOverlayLines.size() * lineHeight + padding * 2;
-/* 667 */     return new CommissionOverlayMetrics(boxWidth, boxHeight, lineHeight, padding);
+/* 673 */     float rWidth = NVGUtils.getTextWidth("R", rsaSize, NVGUtils.ROBOTO);
+/* 674 */     float sWidth = NVGUtils.getTextWidth("S", rsaSize, NVGUtils.ROBOTO);
+/* 675 */     float aWidth = NVGUtils.getTextWidth("A", rsaSize, NVGUtils.ROBOTO);
+/* 676 */     float rsaWidth = rWidth + sWidth + aWidth;
+/* 677 */     float titleHeight = NVGUtils.getTextHeight(titleSize, NVGUtils.ROBOTO);
+/* 678 */     float lineHeight = NVGUtils.getTextHeight(lineSize, NVGUtils.ROBOTO);
+/* 679 */     float rsaHeight = NVGUtils.getTextHeight(rsaSize, NVGUtils.ROBOTO);
+/* 680 */     float bodyStartY = padding + titleHeight + 12.0F;
+/* 681 */     int bodyLines = Math.max(0, this.commissionOverlayLines.size() - 1);
+/* 682 */     float bodyHeight = bodyLines * (lineHeight + barTopGap + barHeight) + Math.max(0, bodyLines - 1) * lineGap;
+/* 683 */     float rsaY = bodyStartY + bodyHeight + footerGap;
+/* 684 */     float boxWidth = Math.max(minWidth, Math.max(maxWidth + padding * 2.0F + 16.0F, rsaWidth + padding * 2.0F + 16.0F));
+/* 685 */     float boxHeight = rsaY + rsaHeight + padding;
+/* 686 */     return new CommissionOverlayMetrics(boxWidth, boxHeight, padding, titleSize, lineSize, rsaSize, lineGap, barTopGap, barHeight, barRadius, padding, bodyStartY, rsaY, radius, outlineThickness);
 /*     */   }
 /*     */   
-/*     */   private void renderCommissionOverlay(class_332 gfx, int left, int top, CommissionOverlayMetrics metrics) {
-/* 617 */     if (gfx == null || this.commissionOverlayLines.isEmpty() || this.mc.field_1772 == null) {
+/*     */   private void renderCommissionOverlay(float left, float top, CommissionOverlayMetrics metrics) {
+/* 691 */     if (metrics == null || this.commissionOverlayLines.isEmpty()) {
 /*     */       return;
 /*     */     }
-/* 620 */     int padding = metrics.padding();
-/* 621 */     int lineHeight = metrics.lineHeight();
-/* 622 */     int boxWidth = metrics.boxWidth();
-/* 623 */     int boxHeight = metrics.boxHeight();
-/* 624 */     gfx.method_25294(left - 1, top - 1, left + boxWidth + 1, top + boxHeight + 1, 1879048192);
-/* 625 */     int textY = top + padding;
-/* 632 */     for (int i = 0; i < this.commissionOverlayLines.size(); i++) {
+/* 694 */     float boxWidth = metrics.boxWidth();
+/* 695 */     float boxHeight = metrics.boxHeight();
+/* 696 */     float padding = metrics.padding();
+/* 697 */     NVGUtils.drawRect(left, top, boxWidth, boxHeight, metrics.radius(), COMMISSION_PANEL_FILL);
+/* 698 */     NVGUtils.drawOutlineRect(left, top, boxWidth, boxHeight, metrics.radius(), metrics.outlineThickness(), COMMISSION_PANEL_OUTLINE);
+/* 699 */     if (!this.commissionOverlayLines.isEmpty()) {
+/* 700 */       String title = this.commissionOverlayLines.get(0);
+/* 701 */       float titleWidth = NVGUtils.getTextWidth(title, metrics.titleSize(), NVGUtils.ROBOTO);
+/* 702 */       float titleX = left + (boxWidth - titleWidth) / 2.0F;
+/* 703 */       NVGUtils.drawText(title, titleX, top + metrics.titleY(), metrics.titleSize(), COMMISSION_TITLE_COLOUR, NVGUtils.ROBOTO);
+/*     */     }
+/* 705 */     float textY = top + metrics.bodyStartY();
+/* 706 */     float lineHeight = NVGUtils.getTextHeight(metrics.lineSize(), NVGUtils.ROBOTO);
+/* 706 */     for (int i = 1; i < this.commissionOverlayLines.size(); i++) {
 /* 633 */       String line = this.commissionOverlayLines.get(i);
-/* 634 */       int color = (i == 0) ? -9802497 : getCommissionLineColour(line);
-/* 635 */       gfx.method_25303(this.mc.field_1772, line, left + padding, textY, color);
-/* 636 */       textY += lineHeight;
+/* 634 */       Colour color = getCommissionLineColour(line);
+/* 635 */       NVGUtils.drawText(line, left + padding, textY, metrics.lineSize(), color, NVGUtils.ROBOTO);
+/* 636 */       double progress = getCommissionProgressPercent(line);
+/* 637 */       if (progress < 0.0D) {
+/* 638 */         progress = 0.0D;
+/*     */       }
+/* 640 */       float barY = textY + lineHeight + metrics.barTopGap();
+/* 641 */       float barWidth = boxWidth - padding * 2.0F;
+/* 642 */       drawCommissionProgressBar(left + padding, barY, barWidth, metrics.barHeight(), metrics.barRadius(), progress);
+/* 643 */       textY += lineHeight + metrics.barTopGap() + metrics.barHeight() + metrics.lineGap();
+/*     */     } 
+/* 638 */     float rsaSize = metrics.rsaSize();
+/* 639 */     float rWidth = NVGUtils.getTextWidth("R", rsaSize, NVGUtils.ROBOTO);
+/* 640 */     float sWidth = NVGUtils.getTextWidth("S", rsaSize, NVGUtils.ROBOTO);
+/* 641 */     float aWidth = NVGUtils.getTextWidth("A", rsaSize, NVGUtils.ROBOTO);
+/* 642 */     float rsaTotalWidth = rWidth + sWidth + aWidth;
+/* 643 */     float rsaX = left + (boxWidth - rsaTotalWidth) / 2.0F;
+/* 644 */     float rsaY = top + metrics.rsaY();
+/* 645 */     NVGUtils.drawText("R", rsaX, rsaY, rsaSize, RSA_R_COLOUR, NVGUtils.ROBOTO);
+/* 646 */     rsaX += rWidth;
+/* 647 */     NVGUtils.drawText("S", rsaX, rsaY, rsaSize, RSA_S_COLOUR, NVGUtils.ROBOTO);
+/* 648 */     rsaX += sWidth;
+/* 649 */     NVGUtils.drawText("A", rsaX, rsaY, rsaSize, RSA_A_COLOUR, NVGUtils.ROBOTO);
+/*     */   }
+/*     */   
+/*     */   private Colour getCommissionLineColour(String line) {
+/* 641 */     if (line == null || line.isBlank()) {
+/* 642 */       return COMMISSION_TEXT_DEFAULT;
+/*     */     }
+/* 644 */     double percent = getCommissionProgressPercent(line);
+/* 645 */     if (percent >= 0.0D) {
+/* 646 */       if (percent <= 0.0D) return COMMISSION_TEXT_ZERO; 
+/* 647 */       if (percent >= 100.0D) return COMMISSION_TEXT_DONE; 
+/* 648 */       return COMMISSION_TEXT_PROGRESS;
+/*     */     }
+/* 657 */     return COMMISSION_TEXT_DEFAULT;
+/*     */   }
+/*     */   
+/*     */   private double getCommissionProgressPercent(String line) {
+/* 661 */     if (line == null || line.isBlank()) {
+/* 662 */       return -1.0D;
+/*     */     }
+/* 664 */     Matcher matcher = COMMISSION_PERCENT_PATTERN.matcher(line);
+/* 665 */     if (matcher.find()) {
+/*     */       try {
+/* 667 */         double percent = Double.parseDouble(matcher.group(1));
+/* 668 */         return Math.max(0.0D, Math.min(100.0D, percent));
+/* 669 */       } catch (NumberFormatException numberFormatException) {}
+/*     */     }
+/* 671 */     String lower = line.toLowerCase(Locale.ROOT);
+/* 672 */     if (lower.endsWith("done") || lower.endsWith("completed")) {
+/* 673 */       return 100.0D;
+/*     */     }
+/* 675 */     return -1.0D;
+/*     */   }
+/*     */   
+/*     */   private void drawCommissionProgressBar(float x, float y, float width, float height, float radius, double percent) {
+/* 679 */     if (width <= 0.0F || height <= 0.0F) {
+/*     */       return;
+/*     */     }
+/* 682 */     NVGUtils.drawRect(x, y, width, height, radius, COMMISSION_PROGRESS_TRACK);
+/* 683 */     float clampedPercent = (float)Math.max(0.0D, Math.min(100.0D, percent));
+/* 684 */     float fillWidth = width * clampedPercent / 100.0F;
+/* 685 */     if (fillWidth <= 0.5F) {
+/*     */       return;
+/*     */     }
+/* 688 */     int strips = Math.max(1, Math.round(fillWidth));
+/* 689 */     float stripWidth = fillWidth / strips;
+/* 690 */     for (int i = 0; i < strips; i++) {
+/* 691 */       float t = (strips <= 1) ? 0.0F : (i / (float)(strips - 1));
+/* 692 */       float stripX = x + i * stripWidth;
+/* 693 */       float stripW = (i == strips - 1) ? (x + fillWidth - stripX) : stripWidth;
+/* 694 */       float stripRadius = (strips == 1 || i == 0 || i == strips - 1) ? radius : 0.0F;
+/* 695 */       NVGUtils.drawRect(stripX, y, stripW + 0.05F, height, stripRadius, interpolateCommissionProgressColour(t));
 /*     */     } 
 /*     */   }
 /*     */   
-/*     */   private int getCommissionLineColour(String line) {
-/* 641 */     if (line == null || line.isBlank()) {
-/* 642 */       return -1;
-/*     */     }
-/* 644 */     Matcher matcher = COMMISSION_PERCENT_PATTERN.matcher(line);
-/* 645 */     if (matcher.find()) {
-/*     */       try {
-/* 647 */         double percent = Double.parseDouble(matcher.group(1));
-/* 648 */         if (percent <= 0.0D) return -43691; 
-/* 649 */         if (percent >= 100.0D) return -11141291; 
-/* 650 */         return -171;
-/* 651 */       } catch (NumberFormatException numberFormatException) {}
-/*     */     }
-/* 653 */     String lower = line.toLowerCase(Locale.ROOT);
-/* 654 */     if (lower.endsWith("done") || lower.endsWith("completed")) {
-/* 655 */       return -11141291;
-/*     */     }
-/* 657 */     return -1;
+/*     */   private Colour interpolateCommissionProgressColour(float t) {
+/* 700 */     float clampedT = Math.max(0.0F, Math.min(1.0F, t));
+/* 701 */     int red = Math.round(COMMISSION_PROGRESS_START.getRed() + (COMMISSION_PROGRESS_END.getRed() - COMMISSION_PROGRESS_START.getRed()) * clampedT);
+/* 702 */     int green = Math.round(COMMISSION_PROGRESS_START.getGreen() + (COMMISSION_PROGRESS_END.getGreen() - COMMISSION_PROGRESS_START.getGreen()) * clampedT);
+/* 703 */     int blue = Math.round(COMMISSION_PROGRESS_START.getBlue() + (COMMISSION_PROGRESS_END.getBlue() - COMMISSION_PROGRESS_START.getBlue()) * clampedT);
+/* 704 */     return new Colour(red, green, blue, 255);
 /*     */   }
 /*     */   
 /*     */   private boolean shouldRenderCommissionOverlay() {
 /* 661 */     if (!((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()) {
 /* 662 */       return false;
+/*     */     }
+/* 663 */     if (!this.commissionHeaderDetected || this.commissionOverlayLines.isEmpty()) {
+/* 664 */       return false;
 /*     */     }
 /* 664 */     if (((Boolean)this.commissionPeekEnabled.getValue()).booleanValue() && !isCommissionPeekKeyActive()) {
 /* 665 */       return false;
@@ -872,6 +977,7 @@
 /*     */   
 /*     */   private void updateCommissionOverlayData() {
 /* 661 */     this.commissionOverlayLines.clear();
+/* 662 */     this.commissionHeaderDetected = false;
 /* 662 */     if (!isEnabled() || !((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()) {
 /*     */       return;
 /*     */     }
@@ -883,16 +989,14 @@
 /* 670 */     for (int i = 0; i < tabLines.size(); i++) {
 /* 671 */       if (isCommissionHeaderLine(tabLines.get(i))) {
 /* 672 */         startIndex = i + 1;
+/* 673 */         this.commissionHeaderDetected = true;
 /*     */         break;
 /*     */       } 
 /*     */     } 
 /* 676 */     if (startIndex < 0) {
-/* 677 */       startIndex = findFallbackCommissionStart(tabLines);
-/* 678 */       if (startIndex < 0) {
-/*     */         return;
-/*     */       }
+/*     */       return;
 /*     */     }
-/* 679 */     this.commissionOverlayLines.add("Commissions:");
+/* 679 */     this.commissionOverlayLines.add("Commissions");
 /* 680 */     for (int j = startIndex; j < tabLines.size() && this.commissionOverlayLines.size() < 8; j++) {
 /* 681 */       String line = tabLines.get(j);
 /* 682 */       if (line == null || line.isBlank()) {
@@ -920,6 +1024,7 @@
 /*     */     } 
 /* 705 */     if (this.commissionOverlayLines.size() <= 1) {
 /* 706 */       this.commissionOverlayLines.clear();
+/* 707 */       this.commissionHeaderDetected = false;
 /*     */     }
 /*     */   }
 /*     */   
@@ -1079,7 +1184,7 @@
 /* 770 */       return false;
 /*     */     }
 /* 772 */     String normalized = normalizeTabLine(line).toLowerCase(Locale.ROOT);
-/* 773 */     return normalized.contains("commission");
+/* 773 */     return normalized.contains("commissions:");
 /*     */   }
 /*     */   
 /*     */   private boolean looksLikeCommissionLine(String line) {
@@ -1093,6 +1198,7 @@
 /*     */   private void clearCommissionOverlayData() {
 /* 785 */     this.commissionOverlayTickCounter = 0;
 /* 786 */     this.commissionOverlayLines.clear();
+/* 787 */     this.commissionHeaderDetected = false;
 /*     */   }
 /*     */   
 /*     */   private void renderBlockTasks(List<Object> tasks, Boolean enabled) {
