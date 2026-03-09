@@ -7,6 +7,7 @@
 /*     */ import com.ricedotwho.rsm.event.impl.game.ClientTickEvent;
 /*     */ import com.ricedotwho.rsm.event.impl.game.ConnectionEvent;
 /*     */ import com.ricedotwho.rsm.event.impl.player.PlayerChatEvent;
+/*     */ import com.ricedotwho.rsm.event.impl.render.Render2DEvent;
 /*     */ import com.ricedotwho.rsm.event.impl.render.Render3DEvent;
 /*     */ import com.ricedotwho.rsm.module.Module;
 /*     */ import com.ricedotwho.rsm.module.api.Category;
@@ -15,6 +16,7 @@
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.group.DefaultGroupSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.BooleanSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.ButtonSetting;
+/*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.DragSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.MultiBoolSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.NumberSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.StringSetting;
@@ -24,6 +26,7 @@
 /*     */ import java.net.http.HttpRequest;
 /*     */ import java.net.http.HttpResponse;
 /*     */ import java.lang.reflect.Constructor;
+/*     */ import java.lang.reflect.Field;
 /*     */ import java.lang.reflect.Method;
 /*     */ import java.util.ArrayList;
 /*     */ import java.util.Collections;
@@ -38,14 +41,21 @@
 /*     */ import java.util.regex.Matcher;
 /*     */ import java.util.regex.Pattern;
 /*     */ import net.minecraft.class_124;
+/*     */ import net.minecraft.class_1661;
 /*     */ import net.minecraft.class_1937;
+/*     */ import net.minecraft.class_1799;
 /*     */ import net.minecraft.class_2338;
 /*     */ import net.minecraft.class_238;
 /*     */ import net.minecraft.class_243;
 /*     */ import net.minecraft.class_2561;
 /*     */ import net.minecraft.class_2680;
 /*     */ import net.minecraft.class_310;
+/*     */ import net.minecraft.class_332;
+/*     */ import net.minecraft.class_355;
+/*     */ import net.minecraft.class_634;
+/*     */ import net.minecraft.class_640;
 /*     */ import net.minecraft.class_5250;
+/*     */ import org.joml.Vector2d;
 /*     */ 
 /*     */ 
 /*     */ 
@@ -78,7 +88,10 @@
 /*  72 */   private static final byte MATCH_TITANIUM = 1;
 /*  73 */   private static final byte MATCH_NODE = 2;
 /*  74 */   private static final Pattern HEALTH_FRACTION_PATTERN = Pattern.compile("(?<!\\d)(\\d+)\\s*/\\s*(\\d+)(?!\\d)");
+/*  75 */   private static final Pattern COMMISSION_PERCENT_PATTERN = Pattern.compile("(?<!\\d)(\\d+(?:\\.\\d+)?)\\s*%");
+/*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 10;
 /*     */   private record ScheduledLine(long delayMs, String command) {}
+/*     */   private record CommissionOverlayMetrics(int boxWidth, int boxHeight, int lineHeight, int padding) {}
 /*     */   
 /*  65 */   private final class_310 mc = class_310.method_1551(); public class_310 getMc() { return this.mc; }
 /*  66 */    private final LinkedHashMap<String, Integer> commandCategories = new LinkedHashMap<>(); public LinkedHashMap<String, Integer> getCommandCategories() { return this.commandCategories; }
@@ -103,6 +116,7 @@
 /*  85 */    private final DefaultGroupSetting miscGroup = new DefaultGroupSetting("Misc", this); public DefaultGroupSetting getMiscGroup() { return this.miscGroup; }
 /*  86 */    private final DefaultGroupSetting espGroup = new DefaultGroupSetting("ESP", this); public DefaultGroupSetting getEspGroup() { return this.espGroup; }
 /*  86 */    private final DefaultGroupSetting customHighlightGroup = new DefaultGroupSetting("Custom Highlight", this); public DefaultGroupSetting getCustomHighlightGroup() { return this.customHighlightGroup; }
+/*  86 */    private final DefaultGroupSetting commissionOverlayGroup = new DefaultGroupSetting("Commission Overlay", this); public DefaultGroupSetting getCommissionOverlayGroup() { return this.commissionOverlayGroup; }
 /*  86 */    private final BooleanSetting miscEnabled = new BooleanSetting("Enable", true); public BooleanSetting getMiscEnabled() { return this.miscEnabled; }
 /*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("Enable", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
 /*  88 */    private final BooleanSetting titaniumHighlightEnabled = new BooleanSetting("Titanium", true); public BooleanSetting getTitaniumHighlightEnabled() { return this.titaniumHighlightEnabled; }
@@ -116,12 +130,21 @@
 /*  95 */    private final BooleanSetting customTracerEnabled = new BooleanSetting("Tracer", false, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public BooleanSetting getCustomTracerEnabled() { return this.customTracerEnabled; }
 /*  96 */    private final BooleanSetting customTracerClosestOnly = new BooleanSetting("Closest only", false, () -> (((Boolean)this.customHighlightEnabled.getValue()).booleanValue() && ((Boolean)this.customTracerEnabled.getValue()).booleanValue())); public BooleanSetting getCustomTracerClosestOnly() { return this.customTracerClosestOnly; }
 /*  97 */    private final NumberSetting customTracerThicknessPx = new NumberSetting("Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", () -> (((Boolean)this.customHighlightEnabled.getValue()).booleanValue() && ((Boolean)this.customTracerEnabled.getValue()).booleanValue())); public NumberSetting getCustomTracerThicknessPx() { return this.customTracerThicknessPx; }
+/*  98 */    private final BooleanSetting commissionOverlayEnabled = new BooleanSetting("Enable", true); public BooleanSetting getCommissionOverlayEnabled() { return this.commissionOverlayEnabled; }
+/*  99 */    private final DragSetting commissionOverlayPosition = new DragSetting("Commission Overlay", new Vector2d(8.0D, 8.0D), new Vector2d(180.0D, 80.0D), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public DragSetting getCommissionOverlayPosition() { return this.commissionOverlayPosition; }
+/* 100 */    private final BooleanSetting commissionPeekEnabled = new BooleanSetting("Peek", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionPeekEnabled() { return this.commissionPeekEnabled; }
+/* 101 */    private final Setting<?> commissionPeekKeybindSetting = createCommissionPeekKeybindSetting(); public Setting<?> getCommissionPeekKeybindSetting() { return this.commissionPeekKeybindSetting; }
+/* 102 */    private final BooleanSetting commissionOnlyRoyalPigeonInventory = new BooleanSetting("Only display if Royal Pigeon is in inventory", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonInventory() { return this.commissionOnlyRoyalPigeonInventory; }
+/* 103 */    private final BooleanSetting commissionOnlyRoyalPigeonHotbar = new BooleanSetting("Only display if Royal Pigeon is in hotbar", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonHotbar() { return this.commissionOnlyRoyalPigeonHotbar; }
 /*  95 */    private final ButtonSetting debugNametagScanButton = new ButtonSetting("Debug Nametags", "", this::debugCustomHighlightScan); public ButtonSetting getDebugNametagScanButton() { return this.debugNametagScanButton; }
 /*  87 */   private final Setting<?> ptwKeybind = createPtwKeybindSetting(); public Setting<?> getPtwKeybind() { return this.ptwKeybind; }
 /*     */ 
 /*     */ 
 /*     */   
 /*  91 */   private final BooleanSetting glorpWarp = new BooleanSetting("glorp warp", false); public BooleanSetting getGlorpWarp() { return this.glorpWarp; }
+/*  91 */   private Object commissionPeekKeybind;
+/*  91 */   private final List<String> commissionOverlayLines = new ArrayList<>();
+/*  91 */   private int commissionOverlayTickCounter;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Enabled", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
 /*  96 */    private final StringSetting webhookLink = new StringSetting("Webhook Link", ""); public StringSetting getWebhookLink() { return this.webhookLink; }
 /*  97 */    private final BooleanSetting guildChatWebhookEnabled = new BooleanSetting("Enable Guild chat", false); public BooleanSetting getGuildChatWebhookEnabled() { return this.guildChatWebhookEnabled; }
@@ -400,7 +423,7 @@
 /* 368 */     this.otherCommandsSetting = new MultiBoolSetting("Other", this.otherCommands, new ArrayList<>(this.otherCommands));
 /*     */     
 /* 370 */     setGroup(new DefaultGroupSetting("Party Commands", this));
-/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.levelPrefixGroup, (Setting)this.webhookGroup, (Setting)this.accountShareGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.customHighlightGroup });
+/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.levelPrefixGroup, (Setting)this.webhookGroup, (Setting)this.accountShareGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.customHighlightGroup, (Setting)this.commissionOverlayGroup });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -449,7 +472,8 @@
 /*     */     
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx });
-/* 424 */     this.customHighlightGroup.add(new Setting[] { (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.customTracerClosestOnly, (Setting)this.customTracerThicknessPx }); }
+/* 424 */     this.customHighlightGroup.add(new Setting[] { (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.customTracerClosestOnly, (Setting)this.customTracerThicknessPx });
+/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
 /*     */   public String getCachedWebhookInput() { return this.cachedWebhookInput; }
@@ -486,6 +510,44 @@
 /* 461 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
 /*     */ 
 /* 463 */     return (Setting<?>)new ButtonSetting("PT/W Keybind", "", () -> ChatUtils.chat(String.valueOf(class_124.field_1061) + "PT/W keybind unavailable in this runtime.", new Object[0]));
+/*     */   }
+/*     */   
+/*     */   private Setting<?> createCommissionPeekKeybindSetting() {
+/*     */     try {
+/* 467 */       Class<?> keybindClass = Class.forName("com.ricedotwho.rsm.data.Keybind");
+/* 468 */       Constructor<?> keybindConstructor = keybindClass.getConstructor(new Class[] { int.class, boolean.class, Runnable.class });
+/* 469 */       Object keybind = keybindConstructor.newInstance(new Object[] { Integer.valueOf(-1), Boolean.valueOf(false), (Runnable)(() -> {}) });
+/* 470 */       this.commissionPeekKeybind = keybind;
+/* 471 */       Class<?> keybindSettingClass = Class.forName("com.ricedotwho.rsm.ui.clickgui.settings.impl.KeybindSetting");
+/*     */       try {
+/* 473 */         Constructor<?> constructor = keybindSettingClass.getConstructor(new Class[] { String.class, keybindClass, Runnable.class, java.util.function.BooleanSupplier.class });
+/* 474 */         Object setting = constructor.newInstance(new Object[] { "Peek Keybind", keybind, (Runnable)(() -> {}), (java.util.function.BooleanSupplier)(() -> (((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue() && ((Boolean)this.commissionPeekEnabled.getValue()).booleanValue())) });
+/* 475 */         if (setting instanceof Setting) {
+/* 476 */           return (Setting)setting;
+/*     */         }
+/* 478 */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */ 
+/* 480 */       Constructor<?> keybindSettingConstructor = keybindSettingClass.getConstructor(new Class[] { String.class, keybindClass });
+/* 481 */       Object fallbackSetting = keybindSettingConstructor.newInstance(new Object[] { "Peek Keybind", keybind });
+/* 482 */       if (fallbackSetting instanceof Setting) {
+/* 483 */         return (Setting)fallbackSetting;
+/*     */       }
+/* 485 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */ 
+/* 487 */     this.commissionPeekKeybind = null;
+/* 488 */     return (Setting<?>)new ButtonSetting("Peek Keybind", "", () -> ChatUtils.chat(String.valueOf(class_124.field_1061) + "Peek keybind unavailable in this runtime.", new Object[0]));
+/*     */   }
+/*     */   
+/*     */   private boolean isCommissionPeekKeyActive() {
+/* 492 */     if (this.commissionPeekKeybind == null) {
+/* 493 */       return false;
+/*     */     }
+/*     */     try {
+/* 496 */       Object active = this.commissionPeekKeybind.getClass().getMethod("isActive", new Class[0]).invoke(this.commissionPeekKeybind, new Object[0]);
+/* 497 */       return (active instanceof Boolean && ((Boolean)active).booleanValue());
+/* 498 */     } catch (ReflectiveOperationException reflectiveOperationException) {
+/* 499 */       return false;
+/*     */     } 
 /*     */   }
 /*     */   
 /*     */   
@@ -562,11 +624,13 @@
 /* 551 */     if (!isEnabled()) {
 /* 552 */       clearEspData();
 /* 553 */       clearCustomHighlightData();
+/* 554 */       clearCommissionOverlayData();
 /*     */       return;
 /*     */     }
 /* 556 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
 /* 557 */       clearEspData();
 /* 558 */       clearCustomHighlightData();
+/* 559 */       clearCommissionOverlayData();
 /*     */       return;
 /*     */     }
 /* 561 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
@@ -595,6 +659,14 @@
 /* 584 */       updateCustomHighlightData();
 /*     */     } else {
 /* 586 */       clearCustomHighlightData();
+/*     */     } 
+/* 588 */     if (((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()) {
+/* 589 */       this.commissionOverlayTickCounter++;
+/* 590 */       if (this.commissionOverlayLines.isEmpty() || this.commissionOverlayTickCounter % COMMISSION_SCAN_INTERVAL_TICKS == 0) {
+/* 591 */         updateCommissionOverlayData();
+/*     */       }
+/*     */     } else {
+/* 594 */       clearCommissionOverlayData();
 /*     */     } 
 /*     */   }
 /*     */   
@@ -640,6 +712,387 @@
 /* 594 */     } catch (Throwable throwable) {
 /* 595 */       clearCustomHighlightData();
 /*     */     } 
+/*     */   }
+/*     */   
+/*     */   @SubscribeEvent
+/*     */   public void onRender2D(Render2DEvent event) {
+/* 599 */     if (!isEnabled() || !shouldRenderCommissionOverlay() || this.mc.field_1772 == null) {
+/*     */       return;
+/*     */     }
+/* 602 */     if (this.commissionOverlayLines.isEmpty()) {
+/* 603 */       updateCommissionOverlayData();
+/* 604 */       if (this.commissionOverlayLines.isEmpty()) {
+/*     */         return;
+/*     */       }
+/*     */     } 
+/*     */     try {
+/* 609 */       Object gfxObject = invokeNoArg(event, new String[] { "getGfx" });
+/* 610 */       if (gfxObject == null) {
+/*     */         return;
+/*     */       }
+/* 613 */       CommissionOverlayMetrics metrics = getCommissionOverlayMetrics();
+/* 614 */       if (metrics == null) {
+/*     */         return;
+/*     */       }
+/* 617 */       renderCommissionOverlayWithDrag(gfxObject, metrics);
+/* 619 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */   }
+/*     */   
+/*     */   private void renderCommissionOverlayWithDrag(Object gfxObject, CommissionOverlayMetrics metrics) {
+/* 623 */     if (gfxObject == null || metrics == null) {
+/*     */       return;
+/*     */     }
+/* 626 */     Runnable draw = () -> {
+/* 628 */         if (gfxObject instanceof class_332)
+/* 629 */           renderCommissionOverlay((class_332)gfxObject, 0, 0, metrics); 
+/*     */       };
+/* 631 */     float width = (float)metrics.boxWidth();
+/* 632 */     float height = (float)metrics.boxHeight();
+/* 633 */     if (invokeDragRenderMethod("renderScaledGFX", gfxObject, draw, width, height)) {
+/*     */       return;
+/*     */     }
+/* 636 */     invokeDragRenderMethod("renderScaled", gfxObject, draw, width, height);
+/*     */   }
+/*     */   
+/*     */   private boolean invokeDragRenderMethod(String methodName, Object gfxObject, Runnable draw, float width, float height) {
+/* 640 */     if (methodName == null || gfxObject == null || draw == null) {
+/* 641 */       return false;
+/*     */     }
+/* 643 */     for (Method method : this.commissionOverlayPosition.getClass().getMethods()) {
+/* 644 */       if (!methodName.equals(method.getName()) || method.getParameterCount() != 4) {
+/*     */         continue;
+/*     */       }
+/*     */       try {
+/* 648 */         method.invoke(this.commissionOverlayPosition, new Object[] { gfxObject, draw, Float.valueOf(width), Float.valueOf(height) });
+/* 649 */         return true;
+/* 650 */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     } 
+/* 652 */     return false;
+/*     */   }
+/*     */   
+/*     */   private CommissionOverlayMetrics getCommissionOverlayMetrics() {
+/* 656 */     if (this.commissionOverlayLines.isEmpty() || this.mc.field_1772 == null) {
+/* 657 */       return null;
+/*     */     }
+/* 659 */     int padding = 4;
+/* 660 */     int lineHeight = this.mc.field_1772.field_2000 + 2;
+/* 661 */     int maxWidth = 0;
+/* 662 */     for (String line : this.commissionOverlayLines) {
+/* 663 */       maxWidth = Math.max(maxWidth, this.mc.field_1772.method_1727(line));
+/*     */     }
+/* 665 */     int boxWidth = maxWidth + padding * 2;
+/* 666 */     int boxHeight = this.commissionOverlayLines.size() * lineHeight + padding * 2;
+/* 667 */     return new CommissionOverlayMetrics(boxWidth, boxHeight, lineHeight, padding);
+/*     */   }
+/*     */   
+/*     */   private void renderCommissionOverlay(class_332 gfx, int left, int top, CommissionOverlayMetrics metrics) {
+/* 617 */     if (gfx == null || this.commissionOverlayLines.isEmpty() || this.mc.field_1772 == null) {
+/*     */       return;
+/*     */     }
+/* 620 */     int padding = metrics.padding();
+/* 621 */     int lineHeight = metrics.lineHeight();
+/* 622 */     int boxWidth = metrics.boxWidth();
+/* 623 */     int boxHeight = metrics.boxHeight();
+/* 624 */     gfx.method_25294(left - 1, top - 1, left + boxWidth + 1, top + boxHeight + 1, 1879048192);
+/* 625 */     int textY = top + padding;
+/* 632 */     for (int i = 0; i < this.commissionOverlayLines.size(); i++) {
+/* 633 */       String line = this.commissionOverlayLines.get(i);
+/* 634 */       int color = (i == 0) ? -9802497 : getCommissionLineColour(line);
+/* 635 */       gfx.method_25303(this.mc.field_1772, line, left + padding, textY, color);
+/* 636 */       textY += lineHeight;
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private int getCommissionLineColour(String line) {
+/* 641 */     if (line == null || line.isBlank()) {
+/* 642 */       return -1;
+/*     */     }
+/* 644 */     Matcher matcher = COMMISSION_PERCENT_PATTERN.matcher(line);
+/* 645 */     if (matcher.find()) {
+/*     */       try {
+/* 647 */         double percent = Double.parseDouble(matcher.group(1));
+/* 648 */         if (percent <= 0.0D) return -43691; 
+/* 649 */         if (percent >= 100.0D) return -11141291; 
+/* 650 */         return -171;
+/* 651 */       } catch (NumberFormatException numberFormatException) {}
+/*     */     }
+/* 653 */     String lower = line.toLowerCase(Locale.ROOT);
+/* 654 */     if (lower.endsWith("done") || lower.endsWith("completed")) {
+/* 655 */       return -11141291;
+/*     */     }
+/* 657 */     return -1;
+/*     */   }
+/*     */   
+/*     */   private boolean shouldRenderCommissionOverlay() {
+/* 661 */     if (!((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()) {
+/* 662 */       return false;
+/*     */     }
+/* 664 */     if (((Boolean)this.commissionPeekEnabled.getValue()).booleanValue() && !isCommissionPeekKeyActive()) {
+/* 665 */       return false;
+/*     */     }
+/* 667 */     if (((Boolean)this.commissionOnlyRoyalPigeonInventory.getValue()).booleanValue() && !hasRoyalPigeonInInventory(false)) {
+/* 668 */       return false;
+/*     */     }
+/* 670 */     if (((Boolean)this.commissionOnlyRoyalPigeonHotbar.getValue()).booleanValue() && !hasRoyalPigeonInInventory(true)) {
+/* 671 */       return false;
+/*     */     }
+/* 673 */     return true;
+/*     */   }
+/*     */   
+/*     */   private boolean hasRoyalPigeonInInventory(boolean hotbarOnly) {
+/* 677 */     if (this.mc.field_1724 == null) {
+/* 678 */       return false;
+/*     */     }
+/* 680 */     class_1661 inventory = this.mc.field_1724.method_31548();
+/* 681 */     if (inventory == null) {
+/* 682 */       return false;
+/*     */     }
+/* 684 */     int size = inventory.method_5439();
+/* 685 */     int scanLimit = hotbarOnly ? Math.min(size, class_1661.method_7368()) : size;
+/* 686 */     for (int i = 0; i < scanLimit; i++) {
+/* 687 */       class_1799 stack = inventory.method_5438(i);
+/* 688 */       if (isRoyalPigeonStack(stack)) {
+/* 689 */         return true;
+/*     */       }
+/*     */     } 
+/* 692 */     return false;
+/*     */   }
+/*     */   
+/*     */   private boolean isRoyalPigeonStack(class_1799 stack) {
+/* 696 */     if (stack == null || stack.method_7960()) {
+/* 697 */       return false;
+/*     */     }
+/* 699 */     class_2561 name = stack.method_7964();
+/* 700 */     if (name == null) {
+/* 701 */       return false;
+/*     */     }
+/* 703 */     String cleaned = class_124.method_539(name.getString()).trim().toLowerCase(Locale.ROOT);
+/* 704 */     return cleaned.contains("royal pigeon");
+/*     */   }
+/*     */   
+/*     */   private void updateCommissionOverlayData() {
+/* 661 */     this.commissionOverlayLines.clear();
+/* 662 */     if (!isEnabled() || !((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()) {
+/*     */       return;
+/*     */     }
+/* 665 */     List<String> tabLines = readTabMenuLines();
+/* 666 */     if (tabLines.isEmpty()) {
+/*     */       return;
+/*     */     }
+/* 669 */     int startIndex = -1;
+/* 670 */     for (int i = 0; i < tabLines.size(); i++) {
+/* 671 */       if (isCommissionHeaderLine(tabLines.get(i))) {
+/* 672 */         startIndex = i + 1;
+/*     */         break;
+/*     */       } 
+/*     */     } 
+/* 676 */     if (startIndex < 0) {
+/* 677 */       startIndex = findFallbackCommissionStart(tabLines);
+/* 678 */       if (startIndex < 0) {
+/*     */         return;
+/*     */       }
+/*     */     }
+/* 679 */     this.commissionOverlayLines.add("Commissions:");
+/* 680 */     for (int j = startIndex; j < tabLines.size() && this.commissionOverlayLines.size() < 8; j++) {
+/* 681 */       String line = tabLines.get(j);
+/* 682 */       if (line == null || line.isBlank()) {
+/* 683 */         if (this.commissionOverlayLines.size() > 1) {
+/*     */           break;
+/*     */         }
+/*     */         continue;
+/*     */       } 
+/* 688 */       if (isCommissionHeaderLine(line)) {
+/*     */         continue;
+/*     */       }
+/* 691 */       if (line.endsWith(":") && !looksLikeCommissionLine(line)) {
+/* 692 */         if (this.commissionOverlayLines.size() > 1) {
+/*     */           break;
+/*     */         }
+/*     */         continue;
+/*     */       } 
+/* 697 */       if (!looksLikeCommissionLine(line)) {
+/* 698 */         if (this.commissionOverlayLines.size() > 1) {
+/*     */           break;
+/*     */         }
+/*     */         continue;
+/*     */       } 
+/* 703 */       this.commissionOverlayLines.add(line);
+/*     */     } 
+/* 705 */     if (this.commissionOverlayLines.size() <= 1) {
+/* 706 */       this.commissionOverlayLines.clear();
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private int findFallbackCommissionStart(List<String> tabLines) {
+/* 710 */     if (tabLines == null || tabLines.isEmpty()) {
+/* 711 */       return -1;
+/*     */     }
+/* 713 */     for (int i = 0; i < tabLines.size(); i++) {
+/* 714 */       String line = tabLines.get(i);
+/* 715 */       if (!looksLikeCommissionLine(line)) {
+/*     */         continue;
+/*     */       }
+/* 718 */       int streak = 0;
+/* 719 */       for (int j = i; j < tabLines.size() && j < i + 6; j++) {
+/* 720 */         if (looksLikeCommissionLine(tabLines.get(j))) {
+/* 721 */           streak++;
+/*     */         } else if (tabLines.get(j) == null || tabLines.get(j).isBlank()) {
+/*     */           
+/*     */           break;
+/*     */         } 
+/*     */       } 
+/* 727 */       if (streak >= 2) {
+/* 728 */         return i;
+/*     */       }
+/*     */     } 
+/* 731 */     return -1;
+/*     */   }
+/*     */   
+/*     */   private List<String> readTabMenuLines() {
+/* 735 */     List<String> lines = new ArrayList<>();
+/* 736 */     class_355 playerListHud = null;
+/*     */     try {
+/* 738 */       if (this.mc.field_1705 != null) {
+/* 739 */         Object hudObject = invokeNoArg(this.mc.field_1705, new String[] { "method_1750", "getPlayerListHud" });
+/* 740 */         if (hudObject instanceof class_355) {
+/* 741 */           playerListHud = (class_355)hudObject;
+/*     */         }
+/*     */       } 
+/* 744 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/* 745 */     appendTabHeaderFooterLines(lines, playerListHud);
+/* 746 */     appendDisplayedTabHudEntries(playerListHud, lines);
+/* 747 */     class_634 networkHandler = this.mc.method_1562();
+/* 748 */     if (networkHandler == null) {
+/* 749 */       return lines;
+/*     */     }
+/* 751 */     appendTabEntryLines(networkHandler.method_2880(), lines, playerListHud);
+/* 752 */     return lines;
+/*     */   }
+/*     */   
+/*     */   private void appendDisplayedTabHudEntries(class_355 playerListHud, List<String> lines) {
+/* 756 */     if (playerListHud == null || lines == null) {
+/*     */       return;
+/*     */     }
+/*     */     try {
+/* 760 */       Method method = playerListHud.getClass().getDeclaredMethod("method_48213", new Class[0]);
+/* 761 */       method.setAccessible(true);
+/* 762 */       Object value = method.invoke(playerListHud, new Object[0]);
+/* 763 */       if (!(value instanceof Iterable)) {
+/*     */         return;
+/*     */       }
+/* 766 */       appendTabEntryLines((Iterable)value, lines, playerListHud);
+/* 767 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */   }
+/*     */   
+/*     */   private void appendTabHeaderFooterLines(List<String> lines, class_355 playerListHud) {
+/* 771 */     if (lines == null || playerListHud == null) {
+/*     */       return;
+/*     */     }
+/* 774 */     appendLinesFromPlayerListField(playerListHud, "field_2154", lines);
+/* 775 */     appendLinesFromPlayerListField(playerListHud, "field_2153", lines);
+/*     */   }
+/*     */   
+/*     */   private void appendLinesFromPlayerListField(Object playerListHud, String fieldName, List<String> lines) {
+/* 736 */     if (playerListHud == null || fieldName == null || lines == null) {
+/*     */       return;
+/*     */     }
+/*     */     try {
+/* 740 */       Field field = playerListHud.getClass().getDeclaredField(fieldName);
+/* 741 */       field.setAccessible(true);
+/* 742 */       Object value = field.get(playerListHud);
+/* 743 */       if (value instanceof class_2561) {
+/* 744 */         appendMultilineText(((class_2561)value).getString(), lines);
+/*     */       }
+/* 746 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */   }
+/*     */   
+/*     */   private void appendMultilineText(String rawText, List<String> lines) {
+/* 750 */     if (rawText == null || lines == null) {
+/*     */       return;
+/*     */     }
+/* 753 */     String cleaned = class_124.method_539(rawText).replace('\r', '\n');
+/* 754 */     String[] split = cleaned.split("\\n");
+/* 755 */     for (String part : split) {
+/* 756 */       String normalized = normalizeTabLine(part);
+/* 757 */       if (!normalized.isEmpty()) {
+/* 758 */         lines.add(normalized);
+/*     */       }
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private void appendTabEntryLines(Iterable<?> entries, List<String> lines, class_355 playerListHud) {
+/* 789 */     if (entries == null || lines == null) {
+/*     */       return;
+/*     */     }
+/* 792 */     for (Object obj : entries) {
+/* 793 */       if (!(obj instanceof class_640)) {
+/*     */         continue;
+/*     */       }
+/* 796 */       String line = getTabLineFromEntry((class_640)obj, playerListHud);
+/* 797 */       if (line != null && !line.isBlank()) {
+/* 798 */         lines.add(line);
+/*     */       }
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private String getTabLineFromEntry(class_640 entry, class_355 playerListHud) {
+/* 745 */     if (entry == null) {
+/* 746 */       return null;
+/*     */     }
+/* 748 */     String raw = null;
+/*     */     try {
+/* 750 */       if (playerListHud != null) {
+/* 751 */         class_2561 rendered = playerListHud.method_1918(entry);
+/* 752 */         if (rendered != null) {
+/* 753 */           raw = rendered.getString();
+/*     */         }
+/*     */       } 
+/* 756 */     } catch (Throwable throwable) {}
+/* 757 */     if (raw == null || raw.isBlank()) {
+/* 758 */       class_2561 displayName = entry.method_2971();
+/* 759 */       if (displayName != null) {
+/* 760 */         raw = displayName.getString();
+/*     */       }
+/*     */     }
+/* 753 */     if ((raw == null || raw.isBlank()) && entry.method_2966() != null) {
+/*     */       try {
+/* 755 */         Object profileName = invokeNoArg(entry.method_2966(), new String[] { "getName", "method_1676" });
+/* 756 */         if (profileName instanceof String) {
+/* 757 */           raw = (String)profileName;
+/*     */         }
+/* 759 */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     }
+/* 761 */     String normalized = normalizeTabLine(raw);
+/* 762 */     return normalized.isEmpty() ? null : normalized;
+/*     */   }
+/*     */   
+/*     */   private String normalizeTabLine(String line) {
+/* 761 */     if (line == null) {
+/* 762 */       return "";
+/*     */     }
+/* 764 */     String cleaned = class_124.method_539(line).replace('\u00A0', ' ').trim();
+/* 765 */     return cleaned.replaceAll("\\s+", " ");
+/*     */   }
+/*     */   
+/*     */   private boolean isCommissionHeaderLine(String line) {
+/* 769 */     if (line == null || line.isBlank()) {
+/* 770 */       return false;
+/*     */     }
+/* 772 */     String normalized = normalizeTabLine(line).toLowerCase(Locale.ROOT);
+/* 773 */     return normalized.contains("commission");
+/*     */   }
+/*     */   
+/*     */   private boolean looksLikeCommissionLine(String line) {
+/* 777 */     if (line == null || line.isBlank() || line.indexOf(':') < 0) {
+/* 778 */       return false;
+/*     */     }
+/* 780 */     String lower = line.toLowerCase(Locale.ROOT);
+/* 781 */     return (line.contains("%") || lower.endsWith("done") || lower.endsWith("completed"));
+/*     */   }
+/*     */   
+/*     */   private void clearCommissionOverlayData() {
+/* 785 */     this.commissionOverlayTickCounter = 0;
+/* 786 */     this.commissionOverlayLines.clear();
 /*     */   }
 /*     */   
 /*     */   private void renderBlockTasks(List<Object> tasks, Boolean enabled) {
