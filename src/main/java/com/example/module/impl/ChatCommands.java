@@ -21,6 +21,7 @@
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.NumberSetting;
 /*     */ import com.ricedotwho.rsm.ui.clickgui.settings.impl.StringSetting;
 /*     */ import com.ricedotwho.rsm.utils.ChatUtils;
+/*     */ import com.ricedotwho.rsm.utils.render.render2d.Gradient;
 /*     */ import com.ricedotwho.rsm.utils.render.render2d.NVGUtils;
 /*     */ import java.net.URI;
 /*     */ import java.net.http.HttpClient;
@@ -90,6 +91,8 @@
 /*  74 */   private static final Pattern HEALTH_FRACTION_PATTERN = Pattern.compile("(?<!\\d)(\\d+)\\s*/\\s*(\\d+)(?!\\d)");
 /*  75 */   private static final Pattern COMMISSION_PERCENT_PATTERN = Pattern.compile("(?<!\\d)(\\d+(?:\\.\\d+)?)\\s*%");
 /*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 1;
+/*  76 */   private static final double COMMISSION_ANIMATION_SPEED = 11.0D;
+/*  76 */   private static final double COMMISSION_PERCENT_EPSILON = 0.05D;
 /*  77 */   private static final Colour COMMISSION_PANEL_FILL = new Colour(22, 18, 34, 185);
 /*  78 */   private static final Colour COMMISSION_PANEL_OUTLINE = new Colour(138, 104, 222, 235);
 /*  79 */   private static final Colour COMMISSION_TITLE_COLOUR = new Colour(222, 228, 255, 255);
@@ -98,8 +101,8 @@
 /*  82 */   private static final Colour COMMISSION_TEXT_DONE = new Colour(95, 217, 140, 255);
 /*  83 */   private static final Colour COMMISSION_TEXT_ZERO = new Colour(255, 96, 124, 255);
 /*  83 */   private static final Colour COMMISSION_PROGRESS_TRACK = new Colour(255, 255, 255, 36);
-/*  83 */   private static final Colour COMMISSION_PROGRESS_START = new Colour(201, 92, 143, 255);
-/*  83 */   private static final Colour COMMISSION_PROGRESS_END = new Colour(154, 122, 222, 255);
+/*  83 */   private static final Colour COMMISSION_PROGRESS_START = new Colour(178, 99, 223, 255);
+/*  83 */   private static final Colour COMMISSION_PROGRESS_END = new Colour(215, 147, 244, 255);
 /*  84 */   private static final Colour RSA_R_COLOUR = new Colour(178, 99, 223, 255);
 /*  85 */   private static final Colour RSA_S_COLOUR = new Colour(197, 123, 234, 255);
 /*  86 */   private static final Colour RSA_A_COLOUR = new Colour(215, 147, 244, 255);
@@ -157,6 +160,9 @@
 /*  91 */   private final BooleanSetting glorpWarp = new BooleanSetting("glorp warp", false); public BooleanSetting getGlorpWarp() { return this.glorpWarp; }
 /*  91 */   private Object commissionPeekKeybind;
 /*  91 */   private final List<String> commissionOverlayLines = new ArrayList<>();
+/*  91 */   private final LinkedHashMap<String, Double> commissionProgressTargets = new LinkedHashMap<>();
+/*  91 */   private final LinkedHashMap<String, Double> commissionProgressDisplayed = new LinkedHashMap<>();
+/*  91 */   private long commissionAnimationLastNanos = System.nanoTime();
 /*  91 */   private boolean commissionHeaderDetected;
 /*  91 */   private int commissionOverlayTickCounter;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Enabled", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
@@ -825,6 +831,7 @@
 /* 691 */     if (metrics == null || this.commissionOverlayLines.isEmpty()) {
 /*     */       return;
 /*     */     }
+/* 693 */     updateCommissionProgressAnimation();
 /* 694 */     float boxWidth = metrics.boxWidth();
 /* 695 */     float boxHeight = metrics.boxHeight();
 /* 696 */     float padding = metrics.padding();
@@ -840,11 +847,16 @@
 /* 706 */     float lineHeight = NVGUtils.getTextHeight(metrics.lineSize(), NVGUtils.ROBOTO);
 /* 706 */     for (int i = 1; i < this.commissionOverlayLines.size(); i++) {
 /* 633 */       String line = this.commissionOverlayLines.get(i);
-/* 634 */       Colour color = getCommissionLineColour(line);
-/* 635 */       NVGUtils.drawText(line, left + padding, textY, metrics.lineSize(), color, NVGUtils.ROBOTO);
-/* 636 */       double progress = getCommissionProgressPercent(line);
+/* 634 */       double progress = getCommissionProgressPercent(line);
+/* 635 */       double animatedProgress = getAnimatedCommissionProgress(line, progress);
+/* 636 */       String renderedLine = getAnimatedCommissionLine(line, animatedProgress, progress);
+/* 637 */       Colour color = getCommissionLineColour(renderedLine, animatedProgress);
+/* 638 */       NVGUtils.drawText(renderedLine, left + padding, textY, metrics.lineSize(), color, NVGUtils.ROBOTO);
 /* 637 */       if (progress < 0.0D) {
 /* 638 */         progress = 0.0D;
+/*     */       }
+/* 639 */       if (animatedProgress >= 0.0D) {
+/* 640 */         progress = animatedProgress;
 /*     */       }
 /* 640 */       float barY = textY + lineHeight + metrics.barTopGap();
 /* 641 */       float barWidth = boxWidth - padding * 2.0F;
@@ -865,17 +877,86 @@
 /* 649 */     NVGUtils.drawText("A", rsaX, rsaY, rsaSize, RSA_A_COLOUR, NVGUtils.ROBOTO);
 /*     */   }
 /*     */   
-/*     */   private Colour getCommissionLineColour(String line) {
+/*     */   private Colour getCommissionLineColour(String line, double animatedPercent) {
 /* 641 */     if (line == null || line.isBlank()) {
 /* 642 */       return COMMISSION_TEXT_DEFAULT;
 /*     */     }
-/* 644 */     double percent = getCommissionProgressPercent(line);
+/* 644 */     double percent = animatedPercent;
+/* 645 */     if (percent < 0.0D) {
+/* 646 */       percent = getCommissionProgressPercent(line);
+/*     */     }
 /* 645 */     if (percent >= 0.0D) {
 /* 646 */       if (percent <= 0.0D) return COMMISSION_TEXT_ZERO; 
 /* 647 */       if (percent >= 100.0D) return COMMISSION_TEXT_DONE; 
 /* 648 */       return COMMISSION_TEXT_PROGRESS;
 /*     */     }
 /* 657 */     return COMMISSION_TEXT_DEFAULT;
+/*     */   }
+/*     */   
+/*     */   private void updateCommissionProgressAnimation() {
+/* 659 */     long now = System.nanoTime();
+/* 660 */     long deltaNanos = now - this.commissionAnimationLastNanos;
+/* 661 */     this.commissionAnimationLastNanos = now;
+/* 662 */     if (deltaNanos <= 0L || this.commissionProgressTargets.isEmpty()) {
+/*     */       return;
+/*     */     }
+/* 665 */     double deltaSeconds = Math.min(0.25D, deltaNanos / 1.0E9D);
+/* 666 */     double blend = 1.0D - Math.exp(-COMMISSION_ANIMATION_SPEED * deltaSeconds);
+/* 667 */     for (String key : this.commissionProgressTargets.keySet()) {
+/* 668 */       double target = ((Double)this.commissionProgressTargets.get(key)).doubleValue();
+/* 669 */       double current = ((Double)this.commissionProgressDisplayed.getOrDefault(key, Double.valueOf(target))).doubleValue();
+/* 670 */       double next = current + (target - current) * blend;
+/* 671 */       if (Math.abs(target - next) <= COMMISSION_PERCENT_EPSILON) {
+/* 672 */         next = target;
+/*     */       }
+/* 674 */       this.commissionProgressDisplayed.put(key, Double.valueOf(next));
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private double getAnimatedCommissionProgress(String line, double fallbackPercent) {
+/* 679 */     if (fallbackPercent < 0.0D || line == null || line.isBlank()) {
+/* 680 */       return fallbackPercent;
+/*     */     }
+/* 682 */     String key = getCommissionProgressKey(line);
+/* 683 */     if (key.isEmpty()) {
+/* 684 */       return fallbackPercent;
+/*     */     }
+/* 686 */     return ((Double)this.commissionProgressDisplayed.getOrDefault(key, Double.valueOf(fallbackPercent))).doubleValue();
+/*     */   }
+/*     */   
+/*     */   private String getAnimatedCommissionLine(String line, double animatedPercent, double targetPercent) {
+/* 690 */     if (line == null || line.isBlank() || animatedPercent < 0.0D || targetPercent < 0.0D) {
+/* 691 */       return line;
+/*     */     }
+/* 693 */     Matcher matcher = COMMISSION_PERCENT_PATTERN.matcher(line);
+/* 694 */     if (!matcher.find()) {
+/* 695 */       return line;
+/*     */     }
+/* 697 */     String animatedText = formatAnimatedCommissionPercent(animatedPercent, targetPercent);
+/* 698 */     return line.substring(0, matcher.start(1)) + animatedText + line.substring(matcher.end(1));
+/*     */   }
+/*     */   
+/*     */   private String formatAnimatedCommissionPercent(double animatedPercent, double targetPercent) {
+/* 702 */     double clampedAnimated = Math.max(0.0D, Math.min(100.0D, animatedPercent));
+/* 703 */     if (Math.abs(clampedAnimated - targetPercent) <= COMMISSION_PERCENT_EPSILON) {
+/* 704 */       return String.format(Locale.ROOT, "%.0f", Math.max(0.0D, Math.min(100.0D, targetPercent)));
+/*     */     }
+/* 706 */     return String.format(Locale.ROOT, "%.1f", clampedAnimated);
+/*     */   }
+/*     */   
+/*     */   private String getCommissionProgressKey(String line) {
+/* 710 */     if (line == null || line.isBlank()) {
+/* 711 */       return "";
+/*     */     }
+/* 713 */     String normalized = normalizeTabLine(line).toLowerCase(Locale.ROOT);
+/* 714 */     int colonIndex = normalized.indexOf(':');
+/* 715 */     if (colonIndex > 0) {
+/* 716 */       String left = normalized.substring(0, colonIndex).trim();
+/* 717 */       if (!left.isEmpty()) {
+/* 718 */         return left;
+/*     */       }
+/*     */     } 
+/* 721 */     return normalized;
 /*     */   }
 /*     */   
 /*     */   private double getCommissionProgressPercent(String line) {
@@ -906,23 +987,7 @@
 /* 685 */     if (fillWidth <= 0.5F) {
 /*     */       return;
 /*     */     }
-/* 688 */     int strips = Math.max(1, Math.round(fillWidth));
-/* 689 */     float stripWidth = fillWidth / strips;
-/* 690 */     for (int i = 0; i < strips; i++) {
-/* 691 */       float t = (strips <= 1) ? 0.0F : (i / (float)(strips - 1));
-/* 692 */       float stripX = x + i * stripWidth;
-/* 693 */       float stripW = (i == strips - 1) ? (x + fillWidth - stripX) : stripWidth;
-/* 694 */       float stripRadius = (strips == 1 || i == 0 || i == strips - 1) ? radius : 0.0F;
-/* 695 */       NVGUtils.drawRect(stripX, y, stripW + 0.05F, height, stripRadius, interpolateCommissionProgressColour(t));
-/*     */     } 
-/*     */   }
-/*     */   
-/*     */   private Colour interpolateCommissionProgressColour(float t) {
-/* 700 */     float clampedT = Math.max(0.0F, Math.min(1.0F, t));
-/* 701 */     int red = Math.round(COMMISSION_PROGRESS_START.getRed() + (COMMISSION_PROGRESS_END.getRed() - COMMISSION_PROGRESS_START.getRed()) * clampedT);
-/* 702 */     int green = Math.round(COMMISSION_PROGRESS_START.getGreen() + (COMMISSION_PROGRESS_END.getGreen() - COMMISSION_PROGRESS_START.getGreen()) * clampedT);
-/* 703 */     int blue = Math.round(COMMISSION_PROGRESS_START.getBlue() + (COMMISSION_PROGRESS_END.getBlue() - COMMISSION_PROGRESS_START.getBlue()) * clampedT);
-/* 704 */     return new Colour(red, green, blue, 255);
+/* 688 */     NVGUtils.drawGradientRect(x, y, fillWidth, height, radius, COMMISSION_PROGRESS_START, COMMISSION_PROGRESS_END, Gradient.LeftToRight);
 /*     */   }
 /*     */   
 /*     */   private boolean shouldRenderCommissionOverlay() {
@@ -978,6 +1043,7 @@
 /*     */   private void updateCommissionOverlayData() {
 /* 661 */     this.commissionOverlayLines.clear();
 /* 662 */     this.commissionHeaderDetected = false;
+/* 663 */     this.commissionProgressTargets.clear();
 /* 662 */     if (!isEnabled() || !((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()) {
 /*     */       return;
 /*     */     }
@@ -1021,10 +1087,22 @@
 /*     */         continue;
 /*     */       } 
 /* 703 */       this.commissionOverlayLines.add(line);
+/* 704 */       double percent = getCommissionProgressPercent(line);
+/* 705 */       if (percent >= 0.0D) {
+/* 706 */         String key = getCommissionProgressKey(line);
+/* 707 */         if (!key.isEmpty()) {
+/* 708 */           this.commissionProgressTargets.put(key, Double.valueOf(percent));
+/* 709 */           this.commissionProgressDisplayed.putIfAbsent(key, Double.valueOf(percent));
+/*     */         }
+/*     */       }
 /*     */     } 
 /* 705 */     if (this.commissionOverlayLines.size() <= 1) {
 /* 706 */       this.commissionOverlayLines.clear();
 /* 707 */       this.commissionHeaderDetected = false;
+/* 708 */       this.commissionProgressTargets.clear();
+/* 709 */       this.commissionProgressDisplayed.clear();
+/*     */     } else {
+/* 711 */       this.commissionProgressDisplayed.keySet().removeIf(key -> !this.commissionProgressTargets.containsKey(key));
 /*     */     }
 /*     */   }
 /*     */   
@@ -1199,6 +1277,9 @@
 /* 785 */     this.commissionOverlayTickCounter = 0;
 /* 786 */     this.commissionOverlayLines.clear();
 /* 787 */     this.commissionHeaderDetected = false;
+/* 788 */     this.commissionProgressTargets.clear();
+/* 789 */     this.commissionProgressDisplayed.clear();
+/* 790 */     this.commissionAnimationLastNanos = System.nanoTime();
 /*     */   }
 /*     */   
 /*     */   private void renderBlockTasks(List<Object> tasks, Boolean enabled) {
