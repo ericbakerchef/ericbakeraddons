@@ -152,6 +152,7 @@
 /* 101 */    private final Setting<?> commissionPeekKeybindSetting = createCommissionPeekKeybindSetting(); public Setting<?> getCommissionPeekKeybindSetting() { return this.commissionPeekKeybindSetting; }
 /* 102 */    private final BooleanSetting commissionOnlyRoyalPigeonInventory = new BooleanSetting("Only display if Royal Pigeon is in inventory", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonInventory() { return this.commissionOnlyRoyalPigeonInventory; }
 /* 103 */    private final BooleanSetting commissionOnlyRoyalPigeonHotbar = new BooleanSetting("Only display if Royal Pigeon is in hotbar", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonHotbar() { return this.commissionOnlyRoyalPigeonHotbar; }
+/* 104 */    private final BooleanSetting commissionRoundProgressNumbers = new BooleanSetting("Round Progress Numbers", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionRoundProgressNumbers() { return this.commissionRoundProgressNumbers; }
 /*  95 */    private final ButtonSetting debugNametagScanButton = new ButtonSetting("Debug Nametags", "", this::debugCustomHighlightScan); public ButtonSetting getDebugNametagScanButton() { return this.debugNametagScanButton; }
 /*  87 */   private final Setting<?> ptwKeybind = createPtwKeybindSetting(); public Setting<?> getPtwKeybind() { return this.ptwKeybind; }
 /*     */ 
@@ -493,7 +494,7 @@
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx });
 /* 424 */     this.customHighlightGroup.add(new Setting[] { (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.customTracerClosestOnly, (Setting)this.customTracerThicknessPx });
-/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar }); }
+/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
 /*     */   public String getCachedWebhookInput() { return this.cachedWebhookInput; }
@@ -938,10 +939,17 @@
 /*     */   
 /*     */   private String formatAnimatedCommissionPercent(double animatedPercent, double targetPercent) {
 /* 702 */     double clampedAnimated = Math.max(0.0D, Math.min(100.0D, animatedPercent));
-/* 703 */     if (Math.abs(clampedAnimated - targetPercent) <= COMMISSION_PERCENT_EPSILON) {
-/* 704 */       return String.format(Locale.ROOT, "%.0f", Math.max(0.0D, Math.min(100.0D, targetPercent)));
+/* 703 */     double value = clampedAnimated;
+/* 704 */     if (Math.abs(clampedAnimated - targetPercent) <= COMMISSION_PERCENT_EPSILON) {
+/* 705 */       value = targetPercent;
 /*     */     }
-/* 706 */     return String.format(Locale.ROOT, "%.1f", clampedAnimated);
+/* 707 */     if (((Boolean)this.commissionRoundProgressNumbers.getValue()).booleanValue()) {
+/* 708 */       double rounded = Math.round(value);
+/* 709 */       rounded = Math.max(0.0D, Math.min(100.0D, rounded));
+/* 710 */       return String.format(Locale.ROOT, "%.0f", rounded);
+/*     */     }
+/* 712 */     double clampedValue = Math.max(0.0D, Math.min(100.0D, value));
+/* 713 */     return String.format(Locale.ROOT, "%.1f", clampedValue);
 /*     */   }
 /*     */   
 /*     */   private String getCommissionProgressKey(String line) {
