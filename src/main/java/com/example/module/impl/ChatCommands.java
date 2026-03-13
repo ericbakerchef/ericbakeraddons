@@ -45,6 +45,7 @@
 /*     */ import java.util.regex.Matcher;
 /*     */ import java.util.regex.Pattern;
 /*     */ import net.minecraft.class_124;
+/*     */ import net.minecraft.class_1657;
 /*     */ import net.minecraft.class_1661;
 /*     */ import net.minecraft.class_1937;
 /*     */ import net.minecraft.class_1799;
@@ -52,6 +53,7 @@
 /*     */ import net.minecraft.class_238;
 /*     */ import net.minecraft.class_243;
 /*     */ import net.minecraft.class_2561;
+/*     */ import net.minecraft.class_2583;
 /*     */ import net.minecraft.class_2680;
 /*     */ import net.minecraft.class_310;
 /*     */ import net.minecraft.class_355;
@@ -92,6 +94,14 @@
 /*  73 */   private static final byte MATCH_NODE = 2;
 /*  74 */   private static final Pattern HEALTH_FRACTION_PATTERN = Pattern.compile("(?<!\\d)(\\d+)\\s*/\\s*(\\d+)(?!\\d)");
 /*  75 */   private static final Pattern COMMISSION_PERCENT_PATTERN = Pattern.compile("(?<!\\d)(\\d+(?:\\.\\d+)?)\\s*%");
+/*  75 */   private static final Pattern PICKAXE_ABILITY_USED_PATTERN = Pattern.compile("You used your\\s+(.+?)\\s+Pickaxe Ability!", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern PICKAXE_ABILITY_COOLDOWN_PATTERN = Pattern.compile("-(\\d+)%\\s*Pickaxe Ability Cooldown", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern PET_LEVEL_PATTERN = Pattern.compile("\\b(?:lvl|level)\\s*(\\d{1,3})\\b", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern BAL_PET_PATTERN = Pattern.compile("\\[\\s*lvl\\s*(\\d{1,3})\\s*\\]\\s*bal\\b", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern PICKAXE_COOLDOWN_CHAT_PATTERN = Pattern.compile("Your Pickaxe ability is on cooldown for\\s*([0-9]+(?:\\.[0-9]+)?)s(?:/|\\.)?", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern PICKAXE_USED_CHAT_PATTERN = Pattern.compile("You used your\\s+(.+?)\\s+Pickaxe Ability!", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern PICKAXE_AVAILABLE_CHAT_PATTERN = Pattern.compile("Pickobulus\\s+is\\s+now\\s+available!", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final long SKY_MALL_PICKAXE_GRACE_TICKS = 200L;
 /*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 1;
 /*  76 */   private static final double COMMISSION_ANIMATION_SPEED = 11.0D;
 /*  76 */   private static final double COMMISSION_PERCENT_EPSILON = 0.05D;
@@ -141,6 +151,7 @@
 /*  86 */    private final DefaultGroupSetting espGroup = new DefaultGroupSetting("ESP", this); public DefaultGroupSetting getEspGroup() { return this.espGroup; }
 /*  86 */    private final DefaultGroupSetting customHighlightGroup = new DefaultGroupSetting("Custom Highlight", this); public DefaultGroupSetting getCustomHighlightGroup() { return this.customHighlightGroup; }
 /*  86 */    private final DefaultGroupSetting commissionOverlayGroup = new DefaultGroupSetting("Commission Overlay", this); public DefaultGroupSetting getCommissionOverlayGroup() { return this.commissionOverlayGroup; }
+/*  86 */    private final DefaultGroupSetting pickaxeAbilityCooldownGroup = new DefaultGroupSetting("Pickaxe Ability CD", this); public DefaultGroupSetting getPickaxeAbilityCooldownGroup() { return this.pickaxeAbilityCooldownGroup; }
 /*  86 */    private final BooleanSetting miscEnabled = new BooleanSetting("Enable", true); public BooleanSetting getMiscEnabled() { return this.miscEnabled; }
 /*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("Enable", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
 /*  88 */    private final BooleanSetting titaniumHighlightEnabled = new BooleanSetting("Titanium", true); public BooleanSetting getTitaniumHighlightEnabled() { return this.titaniumHighlightEnabled; }
@@ -155,6 +166,7 @@
 /*  96 */    private final BooleanSetting customTracerClosestOnly = new BooleanSetting("Closest only", false, () -> (((Boolean)this.customHighlightEnabled.getValue()).booleanValue() && ((Boolean)this.customTracerEnabled.getValue()).booleanValue())); public BooleanSetting getCustomTracerClosestOnly() { return this.customTracerClosestOnly; }
 /*  97 */    private final NumberSetting customTracerThicknessPx = new NumberSetting("Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", () -> (((Boolean)this.customHighlightEnabled.getValue()).booleanValue() && ((Boolean)this.customTracerEnabled.getValue()).booleanValue())); public NumberSetting getCustomTracerThicknessPx() { return this.customTracerThicknessPx; }
 /*  98 */    private final BooleanSetting commissionOverlayEnabled = new BooleanSetting("Enable", true); public BooleanSetting getCommissionOverlayEnabled() { return this.commissionOverlayEnabled; }
+/*  98 */    private final BooleanSetting pickaxeAbilityCooldownEnabled = new BooleanSetting("Enable", true); public BooleanSetting getPickaxeAbilityCooldownEnabled() { return this.pickaxeAbilityCooldownEnabled; }
 /*  98 */    private final ModeSetting commissionOverlayTheme = new ModeSetting("Theme", "RSA", List.of("RSA", "RSM", "Custom"), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public ModeSetting getCommissionOverlayTheme() { return this.commissionOverlayTheme; }
 /*  98 */    private final ColourSetting commissionOverlayCustomBorder = new ColourSetting("Custom Border", COMMISSION_PANEL_OUTLINE_RSM, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomBorder() { return this.commissionOverlayCustomBorder; }
 /*  98 */    private final ColourSetting commissionOverlayCustomProgressStart = new ColourSetting("Custom Progress Start", COMMISSION_PROGRESS_START_RSM, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomProgressStart() { return this.commissionOverlayCustomProgressStart; }
@@ -180,6 +192,10 @@
 /*  91 */   private long commissionAnimationLastNanos = System.nanoTime();
 /*  91 */   private boolean commissionHeaderDetected;
 /*  91 */   private int commissionOverlayTickCounter;
+/*  91 */   private final LinkedHashMap<String, Long> pickaxeAbilityCooldowns = new LinkedHashMap<>();
+/*  91 */   private long pickaxeAbilityCooldownTickCounter;
+/*  91 */   private boolean skyMallPickaxeCooldownActive;
+/*  91 */   private long skyMallPickaxeCooldownLastBuffTick;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Enabled", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
 /*  96 */    private final StringSetting webhookLink = new StringSetting("Webhook Link", ""); public StringSetting getWebhookLink() { return this.webhookLink; }
 /*  97 */    private final BooleanSetting guildChatWebhookEnabled = new BooleanSetting("Enable Guild chat", false); public BooleanSetting getGuildChatWebhookEnabled() { return this.guildChatWebhookEnabled; }
@@ -458,7 +474,7 @@
 /* 368 */     this.otherCommandsSetting = new MultiBoolSetting("Other", this.otherCommands, new ArrayList<>(this.otherCommands));
 /*     */     
 /* 370 */     setGroup(new DefaultGroupSetting("Party Commands", this));
-/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.levelPrefixGroup, (Setting)this.webhookGroup, (Setting)this.accountShareGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.customHighlightGroup, (Setting)this.commissionOverlayGroup });
+/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.levelPrefixGroup, (Setting)this.webhookGroup, (Setting)this.accountShareGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.customHighlightGroup, (Setting)this.commissionOverlayGroup, (Setting)this.pickaxeAbilityCooldownGroup });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -508,7 +524,8 @@
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx });
 /* 424 */     this.customHighlightGroup.add(new Setting[] { (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.customTracerClosestOnly, (Setting)this.customTracerThicknessPx });
-/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers }); }
+/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers });
+/* 426 */     this.pickaxeAbilityCooldownGroup.add(new Setting[] { (Setting)this.pickaxeAbilityCooldownEnabled }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
 /*     */   public String getCachedWebhookInput() { return this.cachedWebhookInput; }
@@ -591,11 +608,18 @@
 /* 490 */     String raw = extractEventMessage(event);
 /* 491 */     String message = class_124.method_539(raw);
 /*     */     
+/*     */     handlePickaxeAbilityStatusMessage(event, message);
+/*     */     if (handlePickaxeCooldownChatMessage(event, message)) {
+/*     */       return;
+/*     */     }
+/*     */     
 /* 493 */     if (this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null)
 /* 494 */       return;  if (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.glorpWarp.getValue()).booleanValue() && message.contains("Party > [MVP+] glorpiline: Entered a ")) {
 /* 495 */       this.mc.field_1724.field_3944.method_45730("pc !pt glorpiline");
 /* 496 */       CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
 /*     */     } 
+/*     */     
+/*     */     handlePickaxeAbilityChat(message);
 /*     */ 
 /*     */ 
 /*     */ 
@@ -660,12 +684,14 @@
 /* 552 */       clearEspData();
 /* 553 */       clearCustomHighlightData();
 /* 554 */       clearCommissionOverlayData();
+/* 554 */       clearPickaxeAbilityCooldowns();
 /*     */       return;
 /*     */     }
 /* 556 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
 /* 557 */       clearEspData();
 /* 558 */       clearCustomHighlightData();
 /* 559 */       clearCommissionOverlayData();
+/* 559 */       clearPickaxeAbilityCooldowns();
 /*     */       return;
 /*     */     }
 /* 561 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
@@ -703,6 +729,7 @@
 /*     */     } else {
 /* 594 */       clearCommissionOverlayData();
 /*     */     } 
+/* 595 */     updatePickaxeAbilityCooldowns();
 /*     */   }
 /*     */   
 /*     */   @SubscribeEvent
@@ -1389,6 +1416,604 @@
 /* 788 */     this.commissionProgressTargets.clear();
 /* 789 */     this.commissionProgressDisplayed.clear();
 /* 790 */     this.commissionAnimationLastNanos = System.nanoTime();
+/*     */   }
+/*     */   
+/*     */   private void handlePickaxeAbilityChat(String message) {
+/*     */     if (!((Boolean)this.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
+/*     */       return;
+/*     */     }
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return;
+/*     */     }
+/*     */     if (message.contains("New buff: -20% Pickaxe Ability cooldowns.")) {
+/*     */       this.skyMallPickaxeCooldownActive = true;
+/*     */       this.skyMallPickaxeCooldownLastBuffTick = getPickaxeAbilityTick();
+/*     */       return;
+/*     */     }
+/*     */     if (message.contains("New day! Your Sky Mall buff changed!")) {
+/*     */       if (!this.skyMallPickaxeCooldownActive) {
+/*     */         return;
+/*     */       }
+/*     */       long nowTick = getPickaxeAbilityTick();
+/*     */       if (nowTick - this.skyMallPickaxeCooldownLastBuffTick >= SKY_MALL_PICKAXE_GRACE_TICKS) {
+/*     */         this.skyMallPickaxeCooldownActive = false;
+/*     */       }
+/*     */       return;
+/*     */     }
+/*     */     Matcher matcher = PICKAXE_ABILITY_USED_PATTERN.matcher(message);
+/*     */     if (!matcher.find()) {
+/*     */       return;
+/*     */     }
+/*     */     String abilityName = normalizePickaxeAbilityName(matcher.group(1));
+/*     */     if (abilityName == null) {
+/*     */       return;
+/*     */     }
+/*     */     int baseSeconds = getPickaxeAbilityBaseSeconds(abilityName);
+/*     */     if (baseSeconds <= 0) {
+/*     */       return;
+/*     */     }
+/*     */     double reductionPercent = getPickaxeAbilityCooldownReductionPercent();
+/*     */     double finalSeconds = baseSeconds * (1.0D - reductionPercent / 100.0D);
+/*     */     if (finalSeconds < 0.0D) {
+/*     */       finalSeconds = 0.0D;
+/*     */     }
+/*     */     long nowTick = getPickaxeAbilityTick();
+/*     */     long endTick = nowTick + Math.round(finalSeconds * 20.0D);
+/*     */     this.pickaxeAbilityCooldowns.put(abilityName, Long.valueOf(endTick));
+/*     */   }
+/*     */   
+/*     */   private void updatePickaxeAbilityCooldowns() {
+/*     */     if (!((Boolean)this.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
+/*     */       clearPickaxeAbilityCooldowns();
+/*     */       return;
+/*     */     }
+/*     */     if (this.pickaxeAbilityCooldowns.isEmpty()) {
+/*     */       return;
+/*     */     }
+/*     */     long nowTick = getPickaxeAbilityTick();
+/*     */     this.pickaxeAbilityCooldownTickCounter = nowTick;
+/*     */     List<String> ready = new ArrayList<>();
+/*     */     for (String ability : new ArrayList<>(this.pickaxeAbilityCooldowns.keySet())) {
+/*     */       long endTime = ((Long)this.pickaxeAbilityCooldowns.get(ability)).longValue();
+/*     */       if (nowTick >= endTime) {
+/*     */         ready.add(ability);
+/*     */       }
+/*     */     }
+/*     */     for (String ability : ready) {
+/*     */       this.pickaxeAbilityCooldowns.remove(ability);
+/*     */       ChatUtils.chat(String.valueOf(class_124.field_1060) + ability + " Pickaxe Ability is off cooldown.", new Object[0]);
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private void clearPickaxeAbilityCooldowns() {
+/*     */     this.pickaxeAbilityCooldowns.clear();
+/*     */     this.pickaxeAbilityCooldownTickCounter = 0L;
+/*     */     this.skyMallPickaxeCooldownActive = false;
+/*     */     this.skyMallPickaxeCooldownLastBuffTick = 0L;
+/*     */   }
+/*     */   
+/*     */   private long getPickaxeAbilityTick() {
+/*     */     if (this.mc.field_1687 != null) {
+/*     */       try {
+/*     */         return this.mc.field_1687.method_8510();
+/*     */       } catch (Throwable throwable) {}
+/*     */     }
+/*     */     return this.pickaxeAbilityCooldownTickCounter;
+/*     */   }
+/*     */   
+/*     */   private boolean handlePickaxeCooldownChatMessage(ChatEvent event, String message) {
+/*     */     if (event == null || message == null) {
+/*     */       return false;
+/*     */     }
+/*     */     if (!((Boolean)this.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
+/*     */       return false;
+/*     */     }
+/*     */     Matcher matcher = PICKAXE_COOLDOWN_CHAT_PATTERN.matcher(message);
+/*     */     if (!matcher.find()) {
+/*     */       return false;
+/*     */     }
+/*     */     String seconds = matcher.group(1);
+/*     */     String displaySeconds = seconds;
+/*     */     Double remaining = getShortestPickaxeCooldownSeconds();
+/*     */     if (remaining != null) {
+/*     */       displaySeconds = formatCooldownSeconds(remaining);
+/*     */     }
+/*     */     event.setCancelled(true);
+/*     */     ChatUtils.chat(String.valueOf(class_124.field_1060) + "[RSM] Ability on cooldown for " + displaySeconds + "s", new Object[0]);
+/*     */     return true;
+/*     */   }
+/*     */   
+/*     */   private void handlePickaxeAbilityStatusMessage(ChatEvent event, String message) {
+/*     */     if (event == null || message == null) {
+/*     */       return;
+/*     */     }
+/*     */     if (!((Boolean)this.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
+/*     */       return;
+/*     */     }
+/*     */     Matcher usedMatcher = PICKAXE_USED_CHAT_PATTERN.matcher(message);
+/*     */     if (usedMatcher.find()) {
+/*     */       event.setCancelled(true);
+/*     */       ChatUtils.chat(String.valueOf(class_124.field_1060) + "[RSM] Pickaxe ability used", new Object[0]);
+/*     */       return;
+/*     */     }
+/*     */     Matcher availableMatcher = PICKAXE_AVAILABLE_CHAT_PATTERN.matcher(message);
+/*     */     if (availableMatcher.find()) {
+/*     */       event.setCancelled(true);
+/*     */       ChatUtils.chat(String.valueOf(class_124.field_1060) + "[RSM] Pickaxe ability off cooldown", new Object[0]);
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private Double getShortestPickaxeCooldownSeconds() {
+/*     */     if (this.pickaxeAbilityCooldowns.isEmpty()) {
+/*     */       return null;
+/*     */     }
+/*     */     long nowTick = getPickaxeAbilityTick();
+/*     */     long minEnd = Long.MAX_VALUE;
+/*     */     for (Long endTick : this.pickaxeAbilityCooldowns.values()) {
+/*     */       if (endTick != null && endTick.longValue() < minEnd) {
+/*     */         minEnd = endTick.longValue();
+/*     */       }
+/*     */     }
+/*     */     if (minEnd == Long.MAX_VALUE) {
+/*     */       return null;
+/*     */     }
+/*     */     double remaining = (minEnd - nowTick) / 20.0D;
+/*     */     if (remaining < 0.0D) {
+/*     */       remaining = 0.0D;
+/*     */     }
+/*     */     return Double.valueOf(remaining);
+/*     */   }
+/*     */   
+/*     */   private String formatCooldownSeconds(double seconds) {
+/*     */     if (seconds < 0.0D) {
+/*     */       seconds = 0.0D;
+/*     */     }
+/*     */     double rounded = Math.round(seconds * 10.0D) / 10.0D;
+/*     */     if (Math.abs(rounded - Math.round(rounded)) < 1.0E-4D) {
+/*     */       return String.format(Locale.ROOT, "%.0f", rounded);
+/*     */     }
+/*     */     return String.format(Locale.ROOT, "%.1f", rounded);
+/*     */   }
+/*     */   
+/*     */   private String normalizePickaxeAbilityName(String name) {
+/*     */     if (name == null) {
+/*     */       return null;
+/*     */     }
+/*     */     String trimmed = name.trim();
+/*     */     if (trimmed.isEmpty()) {
+/*     */       return null;
+/*     */     }
+/*     */     String lower = trimmed.toLowerCase(Locale.ROOT);
+/*     */     if (lower.equals("pickobulus")) {
+/*     */       return "Pickobulus";
+/*     */     }
+/*     */     if (lower.equals("mining speed boost")) {
+/*     */       return "Mining Speed Boost";
+/*     */     }
+/*     */     if (lower.equals("maniac miner")) {
+/*     */       return "Maniac Miner";
+/*     */     }
+/*     */     if (lower.equals("tunnel vision")) {
+/*     */       return "Tunnel Vision";
+/*     */     }
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private int getPickaxeAbilityBaseSeconds(String name) {
+/*     */     if (name == null) {
+/*     */       return 0;
+/*     */     }
+/*     */     switch (name) {
+/*     */       case "Pickobulus":
+/*     */         return 50;
+/*     */       case "Mining Speed Boost":
+/*     */       case "Maniac Miner":
+/*     */       case "Tunnel Vision":
+/*     */         return 120;
+/*     */     }
+/*     */     return 0;
+/*     */   }
+/*     */   
+/*     */   private double getPickaxeAbilityCooldownReductionPercent() {
+/*     */     double reduction = 0.0D;
+/*     */     reduction += getHeldItemPickaxeCooldownReduction();
+/*     */     reduction += getLegendaryBalCooldownReduction();
+/*     */     if (this.skyMallPickaxeCooldownActive) {
+/*     */       reduction += 20.0D;
+/*     */     }
+/*     */     if (reduction < 0.0D) {
+/*     */       reduction = 0.0D;
+/*     */     }
+/*     */     if (reduction > 100.0D) {
+/*     */       reduction = 100.0D;
+/*     */     }
+/*     */     return reduction;
+/*     */   }
+/*     */   
+/*     */   private double getHeldItemPickaxeCooldownReduction() {
+/*     */     if (this.mc.field_1724 == null) {
+/*     */       return 0.0D;
+/*     */     }
+/*     */     class_1799 stack = this.mc.field_1724.method_59958();
+/*     */     if (stack == null || stack.method_7960()) {
+/*     */       return 0.0D;
+/*     */     }
+/*     */     List<class_2561> tooltip = getItemTooltip(stack);
+/*     */     if (tooltip.isEmpty()) {
+/*     */       return 0.0D;
+/*     */     }
+/*     */     int best = 0;
+/*     */     for (class_2561 lineText : tooltip) {
+/*     */       if (lineText == null) {
+/*     */         continue;
+/*     */       }
+/*     */       String line = class_124.method_539(lineText.getString());
+/*     */       if (line == null || line.isBlank()) {
+/*     */         continue;
+/*     */       }
+/*     */       Matcher matcher = PICKAXE_ABILITY_COOLDOWN_PATTERN.matcher(line);
+/*     */       if (!matcher.find()) {
+/*     */         continue;
+/*     */       }
+/*     */       try {
+/*     */         int value = Integer.parseInt(matcher.group(1));
+/*     */         if (value == 2 || value == 4 || value == 6 || value == 8 || value == 10) {
+/*     */           best = Math.max(best, value);
+/*     */         }
+/*     */       } catch (NumberFormatException numberFormatException) {}
+/*     */     }
+/*     */     return best;
+/*     */   }
+/*     */   
+/*     */   private double getLegendaryBalCooldownReduction() {
+/*     */     int level = findLegendaryBalPetLevel();
+/*     */     if (level <= 0) {
+/*     */       return 0.0D;
+/*     */     }
+/*     */     return Math.max(0.0D, Math.min(100.0D, level * 0.1D));
+/*     */   }
+/*     */   
+/*     */   private int findLegendaryBalPetLevel() {
+/*     */     List<class_2561> tabTexts = readTabMenuTexts();
+/*     */     if (tabTexts.isEmpty()) {
+/*     */       return -1;
+/*     */     }
+/*     */     boolean hasPetHeader = hasTabPetHeader(tabTexts);
+/*     */     for (class_2561 text : tabTexts) {
+/*     */       if (text == null) {
+/*     */         continue;
+/*     */       }
+/*     */       String plain = text.getString();
+/*     */       if (plain == null || plain.isBlank()) {
+/*     */         continue;
+/*     */       }
+/*     */       String lower = plain.toLowerCase(Locale.ROOT);
+/*     */       if (!lower.contains("bal")) {
+/*     */         continue;
+/*     */       }
+/*     */       Matcher matcher = BAL_PET_PATTERN.matcher(plain);
+/*     */       if (!matcher.find()) {
+/*     */         matcher = PET_LEVEL_PATTERN.matcher(plain);
+/*     */         if (!matcher.find()) {
+/*     */           continue;
+/*     */         }
+/*     */       }
+/*     */       int level;
+/*     */       try {
+/*     */         level = Integer.parseInt(matcher.group(1));
+/*     */       } catch (NumberFormatException numberFormatException) {
+/*     */         continue;
+/*     */       }
+/*     */       if (level <= 0) {
+/*     */         continue;
+/*     */       }
+/*     */       if (isLegendaryBalText(text, lower)) {
+/*     */         return level;
+/*     */       }
+/*     */       if (hasPetHeader) {
+/*     */         return level;
+/*     */       }
+/*     */     }
+/*     */     return -1;
+/*     */   }
+/*     */   
+/*     */   private boolean hasTabPetHeader(List<class_2561> tabTexts) {
+/*     */     if (tabTexts == null || tabTexts.isEmpty()) {
+/*     */       return false;
+/*     */     }
+/*     */     for (class_2561 text : tabTexts) {
+/*     */       if (text == null) {
+/*     */         continue;
+/*     */       }
+/*     */       String line = text.getString();
+/*     */       if (line == null || line.isBlank()) {
+/*     */         continue;
+/*     */       }
+/*     */       String lower = line.toLowerCase(Locale.ROOT);
+/*     */       if (lower.contains("pet:")) {
+/*     */         return true;
+/*     */       }
+/*     */     }
+/*     */     return false;
+/*     */   }
+/*     */   
+/*     */   private boolean isLegendaryBalText(class_2561 text, String lowerPlain) {
+/*     */     if (text == null) {
+/*     */       return false;
+/*     */     }
+/*     */     Integer gold = getGoldTextColorValue();
+/*     */     if (gold == null) {
+/*     */       return (lowerPlain != null && lowerPlain.contains("legendary") && lowerPlain.contains("bal"));
+/*     */     }
+/*     */     if (hasGoldBalFormatting(text)) {
+/*     */       return true;
+/*     */     }
+/*     */     class_2583 baseStyle = text.method_10866();
+/*     */     if (baseStyle != null && lowerPlain != null && lowerPlain.contains("bal")) {
+/*     */       Integer baseColour = baseStyle.method_65301();
+/*     */       if (baseColour != null && baseColour.equals(gold)) {
+/*     */         return true;
+/*     */       }
+/*     */     }
+/*     */     List<class_2561> parts = text.method_44746();
+/*     */     if (parts == null || parts.isEmpty()) {
+/*     */       parts = List.of(text);
+/*     */     }
+/*     */     for (class_2561 part : parts) {
+/*     */       if (part == null) {
+/*     */         continue;
+/*     */       }
+/*     */       String partText = part.getString();
+/*     */       if (partText == null) {
+/*     */         continue;
+/*     */       }
+/*     */       String lower = partText.toLowerCase(Locale.ROOT);
+/*     */       if (!lower.contains("bal")) {
+/*     */         continue;
+/*     */       }
+/*     */       class_2583 style = part.method_10866();
+/*     */       if (style == null) {
+/*     */         continue;
+/*     */       }
+/*     */       Integer colour = style.method_65301();
+/*     */       if (colour != null && colour.equals(gold)) {
+/*     */         return true;
+/*     */       }
+/*     */     }
+/*     */     return (lowerPlain != null && lowerPlain.contains("legendary") && lowerPlain.contains("bal"));
+/*     */   }
+/*     */   
+/*     */   private boolean hasGoldBalFormatting(class_2561 text) {
+/*     */     if (text == null) {
+/*     */       return false;
+/*     */     }
+/*     */     String formatted = text.method_10858(0);
+/*     */     if (formatted == null || formatted.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     String lower = formatted.toLowerCase(Locale.ROOT);
+/*     */     int index = lower.indexOf("bal");
+/*     */     if (index < 0) {
+/*     */       return false;
+/*     */     }
+/*     */     if (lower.contains("§6bal") || lower.contains("§6 bal")) {
+/*     */       return true;
+/*     */     }
+/*     */     if (lower.contains("§x§f§f§a§a§0§0") && lower.indexOf("§x§f§f§a§a§0§0") < index) {
+/*     */       return true;
+/*     */     }
+/*     */     Integer colour = getFormattedColorBeforeIndex(formatted, index);
+/*     */     Integer gold = getGoldTextColorValue();
+/*     */     return (colour != null && gold != null && colour.equals(gold));
+/*     */   }
+/*     */   
+/*     */   private Integer getFormattedColorBeforeIndex(String formatted, int index) {
+/*     */     if (formatted == null || index <= 0) {
+/*     */       return null;
+/*     */     }
+/*     */     Integer current = null;
+/*     */     int i = 0;
+/*     */     int limit = Math.min(index, formatted.length());
+/*     */     while (i < limit - 1) {
+/*     */       char ch = formatted.charAt(i);
+/*     */       if (ch == '§') {
+/*     */         char code = Character.toLowerCase(formatted.charAt(i + 1));
+/*     */         if (code == 'x') {
+/*     */           Integer hex = parseHexColor(formatted, i);
+/*     */           if (hex != null) {
+/*     */             current = hex;
+/*     */             i += 14;
+/*     */             continue;
+/*     */           }
+/*     */         }
+/*     */         if (code == 'r') {
+/*     */           current = null;
+/*     */           i += 2;
+/*     */           continue;
+/*     */         }
+/*     */         Integer legacy = getLegacyColourForCode(code);
+/*     */         if (legacy != null) {
+/*     */           current = legacy;
+/*     */         }
+/*     */         i += 2;
+/*     */         continue;
+/*     */       }
+/*     */       i++;
+/*     */     }
+/*     */     return current;
+/*     */   }
+/*     */   
+/*     */   private Integer parseHexColor(String formatted, int startIndex) {
+/*     */     if (formatted == null || startIndex < 0 || startIndex + 13 >= formatted.length()) {
+/*     */       return null;
+/*     */     }
+/*     */     if (formatted.charAt(startIndex) != '§' || Character.toLowerCase(formatted.charAt(startIndex + 1)) != 'x') {
+/*     */       return null;
+/*     */     }
+/*     */     StringBuilder hex = new StringBuilder();
+/*     */     int idx = startIndex + 2;
+/*     */     for (int i = 0; i < 6; i++) {
+/*     */       if (idx + 1 >= formatted.length()) {
+/*     */         return null;
+/*     */       }
+/*     */       if (formatted.charAt(idx) != '§') {
+/*     */         return null;
+/*     */       }
+/*     */       char digit = formatted.charAt(idx + 1);
+/*     */       if (!isHexDigit(digit)) {
+/*     */         return null;
+/*     */       }
+/*     */       hex.append(digit);
+/*     */       idx += 2;
+/*     */     }
+/*     */     try {
+/*     */       return Integer.valueOf(Integer.parseInt(hex.toString(), 16));
+/*     */     } catch (NumberFormatException numberFormatException) {
+/*     */       return null;
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private boolean isHexDigit(char digit) {
+/*     */     char c = Character.toLowerCase(digit);
+/*     */     return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+/*     */   }
+/*     */   
+/*     */   private Integer getLegacyColourForCode(char code) {
+/*     */     try {
+/*     */       class_124 colour = class_124.method_544(code);
+/*     */       if (colour != null) {
+/*     */         return colour.method_532();
+/*     */       }
+/*     */     } catch (Throwable throwable) {}
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private Integer getGoldTextColorValue() {
+/*     */     try {
+/*     */       class_124 gold = class_124.method_533("gold");
+/*     */       if (gold != null) {
+/*     */         Integer value = gold.method_532();
+/*     */         if (value != null) {
+/*     */           return value;
+/*     */         }
+/*     */       }
+/*     */     } catch (Throwable throwable) {}
+/*     */     return Integer.valueOf(16755200);
+/*     */   }
+/*     */   
+/*     */   private List<class_2561> getItemTooltip(class_1799 stack) {
+/*     */     if (stack == null || this.mc.field_1724 == null || this.mc.field_1687 == null) {
+/*     */       return Collections.emptyList();
+/*     */     }
+/*     */     try {
+/*     */       Class<?> tooltipContextClass = Class.forName("net.minecraft.class_1792$class_9635");
+/*     */       Method contextMethod = tooltipContextClass.getDeclaredMethod("method_59528", new Class[] { class_1937.class });
+/*     */       contextMethod.setAccessible(true);
+/*     */       Object tooltipContext = contextMethod.invoke(null, new Object[] { this.mc.field_1687 });
+/*     */       Class<?> tooltipTypeClass = Class.forName("net.minecraft.class_1836");
+/*     */       Field tooltipTypeField = tooltipTypeClass.getDeclaredField("field_41070");
+/*     */       tooltipTypeField.setAccessible(true);
+/*     */       Object tooltipType = tooltipTypeField.get(null);
+/*     */       Method tooltipMethod = stack.getClass().getMethod("method_7950", new Class[] { tooltipContextClass, class_1657.class, tooltipTypeClass });
+/*     */       Object result = tooltipMethod.invoke(stack, new Object[] { tooltipContext, this.mc.field_1724, tooltipType });
+/*     */       if (result instanceof List) {
+/*     */         return (List<class_2561>)result;
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     return Collections.emptyList();
+/*     */   }
+/*     */   
+/*     */   private List<class_2561> readTabMenuTexts() {
+/*     */     List<class_2561> texts = new ArrayList<>();
+/*     */     class_355 playerListHud = null;
+/*     */     try {
+/*     */       if (this.mc.field_1705 != null) {
+/*     */         Object hudObject = invokeNoArg(this.mc.field_1705, new String[] { "method_1750", "getPlayerListHud" });
+/*     */         if (hudObject instanceof class_355) {
+/*     */           playerListHud = (class_355)hudObject;
+/*     */         }
+/*     */       } 
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     appendTabHeaderFooterTexts(texts, playerListHud);
+/*     */     appendDisplayedTabHudTexts(playerListHud, texts);
+/*     */     class_634 networkHandler = this.mc.method_1562();
+/*     */     if (networkHandler == null) {
+/*     */       return texts;
+/*     */     }
+/*     */     appendTabEntryTexts(networkHandler.method_2880(), texts, playerListHud);
+/*     */     return texts;
+/*     */   }
+/*     */   
+/*     */   private void appendDisplayedTabHudTexts(class_355 playerListHud, List<class_2561> texts) {
+/*     */     if (playerListHud == null || texts == null) {
+/*     */       return;
+/*     */     }
+/*     */     try {
+/*     */       Method method = playerListHud.getClass().getDeclaredMethod("method_48213", new Class[0]);
+/*     */       method.setAccessible(true);
+/*     */       Object value = method.invoke(playerListHud, new Object[0]);
+/*     */       if (!(value instanceof Iterable)) {
+/*     */         return;
+/*     */       }
+/*     */       appendTabEntryTexts((Iterable)value, texts, playerListHud);
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */   }
+/*     */   
+/*     */   private void appendTabHeaderFooterTexts(List<class_2561> texts, class_355 playerListHud) {
+/*     */     if (texts == null || playerListHud == null) {
+/*     */       return;
+/*     */     }
+/*     */     appendTextFromPlayerListField(playerListHud, "field_2154", texts);
+/*     */     appendTextFromPlayerListField(playerListHud, "field_2153", texts);
+/*     */   }
+/*     */   
+/*     */   private void appendTextFromPlayerListField(Object playerListHud, String fieldName, List<class_2561> texts) {
+/*     */     if (playerListHud == null || fieldName == null || texts == null) {
+/*     */       return;
+/*     */     }
+/*     */     try {
+/*     */       Field field = playerListHud.getClass().getDeclaredField(fieldName);
+/*     */       field.setAccessible(true);
+/*     */       Object value = field.get(playerListHud);
+/*     */       if (value instanceof class_2561) {
+/*     */         texts.add((class_2561)value);
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */   }
+/*     */   
+/*     */   private void appendTabEntryTexts(Iterable<?> entries, List<class_2561> texts, class_355 playerListHud) {
+/*     */     if (entries == null || texts == null) {
+/*     */       return;
+/*     */     }
+/*     */     for (Object obj : entries) {
+/*     */       if (!(obj instanceof class_640)) {
+/*     */         continue;
+/*     */       }
+/*     */       class_2561 text = getTabTextFromEntry((class_640)obj, playerListHud);
+/*     */       if (text != null) {
+/*     */         texts.add(text);
+/*     */       }
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private class_2561 getTabTextFromEntry(class_640 entry, class_355 playerListHud) {
+/*     */     if (entry == null) {
+/*     */       return null;
+/*     */     }
+/*     */     class_2561 rendered = null;
+/*     */     try {
+/*     */       if (playerListHud != null) {
+/*     */         rendered = playerListHud.method_1918(entry);
+/*     */       }
+/*     */     } catch (Throwable throwable) {}
+/*     */     if (rendered != null) {
+/*     */       return rendered;
+/*     */     }
+/*     */     class_2561 displayName = entry.method_2971();
+/*     */     if (displayName != null) {
+/*     */       return displayName;
+/*     */     }
+/*     */     return null;
 /*     */   }
 /*     */   
 /*     */   private void renderBlockTasks(List<Object> tasks, Boolean enabled) {
