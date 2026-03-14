@@ -22,7 +22,26 @@
 /*     */       return;
 /*     */     }
 /*     */     
-/*  27 */     ClientReceiveMessageEvents.MODIFY_GAME.register((text, overlay) -> rewriteAll(text));
+/*  27 */     ClientReceiveMessageEvents.ALLOW_GAME.register((text, overlay) -> {
+/*     */           if (ChatCommands.shouldSuppressPickaxeChat(text)) {
+/*     */             ChatCommands.handleSuppressedPickaxeMessage(text);
+/*     */             return false;
+/*     */           }
+/*     */           return true;
+/*     */         });
+/*     */     ClientReceiveMessageEvents.ALLOW_CHAT.register((text, signedMessage, sender, params, timestamp) -> {
+/*     */           if (ChatCommands.shouldSuppressPickaxeChat(text)) {
+/*     */             ChatCommands.handleSuppressedPickaxeMessage(text);
+/*     */             return false;
+/*     */           }
+/*     */           return true;
+/*     */         });
+/*  27 */     ClientReceiveMessageEvents.MODIFY_GAME.register((text, overlay) -> {
+/*     */           if (ChatCommands.shouldSuppressPickaxeChat(text)) {
+/*     */             return (class_2561)class_2561.method_43470("");
+/*     */           }
+/*     */           return rewriteAll(text);
+/*     */         });
 /*     */ 
 /*     */     
 /*  30 */     registered = true;

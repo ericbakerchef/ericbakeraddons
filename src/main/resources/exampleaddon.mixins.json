@@ -7,6 +7,9 @@
   },
   "mixins": [],
   "client": [
+    "ChatHudPickaxeSuppressMixin",
+    "MessageHandlerPickaxeSuppressMixin",
+    "PlayerSendMessageMixin",
     "TabListNameMixin",
     "PlayerInfoDisplayNameMixin",
     "ScreenClickMixin"

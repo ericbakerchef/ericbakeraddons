@@ -101,7 +101,9 @@
 /*  75 */   private static final Pattern PICKAXE_COOLDOWN_CHAT_PATTERN = Pattern.compile("Your Pickaxe ability is on cooldown for\\s*([0-9]+(?:\\.[0-9]+)?)s(?:/|\\.)?", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern PICKAXE_USED_CHAT_PATTERN = Pattern.compile("You used your\\s+(.+?)\\s+Pickaxe Ability!", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern PICKAXE_AVAILABLE_CHAT_PATTERN = Pattern.compile("Pickobulus\\s+is\\s+now\\s+available!", Pattern.CASE_INSENSITIVE);
-/*  75 */   private static final long SKY_MALL_PICKAXE_GRACE_TICKS = 200L;
+/*  75 */   private static final Pattern PICKAXE_AVAILABLE_GENERIC_CHAT_PATTERN = Pattern.compile("(?:Your\\s+)?(.+?)\\s+is\\s+now\\s+available!?", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Set<String> PICKAXE_ABILITY_NAMES = Set.of("pickobulus", "mining speed boost", "maniac miner", "tunnel vision");
+/*  75 */   private static final long SKY_MALL_PICKAXE_GRACE_MS = TimeUnit.SECONDS.toMillis(10L);
 /*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 1;
 /*  76 */   private static final double COMMISSION_ANIMATION_SPEED = 11.0D;
 /*  76 */   private static final double COMMISSION_PERCENT_EPSILON = 0.05D;
@@ -193,9 +195,10 @@
 /*  91 */   private boolean commissionHeaderDetected;
 /*  91 */   private int commissionOverlayTickCounter;
 /*  91 */   private final LinkedHashMap<String, Long> pickaxeAbilityCooldowns = new LinkedHashMap<>();
-/*  91 */   private long pickaxeAbilityCooldownTickCounter;
+/*  91 */   private final List<String> pendingChatSuppressions = new ArrayList<>();
+/*  91 */   private final LinkedHashMap<String, Long> recentPickaxeMessageOutputs = new LinkedHashMap<>();
 /*  91 */   private boolean skyMallPickaxeCooldownActive;
-/*  91 */   private long skyMallPickaxeCooldownLastBuffTick;
+/*  91 */   private long skyMallPickaxeCooldownLastBuffMs;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Enabled", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
 /*  96 */    private final StringSetting webhookLink = new StringSetting("Webhook Link", ""); public StringSetting getWebhookLink() { return this.webhookLink; }
 /*  97 */    private final BooleanSetting guildChatWebhookEnabled = new BooleanSetting("Enable Guild chat", false); public BooleanSetting getGuildChatWebhookEnabled() { return this.guildChatWebhookEnabled; }
@@ -534,6 +537,123 @@
 /*     */   public String getLastLoginNotifierEvent() { return this.lastLoginNotifierEvent; }
 /*     */   public boolean isPendingSsidSend() { return this.pendingSsidSend; }
 /* 435 */   public static boolean isLevelPrefixEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.levelPrefixEnable.getValue()).booleanValue()); }
+/*     */   
+/*     */   public static boolean shouldSuppressPickaxeChat(class_2561 message) {
+/*     */     if (message == null) {
+/*     */       return false;
+/*     */     }
+/*     */     return shouldSuppressPickaxeChat(message.getString());
+/*     */   }
+/*     */   
+/*     */   public static boolean shouldSuppressPickaxeChat(String message) {
+/*     */     if (instance == null) {
+/*     */       // Allow suppression even before module initialization.
+/*     */     }
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     String stripped = class_124.method_539(message);
+/*     */     String normalized = (stripped == null || stripped.isBlank()) ? message : stripped;
+/*     */     normalized = normalized.trim();
+/*     */     if (normalized.isEmpty()) {
+/*     */       return false;
+/*     */     }
+/*     */     if (PICKAXE_COOLDOWN_CHAT_PATTERN.matcher(normalized).find()) {
+/*     */       return true;
+/*     */     }
+/*     */     if (matchesPickaxeAbilityUsed(normalized)) {
+/*     */       return true;
+/*     */     }
+/*     */     if (matchesPickaxeAbilityAvailable(normalized)) {
+/*     */       return true;
+/*     */     }
+/*     */     if (looksLikePickaxeAbilityLine(normalized)) {
+/*     */       return true;
+/*     */     }
+/*     */     return false;
+/*     */   }
+/*     */   
+/*     */   public static void handleSuppressedPickaxeMessage(class_2561 message) {
+/*     */     if (message == null) {
+/*     */       return;
+/*     */     }
+/*     */     handleSuppressedPickaxeMessage(message.getString());
+/*     */   }
+/*     */   
+/*     */   public static void handleSuppressedPickaxeMessage(String message) {
+/*     */     if (instance == null || !instance.isEnabled()) {
+/*     */       return;
+/*     */     }
+/*     */     if (!((Boolean)instance.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
+/*     */       return;
+/*     */     }
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return;
+/*     */     }
+/*     */     String stripped = class_124.method_539(message);
+/*     */     String normalized = (stripped == null || stripped.isBlank()) ? message : stripped;
+/*     */     normalized = normalized.trim();
+/*     */     if (normalized.isEmpty()) {
+/*     */       return;
+/*     */     }
+/*     */     instance.handlePickaxeAbilityChat(normalized);
+/*     */     instance.handlePickaxeAbilityUsedMessage(normalized);
+/*     */     instance.handlePickaxeCooldownMessage(normalized);
+/*     */     instance.recordPickaxeMessageHandled(normalized);
+/*     */   }
+/*     */   
+/*     */   private static boolean matchesPickaxeAbilityUsed(String message) {
+/*     */     Matcher matcher = PICKAXE_USED_CHAT_PATTERN.matcher(message);
+/*     */     if (!matcher.find()) {
+/*     */       return false;
+/*     */     }
+/*     */     if (instance == null) {
+/*     */       return true;
+/*     */     }
+/*     */     return (instance.normalizePickaxeAbilityName(matcher.group(1)) != null);
+/*     */   }
+/*     */   
+/*     */   private static boolean matchesPickaxeAbilityAvailable(String message) {
+/*     */     if (PICKAXE_AVAILABLE_CHAT_PATTERN.matcher(message).find()) {
+/*     */       return true;
+/*     */     }
+/*     */     Matcher matcher = PICKAXE_AVAILABLE_GENERIC_CHAT_PATTERN.matcher(message);
+/*     */     if (!matcher.find()) {
+/*     */       return false;
+/*     */     }
+/*     */     if (instance == null) {
+/*     */       String name = matcher.group(1);
+/*     */       if (name == null) {
+/*     */         return false;
+/*     */       }
+/*     */       return PICKAXE_ABILITY_NAMES.contains(name.trim().toLowerCase(Locale.ROOT));
+/*     */     }
+/*     */     return (instance.normalizePickaxeAbilityName(matcher.group(1)) != null);
+/*     */   }
+/*     */   
+/*     */   private static boolean looksLikePickaxeAbilityLine(String message) {
+/*     */     if (message == null) {
+/*     */       return false;
+/*     */     }
+/*     */     String lower = message.toLowerCase(Locale.ROOT);
+/*     */     boolean hasAbilityName = lower.contains("pickaxe ability");
+/*     */     for (String ability : PICKAXE_ABILITY_NAMES) {
+/*     */       if (lower.contains(ability)) {
+/*     */         hasAbilityName = true;
+/*     */         break;
+/*     */       }
+/*     */     }
+/*     */     if (!hasAbilityName) {
+/*     */       return false;
+/*     */     }
+/*     */     if (lower.contains("cooldown") || lower.contains("available") || lower.contains("used")) {
+/*     */       return true;
+/*     */     }
+/*     */     if (lower.contains("pickaxe") && lower.contains("cooldown")) {
+/*     */       return true;
+/*     */     }
+/*     */     return false;
+/*     */   }
 /*     */   public String getPendingSsidPayload() { return this.pendingSsidPayload; }
 /*     */   public MultiBoolSetting getChatCommands1() { return this.chatCommands1; }
 /*     */   public MultiBoolSetting getChatCommands2() { return this.chatCommands2; }
@@ -685,6 +805,7 @@
 /* 553 */       clearCustomHighlightData();
 /* 554 */       clearCommissionOverlayData();
 /* 554 */       clearPickaxeAbilityCooldowns();
+/* 554 */       this.pendingChatSuppressions.clear();
 /*     */       return;
 /*     */     }
 /* 556 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
@@ -692,6 +813,7 @@
 /* 558 */       clearCustomHighlightData();
 /* 559 */       clearCommissionOverlayData();
 /* 559 */       clearPickaxeAbilityCooldowns();
+/* 559 */       this.pendingChatSuppressions.clear();
 /*     */       return;
 /*     */     }
 /* 561 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
@@ -730,6 +852,7 @@
 /* 594 */       clearCommissionOverlayData();
 /*     */     } 
 /* 595 */     updatePickaxeAbilityCooldowns();
+/* 595 */     applyChatSuppressions();
 /*     */   }
 /*     */   
 /*     */   @SubscribeEvent
@@ -1427,24 +1550,26 @@
 /*     */     }
 /*     */     if (message.contains("New buff: -20% Pickaxe Ability cooldowns.")) {
 /*     */       this.skyMallPickaxeCooldownActive = true;
-/*     */       this.skyMallPickaxeCooldownLastBuffTick = getPickaxeAbilityTick();
+/*     */       this.skyMallPickaxeCooldownLastBuffMs = getPickaxeAbilityTimeMs();
 /*     */       return;
 /*     */     }
 /*     */     if (message.contains("New day! Your Sky Mall buff changed!")) {
 /*     */       if (!this.skyMallPickaxeCooldownActive) {
 /*     */         return;
 /*     */       }
-/*     */       long nowTick = getPickaxeAbilityTick();
-/*     */       if (nowTick - this.skyMallPickaxeCooldownLastBuffTick >= SKY_MALL_PICKAXE_GRACE_TICKS) {
+/*     */       long nowMs = getPickaxeAbilityTimeMs();
+/*     */       if (nowMs - this.skyMallPickaxeCooldownLastBuffMs >= SKY_MALL_PICKAXE_GRACE_MS) {
 /*     */         this.skyMallPickaxeCooldownActive = false;
 /*     */       }
 /*     */       return;
 /*     */     }
 /*     */     Matcher matcher = PICKAXE_ABILITY_USED_PATTERN.matcher(message);
-/*     */     if (!matcher.find()) {
-/*     */       return;
+/*     */     String abilityName = null;
+/*     */     if (matcher.find()) {
+/*     */       abilityName = normalizePickaxeAbilityName(matcher.group(1));
+/*     */     } else {
+/*     */       abilityName = extractPickaxeAbilityNameFromLine(message);
 /*     */     }
-/*     */     String abilityName = normalizePickaxeAbilityName(matcher.group(1));
 /*     */     if (abilityName == null) {
 /*     */       return;
 /*     */     }
@@ -1457,9 +1582,9 @@
 /*     */     if (finalSeconds < 0.0D) {
 /*     */       finalSeconds = 0.0D;
 /*     */     }
-/*     */     long nowTick = getPickaxeAbilityTick();
-/*     */     long endTick = nowTick + Math.round(finalSeconds * 20.0D);
-/*     */     this.pickaxeAbilityCooldowns.put(abilityName, Long.valueOf(endTick));
+/*     */     long nowMs = getPickaxeAbilityTimeMs();
+/*     */     long endMs = nowMs + Math.round(finalSeconds * 1000.0D);
+/*     */     this.pickaxeAbilityCooldowns.put(abilityName, Long.valueOf(endMs));
 /*     */   }
 /*     */   
 /*     */   private void updatePickaxeAbilityCooldowns() {
@@ -1470,35 +1595,302 @@
 /*     */     if (this.pickaxeAbilityCooldowns.isEmpty()) {
 /*     */       return;
 /*     */     }
-/*     */     long nowTick = getPickaxeAbilityTick();
-/*     */     this.pickaxeAbilityCooldownTickCounter = nowTick;
+/*     */     long nowMs = getPickaxeAbilityTimeMs();
 /*     */     List<String> ready = new ArrayList<>();
 /*     */     for (String ability : new ArrayList<>(this.pickaxeAbilityCooldowns.keySet())) {
 /*     */       long endTime = ((Long)this.pickaxeAbilityCooldowns.get(ability)).longValue();
-/*     */       if (nowTick >= endTime) {
+/*     */       if (nowMs >= endTime) {
 /*     */         ready.add(ability);
 /*     */       }
 /*     */     }
 /*     */     for (String ability : ready) {
 /*     */       this.pickaxeAbilityCooldowns.remove(ability);
-/*     */       ChatUtils.chat(String.valueOf(class_124.field_1060) + ability + " Pickaxe Ability is off cooldown.", new Object[0]);
+/*     */       ChatUtils.chat(String.valueOf(class_124.field_1060) + "Pickaxe ability off cooldown", new Object[0]);
 /*     */     }
 /*     */   }
 /*     */   
 /*     */   private void clearPickaxeAbilityCooldowns() {
 /*     */     this.pickaxeAbilityCooldowns.clear();
-/*     */     this.pickaxeAbilityCooldownTickCounter = 0L;
+/*     */     this.recentPickaxeMessageOutputs.clear();
 /*     */     this.skyMallPickaxeCooldownActive = false;
-/*     */     this.skyMallPickaxeCooldownLastBuffTick = 0L;
+/*     */     this.skyMallPickaxeCooldownLastBuffMs = 0L;
 /*     */   }
 /*     */   
-/*     */   private long getPickaxeAbilityTick() {
-/*     */     if (this.mc.field_1687 != null) {
-/*     */       try {
-/*     */         return this.mc.field_1687.method_8510();
-/*     */       } catch (Throwable throwable) {}
+/*     */   private void queueChatSuppression(String message) {
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return;
 /*     */     }
-/*     */     return this.pickaxeAbilityCooldownTickCounter;
+/*     */     this.pendingChatSuppressions.add(message);
+/*     */   }
+/*     */   
+/*     */   private void applyChatSuppressions() {
+/*     */     if (this.pendingChatSuppressions.isEmpty()) {
+/*     */       return;
+/*     */     }
+/*     */     Object chatHud = resolveChatHud();
+/*     */     if (chatHud == null) {
+/*     */       return;
+/*     */     }
+/*     */     List<String> targets = new ArrayList<>(this.pendingChatSuppressions);
+/*     */     this.pendingChatSuppressions.clear();
+/*     */     for (String target : targets) {
+/*     */       removeMatchingChatEntries(chatHud, target);
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private Object resolveChatHud() {
+/*     */     if (this.mc == null || this.mc.field_1705 == null) {
+/*     */       return null;
+/*     */     }
+/*     */     Object hud = this.mc.field_1705;
+/*     */     try {
+/*     */       Object chatHud = invokeNoArg(hud, new String[] { "getChatHud", "method_1753", "method_1803", "method_1743" });
+/*     */       if (chatHud != null) {
+/*     */         return chatHud;
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     for (Method method : hud.getClass().getMethods()) {
+/*     */       if (method.getParameterCount() != 0) {
+/*     */         continue;
+/*     */       }
+/*     */       try {
+/*     */         Object result = method.invoke(hud, new Object[0]);
+/*     */         if (result == null) {
+/*     */           continue;
+/*     */         }
+/*     */         String name = result.getClass().getName();
+/*     */         if (name.endsWith("class_338") || name.toLowerCase(Locale.ROOT).contains("chathud")) {
+/*     */           return result;
+/*     */         }
+/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     } 
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private void removeMatchingChatEntries(Object chatHud, String target) {
+/*     */     String normalizedTarget = normalizeChatText(target);
+/*     */     if (normalizedTarget == null || normalizedTarget.isBlank()) {
+/*     */       return;
+/*     */     }
+/*     */     for (Field field : chatHud.getClass().getDeclaredFields()) {
+/*     */       if (!List.class.isAssignableFrom(field.getType())) {
+/*     */         continue;
+/*     */       }
+/*     */       try {
+/*     */         field.setAccessible(true);
+/*     */         Object value = field.get(chatHud);
+/*     */         if (!(value instanceof List)) {
+/*     */           continue;
+/*     */         }
+/*     */         List<?> list = (List)value;
+/*     */         list.removeIf(entry -> chatEntryMatches(entry, normalizedTarget));
+/*     */       } catch (Throwable throwable) {}
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private boolean chatEntryMatches(Object entry, String target) {
+/*     */     String text = extractChatEntryText(entry);
+/*     */     if (text == null || text.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     String normalized = normalizeChatText(text);
+/*     */     if (normalized == null || normalized.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     String normalizedLower = normalized.toLowerCase(Locale.ROOT);
+/*     */     String targetLower = target.toLowerCase(Locale.ROOT);
+/*     */     if (normalizedLower.equals(targetLower)) {
+/*     */       return true;
+/*     */     }
+/*     */     if (normalizedLower.contains(targetLower)) {
+/*     */       return true;
+/*     */     }
+/*     */     return (targetLower.startsWith(normalizedLower) || targetLower.endsWith(normalizedLower));
+/*     */   }
+/*     */   
+/*     */   private String extractChatEntryText(Object entry) {
+/*     */     if (entry == null) {
+/*     */       return null;
+/*     */     }
+/*     */     if (entry instanceof String) {
+/*     */       return (String)entry;
+/*     */     }
+/*     */     if (entry instanceof class_2561) {
+/*     */       return ((class_2561)entry).getString();
+/*     */     }
+/*     */     try {
+/*     */       Object text = invokeNoArg(entry, new String[] { "getString" });
+/*     */       if (text instanceof String) {
+/*     */         return (String)text;
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     try {
+/*     */       Object text = invokeNoArg(entry, new String[] { "getMessage", "getContent", "getText" });
+/*     */       if (text instanceof class_2561) {
+/*     */         return ((class_2561)text).getString();
+/*     */       }
+/*     */       if (text instanceof String) {
+/*     */         return (String)text;
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     for (Field field : entry.getClass().getDeclaredFields()) {
+/*     */       try {
+/*     */         field.setAccessible(true);
+/*     */         Object value = field.get(entry);
+/*     */         if (value instanceof class_2561) {
+/*     */           return ((class_2561)value).getString();
+/*     */         }
+/*     */         if (value instanceof String) {
+/*     */           return (String)value;
+/*     */         }
+/*     */       } catch (Throwable throwable) {}
+/*     */     } 
+/*     */     return entry.toString();
+/*     */   }
+/*     */   
+/*     */   private String normalizeChatText(String text) {
+/*     */     if (text == null) {
+/*     */       return null;
+/*     */     }
+/*     */     String stripped = class_124.method_539(text);
+/*     */     if (stripped == null) {
+/*     */       return text.trim();
+/*     */     }
+/*     */     return stripped.trim();
+/*     */   }
+/*     */   
+/*     */   private String extractPickaxeAbilityNameFromLine(String message) {
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return null;
+/*     */     }
+/*     */     String lower = message.toLowerCase(Locale.ROOT);
+/*     */     for (String ability : PICKAXE_ABILITY_NAMES) {
+/*     */       if (lower.contains(ability)) {
+/*     */         return normalizePickaxeAbilityName(ability);
+/*     */       }
+/*     */     }
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private String extractCooldownSeconds(String message) {
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return null;
+/*     */     }
+/*     */     Matcher matcher = Pattern.compile("([0-9]+(?:\\.[0-9]+)?)\\s*s", Pattern.CASE_INSENSITIVE).matcher(message);
+/*     */     if (!matcher.find()) {
+/*     */       return null;
+/*     */     }
+/*     */     return matcher.group(1);
+/*     */   }
+/*     */   
+/*     */   private long getPickaxeAbilityTimeMs() {
+/*     */     return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+/*     */   }
+/*     */   
+/*     */   private boolean handlePickaxeCooldownMessage(String message) {
+/*     */     if (!((Boolean)this.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
+/*     */       return false;
+/*     */     }
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     Matcher matcher = PICKAXE_COOLDOWN_CHAT_PATTERN.matcher(message);
+/*     */     String seconds = null;
+/*     */     if (matcher.find()) {
+/*     */       seconds = matcher.group(1);
+/*     */     } else {
+/*     */       seconds = extractCooldownSeconds(message);
+/*     */     }
+/*     */     if (seconds == null) {
+/*     */       return false;
+/*     */     }
+/*     */     if (wasRecentlyHandledPickaxeMessage(message)) {
+/*     */       return true;
+/*     */     }
+/*     */     String displaySeconds = seconds;
+/*     */     Double remaining = getShortestPickaxeCooldownSeconds();
+/*     */     if (remaining != null) {
+/*     */       displaySeconds = formatCooldownSeconds(remaining);
+/*     */     }
+/*     */     ChatUtils.chat(String.valueOf(class_124.field_1060) + "Ability on cooldown for " + displaySeconds + "s", new Object[0]);
+/*     */     recordPickaxeMessageHandled(message);
+/*     */     return true;
+/*     */   }
+/*     */   
+/*     */   private boolean handlePickaxeAbilityUsedMessage(String message) {
+/*     */     if (!((Boolean)this.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
+/*     */       return false;
+/*     */     }
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     Matcher matcher = PICKAXE_USED_CHAT_PATTERN.matcher(message);
+/*     */     String abilityName = null;
+/*     */     if (matcher.find()) {
+/*     */       abilityName = normalizePickaxeAbilityName(matcher.group(1));
+/*     */     } else {
+/*     */       abilityName = extractPickaxeAbilityNameFromLine(message);
+/*     */     }
+/*     */     if (abilityName == null) {
+/*     */       return false;
+/*     */     }
+/*     */     if (wasRecentlyHandledPickaxeMessage(message)) {
+/*     */       return true;
+/*     */     }
+/*     */     ChatUtils.chat(String.valueOf(class_124.field_1060) + "Pickaxe ability used", new Object[0]);
+/*     */     recordPickaxeMessageHandled(message);
+/*     */     return true;
+/*     */   }
+/*     */   
+/*     */   private boolean isPickaxeAbilityAvailableMessage(String message) {
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     if (PICKAXE_AVAILABLE_CHAT_PATTERN.matcher(message).find()) {
+/*     */       return true;
+/*     */     }
+/*     */     Matcher matcher = PICKAXE_AVAILABLE_GENERIC_CHAT_PATTERN.matcher(message);
+/*     */     if (!matcher.find()) {
+/*     */       String ability = extractPickaxeAbilityNameFromLine(message);
+/*     */       if (ability == null) {
+/*     */         return false;
+/*     */       }
+/*     */       return message.toLowerCase(Locale.ROOT).contains("available");
+/*     */     }
+/*     */     return (normalizePickaxeAbilityName(matcher.group(1)) != null);
+/*     */   }
+/*     */   
+/*     */   private void recordPickaxeMessageHandled(String message) {
+/*     */     String key = normalizeChatText(message);
+/*     */     if (key == null || key.isBlank()) {
+/*     */       return;
+/*     */     }
+/*     */     long nowMs = getPickaxeAbilityTimeMs();
+/*     */     this.recentPickaxeMessageOutputs.put(key.toLowerCase(Locale.ROOT), Long.valueOf(nowMs));
+/*     */     pruneRecentPickaxeMessageOutputs(nowMs);
+/*     */   }
+/*     */   
+/*     */   private boolean wasRecentlyHandledPickaxeMessage(String message) {
+/*     */     String key = normalizeChatText(message);
+/*     */     if (key == null || key.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     long nowMs = getPickaxeAbilityTimeMs();
+/*     */     pruneRecentPickaxeMessageOutputs(nowMs);
+/*     */     Long last = this.recentPickaxeMessageOutputs.get(key.toLowerCase(Locale.ROOT));
+/*     */     return (last != null && nowMs - last.longValue() < 1500L);
+/*     */   }
+/*     */   
+/*     */   private void pruneRecentPickaxeMessageOutputs(long nowMs) {
+/*     */     if (this.recentPickaxeMessageOutputs.isEmpty()) {
+/*     */       return;
+/*     */     }
+/*     */     for (String key : new ArrayList<>(this.recentPickaxeMessageOutputs.keySet())) {
+/*     */       Long last = this.recentPickaxeMessageOutputs.get(key);
+/*     */       if (last == null || nowMs - last.longValue() > 5000L) {
+/*     */         this.recentPickaxeMessageOutputs.remove(key);
+/*     */       }
+/*     */     } 
 /*     */   }
 /*     */   
 /*     */   private boolean handlePickaxeCooldownChatMessage(ChatEvent event, String message) {
@@ -1508,18 +1900,11 @@
 /*     */     if (!((Boolean)this.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
 /*     */       return false;
 /*     */     }
-/*     */     Matcher matcher = PICKAXE_COOLDOWN_CHAT_PATTERN.matcher(message);
-/*     */     if (!matcher.find()) {
+/*     */     if (!handlePickaxeCooldownMessage(message)) {
 /*     */       return false;
 /*     */     }
-/*     */     String seconds = matcher.group(1);
-/*     */     String displaySeconds = seconds;
-/*     */     Double remaining = getShortestPickaxeCooldownSeconds();
-/*     */     if (remaining != null) {
-/*     */       displaySeconds = formatCooldownSeconds(remaining);
-/*     */     }
 /*     */     event.setCancelled(true);
-/*     */     ChatUtils.chat(String.valueOf(class_124.field_1060) + "[RSM] Ability on cooldown for " + displaySeconds + "s", new Object[0]);
+/*     */     queueChatSuppression(message);
 /*     */     return true;
 /*     */   }
 /*     */   
@@ -1530,16 +1915,14 @@
 /*     */     if (!((Boolean)this.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
 /*     */       return;
 /*     */     }
-/*     */     Matcher usedMatcher = PICKAXE_USED_CHAT_PATTERN.matcher(message);
-/*     */     if (usedMatcher.find()) {
+/*     */     if (handlePickaxeAbilityUsedMessage(message)) {
 /*     */       event.setCancelled(true);
-/*     */       ChatUtils.chat(String.valueOf(class_124.field_1060) + "[RSM] Pickaxe ability used", new Object[0]);
+/*     */       queueChatSuppression(message);
 /*     */       return;
 /*     */     }
-/*     */     Matcher availableMatcher = PICKAXE_AVAILABLE_CHAT_PATTERN.matcher(message);
-/*     */     if (availableMatcher.find()) {
+/*     */     if (isPickaxeAbilityAvailableMessage(message)) {
 /*     */       event.setCancelled(true);
-/*     */       ChatUtils.chat(String.valueOf(class_124.field_1060) + "[RSM] Pickaxe ability off cooldown", new Object[0]);
+/*     */       queueChatSuppression(message);
 /*     */     }
 /*     */   }
 /*     */   
@@ -1547,7 +1930,7 @@
 /*     */     if (this.pickaxeAbilityCooldowns.isEmpty()) {
 /*     */       return null;
 /*     */     }
-/*     */     long nowTick = getPickaxeAbilityTick();
+/*     */     long nowMs = getPickaxeAbilityTimeMs();
 /*     */     long minEnd = Long.MAX_VALUE;
 /*     */     for (Long endTick : this.pickaxeAbilityCooldowns.values()) {
 /*     */       if (endTick != null && endTick.longValue() < minEnd) {
@@ -1557,7 +1940,7 @@
 /*     */     if (minEnd == Long.MAX_VALUE) {
 /*     */       return null;
 /*     */     }
-/*     */     double remaining = (minEnd - nowTick) / 20.0D;
+/*     */     double remaining = (minEnd - nowMs) / 1000.0D;
 /*     */     if (remaining < 0.0D) {
 /*     */       remaining = 0.0D;
 /*     */     }
