@@ -477,7 +477,7 @@
 /* 368 */     this.otherCommandsSetting = new MultiBoolSetting("Other", this.otherCommands, new ArrayList<>(this.otherCommands));
 /*     */     
 /* 370 */     setGroup(new DefaultGroupSetting("Party Commands", this));
-/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.levelPrefixGroup, (Setting)this.webhookGroup, (Setting)this.accountShareGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.customHighlightGroup, (Setting)this.commissionOverlayGroup, (Setting)this.pickaxeAbilityCooldownGroup });
+/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.levelPrefixGroup, (Setting)this.webhookGroup, (Setting)this.accountShareGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.customHighlightGroup, (Setting)this.commissionOverlayGroup });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -527,8 +527,7 @@
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx });
 /* 424 */     this.customHighlightGroup.add(new Setting[] { (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.customTracerClosestOnly, (Setting)this.customTracerThicknessPx });
-/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers });
-/* 426 */     this.pickaxeAbilityCooldownGroup.add(new Setting[] { (Setting)this.pickaxeAbilityCooldownEnabled }); }
+/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
 /*     */   public String getCachedWebhookInput() { return this.cachedWebhookInput; }
@@ -539,67 +538,19 @@
 /* 435 */   public static boolean isLevelPrefixEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.levelPrefixEnable.getValue()).booleanValue()); }
 /*     */   
 /*     */   public static boolean shouldSuppressPickaxeChat(class_2561 message) {
-/*     */     if (message == null) {
-/*     */       return false;
-/*     */     }
-/*     */     return shouldSuppressPickaxeChat(message.getString());
+/*     */     return false;
 /*     */   }
 /*     */   
 /*     */   public static boolean shouldSuppressPickaxeChat(String message) {
-/*     */     if (instance == null) {
-/*     */       // Allow suppression even before module initialization.
-/*     */     }
-/*     */     if (message == null || message.isBlank()) {
-/*     */       return false;
-/*     */     }
-/*     */     String stripped = class_124.method_539(message);
-/*     */     String normalized = (stripped == null || stripped.isBlank()) ? message : stripped;
-/*     */     normalized = normalized.trim();
-/*     */     if (normalized.isEmpty()) {
-/*     */       return false;
-/*     */     }
-/*     */     if (PICKAXE_COOLDOWN_CHAT_PATTERN.matcher(normalized).find()) {
-/*     */       return true;
-/*     */     }
-/*     */     if (matchesPickaxeAbilityUsed(normalized)) {
-/*     */       return true;
-/*     */     }
-/*     */     if (matchesPickaxeAbilityAvailable(normalized)) {
-/*     */       return true;
-/*     */     }
-/*     */     if (looksLikePickaxeAbilityLine(normalized)) {
-/*     */       return true;
-/*     */     }
 /*     */     return false;
 /*     */   }
 /*     */   
 /*     */   public static void handleSuppressedPickaxeMessage(class_2561 message) {
-/*     */     if (message == null) {
-/*     */       return;
-/*     */     }
-/*     */     handleSuppressedPickaxeMessage(message.getString());
+/*     */     return;
 /*     */   }
 /*     */   
 /*     */   public static void handleSuppressedPickaxeMessage(String message) {
-/*     */     if (instance == null || !instance.isEnabled()) {
-/*     */       return;
-/*     */     }
-/*     */     if (!((Boolean)instance.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
-/*     */       return;
-/*     */     }
-/*     */     if (message == null || message.isBlank()) {
-/*     */       return;
-/*     */     }
-/*     */     String stripped = class_124.method_539(message);
-/*     */     String normalized = (stripped == null || stripped.isBlank()) ? message : stripped;
-/*     */     normalized = normalized.trim();
-/*     */     if (normalized.isEmpty()) {
-/*     */       return;
-/*     */     }
-/*     */     instance.handlePickaxeAbilityChat(normalized);
-/*     */     instance.handlePickaxeAbilityUsedMessage(normalized);
-/*     */     instance.handlePickaxeCooldownMessage(normalized);
-/*     */     instance.recordPickaxeMessageHandled(normalized);
+/*     */     return;
 /*     */   }
 /*     */   
 /*     */   private static boolean matchesPickaxeAbilityUsed(String message) {
@@ -728,24 +679,11 @@
 /* 490 */     String raw = extractEventMessage(event);
 /* 491 */     String message = class_124.method_539(raw);
 /*     */     
-/*     */     handlePickaxeAbilityStatusMessage(event, message);
-/*     */     if (handlePickaxeCooldownChatMessage(event, message)) {
-/*     */       return;
-/*     */     }
-/*     */     
 /* 493 */     if (this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null)
 /* 494 */       return;  if (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.glorpWarp.getValue()).booleanValue() && message.contains("Party > [MVP+] glorpiline: Entered a ")) {
 /* 495 */       this.mc.field_1724.field_3944.method_45730("pc !pt glorpiline");
 /* 496 */       CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
 /*     */     } 
-/*     */     
-/*     */     handlePickaxeAbilityChat(message);
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
 /*     */     
 /* 505 */     if (!((Boolean)this.enableChatCommands.getValue()).booleanValue())
 /* 506 */       return;  sendWebhookMessage(message);
@@ -804,16 +742,12 @@
 /* 552 */       clearEspData();
 /* 553 */       clearCustomHighlightData();
 /* 554 */       clearCommissionOverlayData();
-/* 554 */       clearPickaxeAbilityCooldowns();
-/* 554 */       this.pendingChatSuppressions.clear();
 /*     */       return;
 /*     */     }
 /* 556 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
 /* 557 */       clearEspData();
 /* 558 */       clearCustomHighlightData();
 /* 559 */       clearCommissionOverlayData();
-/* 559 */       clearPickaxeAbilityCooldowns();
-/* 559 */       this.pendingChatSuppressions.clear();
 /*     */       return;
 /*     */     }
 /* 561 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
@@ -851,8 +785,7 @@
 /*     */     } else {
 /* 594 */       clearCommissionOverlayData();
 /*     */     } 
-/* 595 */     updatePickaxeAbilityCooldowns();
-/* 595 */     applyChatSuppressions();
+/*     */     
 /*     */   }
 /*     */   
 /*     */   @SubscribeEvent
@@ -3327,7 +3260,7 @@
 /* 695 */     if (((Boolean)this.partyChatWebhookEnabled.getValue()).booleanValue() && clean.contains("Party > ")) {
 /* 696 */       postToConfiguredWebhook((String)this.partyChatWebhook.getValue(), content);
 /*     */     }
-/* 698 */     if (((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue() && (clean.contains("To ") || clean.contains("From "))) {
+/* 698 */     if (((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue() && (clean.contains("To ") || clean.contains("From ")) && !clean.contains("From stash: ")) {
 /* 699 */       postToConfiguredWebhook((String)this.privateMessagesWebhook.getValue(), content);
 /*     */     }
 /*     */     
