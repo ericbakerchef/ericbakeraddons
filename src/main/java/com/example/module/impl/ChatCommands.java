@@ -91,6 +91,11 @@
 /*  68 */   private static final double CUSTOM_BOX_SMOOTHING = 0.45D;
 /*  69 */   private static final int ESP_SCAN_INTERVAL_TICKS = 10;
 /*  70 */   private static final int ESP_SCAN_IDLE_INTERVAL_TICKS = 40;
+/*  70 */   private static final int GROTTO_IGNORE_X = 513;
+/*  70 */   private static final int GROTTO_IGNORE_Y = 116;
+/*  70 */   private static final int GROTTO_IGNORE_Z = 559;
+/*  70 */   private static final int GROTTO_IGNORE_RADIUS = 20;
+/*  70 */   private static final int GROTTO_MERGE_DISTANCE = 100;
 /*  71 */   private static final byte MATCH_NONE = 0;
 /*  72 */   private static final byte MATCH_TITANIUM = 1;
 /*  73 */   private static final byte MATCH_NODE = 2;
@@ -157,6 +162,7 @@
 /*  86 */    private final DefaultGroupSetting customHighlightGroup = new DefaultGroupSetting("Custom Highlight", this); public DefaultGroupSetting getCustomHighlightGroup() { return this.customHighlightGroup; }
 /*  86 */    private final DefaultGroupSetting commissionOverlayGroup = new DefaultGroupSetting("Commission Overlay", this); public DefaultGroupSetting getCommissionOverlayGroup() { return this.commissionOverlayGroup; }
 /*  86 */    private final DefaultGroupSetting pickaxeAbilityCooldownGroup = new DefaultGroupSetting("Pickaxe Ability CD", this); public DefaultGroupSetting getPickaxeAbilityCooldownGroup() { return this.pickaxeAbilityCooldownGroup; }
+/*  86 */    private final DefaultGroupSetting grottoLocatorGroup = new DefaultGroupSetting("Grotto locator", this); public DefaultGroupSetting getGrottoLocatorGroup() { return this.grottoLocatorGroup; }
 /*  86 */    private final BooleanSetting miscEnabled = new BooleanSetting("Enable", true); public BooleanSetting getMiscEnabled() { return this.miscEnabled; }
 /*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("Enable", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
 /*  88 */    private final BooleanSetting titaniumHighlightEnabled = new BooleanSetting("Titanium", true); public BooleanSetting getTitaniumHighlightEnabled() { return this.titaniumHighlightEnabled; }
@@ -181,7 +187,9 @@
 /*  98 */    private final ColourSetting commissionOverlayCustomTextColour = new ColourSetting("Custom Text Colour", COMMISSION_TEXT_DEFAULT, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomTextColour() { return this.commissionOverlayCustomTextColour; }
 /*  99 */    private final DragSetting commissionOverlayPosition = new DragSetting("Commission Overlay", new Vector2d(8.0D, 8.0D), new Vector2d(180.0D, 80.0D), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public DragSetting getCommissionOverlayPosition() { return this.commissionOverlayPosition; }
 /* 100 */    private final BooleanSetting commissionPeekEnabled = new BooleanSetting("Peek", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionPeekEnabled() { return this.commissionPeekEnabled; }
+/* 100 */    private final BooleanSetting grottoLocatorEnabled = new BooleanSetting("Enable", true); public BooleanSetting getGrottoLocatorEnabled() { return this.grottoLocatorEnabled; }
 /* 101 */    private final Setting<?> commissionPeekKeybindSetting = createCommissionPeekKeybindSetting(); public Setting<?> getCommissionPeekKeybindSetting() { return this.commissionPeekKeybindSetting; }
+/* 101 */    private final Setting<?> grottoSearchKeybindSetting = createGrottoSearchKeybindSetting(); public Setting<?> getGrottoSearchKeybindSetting() { return this.grottoSearchKeybindSetting; }
 /* 102 */    private final BooleanSetting commissionOnlyRoyalPigeonInventory = new BooleanSetting("Only display if Royal Pigeon is in inventory", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonInventory() { return this.commissionOnlyRoyalPigeonInventory; }
 /* 103 */    private final BooleanSetting commissionOnlyRoyalPigeonHotbar = new BooleanSetting("Only display if Royal Pigeon is in hotbar", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonHotbar() { return this.commissionOnlyRoyalPigeonHotbar; }
 /* 104 */    private final BooleanSetting commissionRoundProgressNumbers = new BooleanSetting("Round Progress Numbers", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionRoundProgressNumbers() { return this.commissionRoundProgressNumbers; }
@@ -481,7 +489,7 @@
 /* 368 */     this.otherCommandsSetting = new MultiBoolSetting("Other", this.otherCommands, new ArrayList<>(this.otherCommands));
 /*     */     
 /* 370 */     setGroup(new DefaultGroupSetting("Party Commands", this));
-/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.levelPrefixGroup, (Setting)this.webhookGroup, (Setting)this.accountShareGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.customHighlightGroup, (Setting)this.commissionOverlayGroup });
+/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.levelPrefixGroup, (Setting)this.webhookGroup, (Setting)this.accountShareGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.customHighlightGroup, (Setting)this.commissionOverlayGroup, (Setting)this.grottoLocatorGroup });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -531,7 +539,8 @@
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx });
 /* 424 */     this.customHighlightGroup.add(new Setting[] { (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.customTracerClosestOnly, (Setting)this.customTracerThicknessPx });
-/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers }); }
+/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers });
+/* 426 */     this.grottoLocatorGroup.add(new Setting[] { (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
 /*     */   public String getCachedWebhookInput() { return this.cachedWebhookInput; }
@@ -665,6 +674,22 @@
 /* 488 */     return (Setting<?>)new ButtonSetting("Peek Keybind", "", () -> ChatUtils.chat(String.valueOf(class_124.field_1061) + "Peek keybind unavailable in this runtime.", new Object[0]));
 /*     */   }
 /*     */   
+/*     */   private Setting<?> createGrottoSearchKeybindSetting() {
+/*     */     try {
+/*     */       Class<?> keybindClass = Class.forName("com.ricedotwho.rsm.data.Keybind");
+/*     */       Constructor<?> keybindConstructor = keybindClass.getConstructor(new Class[] { int.class, boolean.class, Runnable.class });
+/*     */       Object keybind = keybindConstructor.newInstance(new Object[] { Integer.valueOf(-1), Boolean.valueOf(false), (Runnable)this::runGrottoSearch });
+/*     */       Class<?> keybindSettingClass = Class.forName("com.ricedotwho.rsm.ui.clickgui.settings.impl.KeybindSetting");
+/*     */       Constructor<?> keybindSettingConstructor = keybindSettingClass.getConstructor(new Class[] { String.class, keybindClass });
+/*     */       Object setting = keybindSettingConstructor.newInstance(new Object[] { "Search", keybind });
+/*     */       if (setting instanceof Setting) {
+/*     */         return (Setting)setting;
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     
+/*     */     return (Setting<?>)new ButtonSetting("Search", "", this::runGrottoSearch);
+/*     */   }
+/*     */   
 /*     */   private boolean isCommissionPeekKeyActive() {
 /* 492 */     if (this.commissionPeekKeybind == null) {
 /* 493 */       return false;
@@ -675,6 +700,276 @@
 /* 498 */     } catch (ReflectiveOperationException reflectiveOperationException) {
 /* 499 */       return false;
 /*     */     } 
+/*     */   }
+/*     */   
+/*     */   private void runGrottoSearch() {
+/*     */     if (!isEnabled()) {
+/*     */       return;
+/*     */     }
+/*     */     if (!((Boolean)this.grottoLocatorEnabled.getValue()).booleanValue()) {
+/*     */       ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto locator is disabled.", new Object[0]);
+/*     */       return;
+/*     */     }
+/*     */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
+/*     */       return;
+/*     */     }
+/*     */     ChatUtils.chat(String.valueOf(class_124.field_1054) + "Searching...", new Object[0]);
+/*     */     class_1937 world = this.mc.field_1687;
+/*     */     class_2338 playerPos = this.mc.field_1724.method_24515();
+/*     */     int px = playerPos.method_10263();
+/*     */     int py = playerPos.method_10264();
+/*     */     int pz = playerPos.method_10260();
+/*     */     int renderChunks = getRenderDistanceChunks();
+/*     */     int minY = resolveWorldMinY(world, -64);
+/*     */     int maxY = resolveWorldMaxYExclusive(world, 320);
+/*     */     int mergeDistanceSq = GROTTO_MERGE_DISTANCE * GROTTO_MERGE_DISTANCE;
+/*     */     int ignoreDistanceSq = GROTTO_IGNORE_RADIUS * GROTTO_IGNORE_RADIUS;
+/*     */     int playerChunkX = px >> 4;
+/*     */     int playerChunkZ = pz >> 4;
+/*     */     List<Long> loadedChunks = getLoadedChunkPositions(world);
+/*     */     if (loadedChunks == null) {
+/*     */       ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto search unavailable in this runtime.", new Object[0]);
+/*     */       return;
+/*     */     }
+/*     */     List<class_2338> reported = new ArrayList<>();
+/*     */     for (Long chunkLong : loadedChunks) {
+/*     */       if (chunkLong == null) {
+/*     */         continue;
+/*     */       }
+/*     */       int chunkX = (int)(long)chunkLong;
+/*     */       int chunkZ = (int)(chunkLong.longValue() >> 32);
+/*     */       if (Math.abs(chunkX - playerChunkX) > renderChunks || Math.abs(chunkZ - playerChunkZ) > renderChunks) {
+/*     */         continue;
+/*     */       }
+/*     */       int baseX = chunkX << 4;
+/*     */       int baseZ = chunkZ << 4;
+/*     */       for (int x = baseX; x < baseX + 16; x++) {
+/*     */         for (int y = minY; y < maxY; y++) {
+/*     */           for (int z = baseZ; z < baseZ + 16; z++) {
+/*     */             class_2338 pos = new class_2338(x, y, z);
+/*     */             class_2680 state;
+/*     */             try {
+/*     */               state = world.method_8320(pos);
+/*     */             } catch (Throwable throwable) {
+/*     */               ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto search failed while scanning chunks.", new Object[0]);
+/*     */               return;
+/*     */             } 
+/*     */             if (!isGrottoGlassPane(state)) {
+/*     */               continue;
+/*     */             }
+/*     */             if (isWithinDistanceSq(pos, GROTTO_IGNORE_X, GROTTO_IGNORE_Y, GROTTO_IGNORE_Z, ignoreDistanceSq)) {
+/*     */               continue;
+/*     */             }
+/*     */             if (isNearReported(pos, reported, mergeDistanceSq)) {
+/*     */               continue;
+/*     */             }
+/*     */             reported.add(pos);
+/*     */             ChatUtils.chat("Grotto located at (" + x + ", " + y + ", " + z + ")", new Object[0]);
+/*     */           } 
+/*     */         } 
+/*     */       } 
+/*     */     } 
+/*     */     if (reported.isEmpty()) {
+/*     */       ChatUtils.chat(String.valueOf(class_124.field_1054) + "No grotto detected", new Object[0]);
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private List<Long> getLoadedChunkPositions(class_1937 world) {
+/*     */     Object chunkManager;
+/*     */     try {
+/*     */       chunkManager = invokeNoArg(world, new String[] { "getChunkManager", "method_2935" });
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
+/*     */       return null;
+/*     */     } 
+/*     */     if (chunkManager == null) {
+/*     */       return null;
+/*     */     }
+/*     */     Object loadedChunks;
+/*     */     try {
+/*     */       loadedChunks = invokeNoArg(chunkManager, new String[] { "getLoadedChunkPositions", "method_62890" });
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
+/*     */       return null;
+/*     */     } 
+/*     */     if (loadedChunks == null) {
+/*     */       return null;
+/*     */     }
+/*     */     List<Long> results = new ArrayList<>();
+/*     */     if (loadedChunks instanceof Iterable) {
+/*     */       try {
+/*     */         for (Object entry : (Iterable)loadedChunks) {
+/*     */           Long value = asLong(entry);
+/*     */           if (value != null) {
+/*     */             results.add(value);
+/*     */           }
+/*     */         } 
+/*     */       } catch (Throwable throwable) {
+/*     */         return null;
+/*     */       } 
+/*     */       return results;
+/*     */     }
+/*     */     try {
+/*     */       Method iteratorMethod = loadedChunks.getClass().getMethod("iterator", new Class[0]);
+/*     */       Object iterator = iteratorMethod.invoke(loadedChunks, new Object[0]);
+/*     */       if (iterator == null) {
+/*     */         return results;
+/*     */       }
+/*     */       Method hasNext = iterator.getClass().getMethod("hasNext", new Class[0]);
+/*     */       Method nextLong = null;
+/*     */       Method next = null;
+/*     */       try {
+/*     */         nextLong = iterator.getClass().getMethod("nextLong", new Class[0]);
+/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {
+/*     */         next = iterator.getClass().getMethod("next", new Class[0]);
+/*     */       } 
+/*     */       while (((Boolean)hasNext.invoke(iterator, new Object[0])).booleanValue()) {
+/*     */         Object value = (nextLong != null) ? nextLong.invoke(iterator, new Object[0]) : next.invoke(iterator, new Object[0]);
+/*     */         Long packed = asLong(value);
+/*     */         if (packed != null) {
+/*     */           results.add(packed);
+/*     */         }
+/*     */       } 
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
+/*     */       return null;
+/*     */     } 
+/*     */     return results;
+/*     */   }
+/*     */   
+/*     */   private Long asLong(Object value) {
+/*     */     if (value instanceof Long) {
+/*     */       return (Long)value;
+/*     */     }
+/*     */     if (value instanceof Number) {
+/*     */       return Long.valueOf(((Number)value).longValue());
+/*     */     }
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private int getRenderDistanceChunks() {
+/*     */     int fallbackChunks = 8;
+/*     */     Integer chunks = resolveRenderDistanceChunks();
+/*     */     if (chunks == null || chunks.intValue() <= 1) {
+/*     */       chunks = Integer.valueOf(fallbackChunks);
+/*     */     }
+/*     */     return chunks.intValue();
+/*     */   }
+/*     */   
+/*     */   private Integer resolveRenderDistanceChunks() {
+/*     */     Object options = resolveGameOptions();
+/*     */     if (options == null) {
+/*     */       return null;
+/*     */     }
+/*     */     Integer candidate = null;
+/*     */     for (Method method : options.getClass().getMethods()) {
+/*     */       if (method.getParameterCount() != 0 || Void.TYPE.equals(method.getReturnType())) {
+/*     */         continue;
+/*     */       }
+/*     */       try {
+/*     */         Object result = method.invoke(options, new Object[0]);
+/*     */         Integer value = extractOptionInt(result);
+/*     */         if (value == null || value.intValue() < 2 || value.intValue() > 32) {
+/*     */           continue;
+/*     */         }
+/*     */         if (candidate == null || value.intValue() > candidate.intValue()) {
+/*     */           candidate = value;
+/*     */         }
+/*     */       } catch (ReflectiveOperationException ignored) {}
+/*     */     } 
+/*     */     return candidate;
+/*     */   }
+/*     */   
+/*     */   private Object resolveGameOptions() {
+/*     */     for (Field field : this.mc.getClass().getDeclaredFields()) {
+/*     */       if (!field.getType().getName().equals("net.minecraft.class_315")) {
+/*     */         continue;
+/*     */       }
+/*     */       try {
+/*     */         field.setAccessible(true);
+/*     */         return field.get(this.mc);
+/*     */       } catch (IllegalAccessException ignored) {}
+/*     */     } 
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private Integer extractOptionInt(Object option) {
+/*     */     if (option instanceof Integer) {
+/*     */       return (Integer)option;
+/*     */     }
+/*     */     if (option == null) {
+/*     */       return null;
+/*     */     }
+/*     */     try {
+/*     */       Object value = option.getClass().getMethod("getValue", new Class[0]).invoke(option, new Object[0]);
+/*     */       if (value instanceof Integer) {
+/*     */         return (Integer)value;
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     
+/*     */     for (Method method : option.getClass().getMethods()) {
+/*     */       if (method.getParameterCount() != 0 || !Integer.TYPE.equals(method.getReturnType())) {
+/*     */         continue;
+/*     */       }
+/*     */       try {
+/*     */         return Integer.valueOf(((Integer)method.invoke(option, new Object[0])).intValue());
+/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     } 
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private int resolveWorldMinY(class_1937 world, int fallback) {
+/*     */     if (world == null) {
+/*     */       return -64;
+/*     */     }
+/*     */     try {
+/*     */       Object value = invokeNoArg(world, new String[] { "getBottomY", "method_31607" });
+/*     */       if (value instanceof Integer) {
+/*     */         return ((Integer)value).intValue();
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     return -64;
+/*     */   }
+/*     */   
+/*     */   private int resolveWorldMaxYExclusive(class_1937 world, int fallback) {
+/*     */     if (world == null) {
+/*     */       return 320;
+/*     */     }
+/*     */     try {
+/*     */       Object value = invokeNoArg(world, new String[] { "getTopY", "method_31608" });
+/*     */       if (value instanceof Integer) {
+/*     */         return ((Integer)value).intValue();
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     return 320;
+/*     */   }
+/*     */   
+/*     */   private boolean isGrottoGlassPane(class_2680 state) {
+/*     */     if (state == null) {
+/*     */       return false;
+/*     */     }
+/*     */     Object block = state.method_26204();
+/*     */     if (block == null) {
+/*     */       return false;
+/*     */     }
+/*     */     String blockText = String.valueOf(block).toLowerCase(Locale.ROOT);
+/*     */     return (blockText.contains("magenta_stained_glass_pane") || blockText.contains("magenta_stained_glass"));
+/*     */   }
+/*     */   
+/*     */   private boolean isWithinDistanceSq(class_2338 pos, int x, int y, int z, int maxDistanceSq) {
+/*     */     int dx = pos.method_10263() - x;
+/*     */     int dy = pos.method_10264() - y;
+/*     */     int dz = pos.method_10260() - z;
+/*     */     return (dx * dx + dy * dy + dz * dz <= maxDistanceSq);
+/*     */   }
+/*     */   
+/*     */   private boolean isNearReported(class_2338 pos, List<class_2338> reported, int mergeDistanceSq) {
+/*     */     for (class_2338 existing : reported) {
+/*     */       int dx = pos.method_10263() - existing.method_10263();
+/*     */       int dy = pos.method_10264() - existing.method_10264();
+/*     */       int dz = pos.method_10260() - existing.method_10260();
+/*     */       if (dx * dx + dy * dy + dz * dz < mergeDistanceSq) {
+/*     */         return true;
+/*     */       }
+/*     */     } 
+/*     */     return false;
 /*     */   }
 /*     */   
 /*     */   
