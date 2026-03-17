@@ -726,52 +726,117 @@
 /*     */     int ignoreDistanceSq = GROTTO_IGNORE_RADIUS * GROTTO_IGNORE_RADIUS;
 /*     */     int playerChunkX = px >> 4;
 /*     */     int playerChunkZ = pz >> 4;
-/*     */     List<Long> loadedChunks = getLoadedChunkPositions(world);
-/*     */     if (loadedChunks == null) {
-/*     */       ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto search unavailable in this runtime.", new Object[0]);
-/*     */       return;
-/*     */     }
+/*     */     Object chunkManager = resolveChunkManager(world);
+/*     */     Method chunkLoadedMethod = (chunkManager == null) ? null : resolveChunkLoadedMethod(chunkManager);
 /*     */     List<class_2338> reported = new ArrayList<>();
-/*     */     for (Long chunkLong : loadedChunks) {
-/*     */       if (chunkLong == null) {
-/*     */         continue;
-/*     */       }
-/*     */       int chunkX = (int)(long)chunkLong;
-/*     */       int chunkZ = (int)(chunkLong.longValue() >> 32);
-/*     */       if (Math.abs(chunkX - playerChunkX) > renderChunks || Math.abs(chunkZ - playerChunkZ) > renderChunks) {
-/*     */         continue;
-/*     */       }
-/*     */       int baseX = chunkX << 4;
-/*     */       int baseZ = chunkZ << 4;
-/*     */       for (int x = baseX; x < baseX + 16; x++) {
-/*     */         for (int y = minY; y < maxY; y++) {
-/*     */           for (int z = baseZ; z < baseZ + 16; z++) {
-/*     */             class_2338 pos = new class_2338(x, y, z);
-/*     */             class_2680 state;
-/*     */             try {
-/*     */               state = world.method_8320(pos);
-/*     */             } catch (Throwable throwable) {
-/*     */               ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto search failed while scanning chunks.", new Object[0]);
-/*     */               return;
-/*     */             } 
-/*     */             if (!isGrottoGlassPane(state)) {
-/*     */               continue;
-/*     */             }
-/*     */             if (isWithinDistanceSq(pos, GROTTO_IGNORE_X, GROTTO_IGNORE_Y, GROTTO_IGNORE_Z, ignoreDistanceSq)) {
-/*     */               continue;
-/*     */             }
-/*     */             if (isNearReported(pos, reported, mergeDistanceSq)) {
-/*     */               continue;
-/*     */             }
-/*     */             reported.add(pos);
-/*     */             ChatUtils.chat("Grotto located at (" + x + ", " + y + ", " + z + ")", new Object[0]);
-/*     */           } 
+/*     */     if (chunkLoadedMethod != null) {
+/*     */       for (int chunkX = playerChunkX - renderChunks; chunkX <= playerChunkX + renderChunks; chunkX++) {
+/*     */         for (int chunkZ = playerChunkZ - renderChunks; chunkZ <= playerChunkZ + renderChunks; chunkZ++) {
+/*     */           if (!isChunkLoaded(chunkManager, chunkLoadedMethod, chunkX, chunkZ)) {
+/*     */             continue;
+/*     */           }
+/*     */           scanGrottoChunk(world, chunkX, chunkZ, minY, maxY, ignoreDistanceSq, mergeDistanceSq, reported);
 /*     */         } 
+/*     */       } 
+/*     */     } else {
+/*     */       List<Long> loadedChunks = getLoadedChunkPositions(world);
+/*     */       if (loadedChunks == null) {
+/*     */         ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto search unavailable in this runtime.", new Object[0]);
+/*     */         return;
+/*     */       }
+/*     */       for (Long chunkLong : loadedChunks) {
+/*     */         if (chunkLong == null) {
+/*     */           continue;
+/*     */         }
+/*     */         int chunkX = (int)(long)chunkLong;
+/*     */         int chunkZ = (int)(chunkLong.longValue() >> 32);
+/*     */         if (Math.abs(chunkX - playerChunkX) > renderChunks || Math.abs(chunkZ - playerChunkZ) > renderChunks) {
+/*     */           continue;
+/*     */         }
+/*     */         scanGrottoChunk(world, chunkX, chunkZ, minY, maxY, ignoreDistanceSq, mergeDistanceSq, reported);
 /*     */       } 
 /*     */     } 
 /*     */     if (reported.isEmpty()) {
 /*     */       ChatUtils.chat(String.valueOf(class_124.field_1054) + "No grotto detected", new Object[0]);
 /*     */     }
+/*     */   }
+/*     */   
+/*     */   private Object resolveChunkManager(class_1937 world) {
+/*     */     if (world == null) {
+/*     */       return null;
+/*     */     }
+/*     */     try {
+/*     */       return invokeNoArg(world, new String[] { "getChunkManager", "method_2935" });
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
+/*     */       return null;
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private Method resolveChunkLoadedMethod(Object chunkManager) {
+/*     */     if (chunkManager == null) {
+/*     */       return null;
+/*     */     }
+/*     */     String[] names = { "isChunkLoaded", "method_16034" };
+/*     */     for (String name : names) {
+/*     */       try {
+/*     */         Method method = chunkManager.getClass().getMethod(name, new Class[] { int.class, int.class });
+/*     */         if (Boolean.TYPE.equals(method.getReturnType()) || Boolean.class.equals(method.getReturnType())) {
+/*     */           return method;
+/*     */         }
+/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     } 
+/*     */     for (Method method : chunkManager.getClass().getMethods()) {
+/*     */       if (method.getParameterCount() != 2 || (!Boolean.TYPE.equals(method.getReturnType()) && !Boolean.class.equals(method.getReturnType()))) {
+/*     */         continue;
+/*     */       }
+/*     */       Class<?>[] params = method.getParameterTypes();
+/*     */       if (params.length == 2 && Integer.TYPE.equals(params[0]) && Integer.TYPE.equals(params[1])) {
+/*     */         return method;
+/*     */       }
+/*     */     } 
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private boolean isChunkLoaded(Object chunkManager, Method method, int chunkX, int chunkZ) {
+/*     */     if (chunkManager == null || method == null) {
+/*     */       return false;
+/*     */     }
+/*     */     try {
+/*     */       Object result = method.invoke(chunkManager, new Object[] { Integer.valueOf(chunkX), Integer.valueOf(chunkZ) });
+/*     */       return (result instanceof Boolean && ((Boolean)result).booleanValue());
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
+/*     */       return false;
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private void scanGrottoChunk(class_1937 world, int chunkX, int chunkZ, int minY, int maxY, int ignoreDistanceSq, int mergeDistanceSq, List<class_2338> reported) {
+/*     */     int baseX = chunkX << 4;
+/*     */     int baseZ = chunkZ << 4;
+/*     */     for (int x = baseX; x < baseX + 16; x++) {
+/*     */       for (int y = minY; y < maxY; y++) {
+/*     */         for (int z = baseZ; z < baseZ + 16; z++) {
+/*     */           class_2338 pos = new class_2338(x, y, z);
+/*     */           class_2680 state;
+/*     */           try {
+/*     */             state = world.method_8320(pos);
+/*     */           } catch (Throwable throwable) {
+/*     */             ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto search failed while scanning chunks.", new Object[0]);
+/*     */             return;
+/*     */           } 
+/*     */           if (!isGrottoGlassPane(state)) {
+/*     */             continue;
+/*     */           }
+/*     */           if (isWithinDistanceSq(pos, GROTTO_IGNORE_X, GROTTO_IGNORE_Y, GROTTO_IGNORE_Z, ignoreDistanceSq)) {
+/*     */             continue;
+/*     */           }
+/*     */           if (isNearReported(pos, reported, mergeDistanceSq)) {
+/*     */             continue;
+/*     */           }
+/*     */           reported.add(pos);
+/*     */           ChatUtils.chat("Grotto located at (" + x + ", " + y + ", " + z + ")", new Object[0]);
+/*     */         } 
+/*     */       } 
+/*     */     } 
 /*     */   }
 /*     */   
 /*     */   private List<Long> getLoadedChunkPositions(class_1937 world) {
