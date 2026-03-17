@@ -2970,7 +2970,7 @@
 /* 599 */       return;  String username = getCurrentUsername();
 /*     */ 
 /*     */     
-/* 603 */     postToConfiguredWebhook((String)this.loginNotifierWebhook.getValue(), username + " Left " + username + ".");
+/* 603 */     postToConfiguredWebhook((String)this.loginNotifierWebhook.getValue(), username + " left " + this.lastKnownServerAddress);
 /* 604 */     this.lastLoginNotifierEvent = "leave";
 /*     */   }
 /*     */   
