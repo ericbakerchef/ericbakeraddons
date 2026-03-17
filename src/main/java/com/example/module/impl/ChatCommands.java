@@ -2959,7 +2959,7 @@
 /* 587 */       return;  if ("join".equals(this.lastLoginNotifierEvent))
 /* 588 */       return;  String username = getCurrentUsername();
 /* 589 */     this.lastKnownServerAddress = getCurrentServerAddress();
-/* 591 */     postToConfiguredWebhook((String)this.loginNotifierWebhook.getValue(), username + " Logged into " + username + ".");
+/* 591 */     postToConfiguredWebhook((String)this.loginNotifierWebhook.getValue(), username + " logged into " + this.lastKnownServerAddress);
 /* 592 */     this.lastLoginNotifierEvent = "join";
 /*     */   }
 /*     */   
