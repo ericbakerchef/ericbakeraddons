@@ -3626,7 +3626,7 @@
 /* 695 */     if (((Boolean)this.partyChatWebhookEnabled.getValue()).booleanValue() && clean.contains("Party > ")) {
 /* 696 */       postToConfiguredWebhook((String)this.partyChatWebhook.getValue(), content);
 /*     */     }
-/* 698 */     if (((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue() && (clean.contains("To ") || clean.contains("From ")) && !clean.contains("From stash: ")) {
+/* 698 */     if (((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue() && (clean.contains("To ") || clean.contains("From ")) && !clean.contains("From stash: ") && !clean.contains("[WARP] To Elizabeth in the next")) {
 /* 699 */       postToConfiguredWebhook((String)this.privateMessagesWebhook.getValue(), content);
 /*     */     }
 /*     */     
