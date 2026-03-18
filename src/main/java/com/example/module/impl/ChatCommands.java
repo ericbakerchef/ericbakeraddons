@@ -214,17 +214,17 @@
 /*  91 */   private boolean skyMallPickaxeCooldownActive;
 /*  91 */   private long skyMallPickaxeCooldownLastBuffMs;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Chat Webhook", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
-/*  96 */    private final StringSetting webhookLink = new StringSetting("Chat Webhook Link", "", true, false, () -> ((Boolean)this.webhookEnabled.getValue()).booleanValue()); public StringSetting getWebhookLink() { return this.webhookLink; }
-/*  97 */    private final BooleanSetting guildChatWebhookEnabled = new BooleanSetting("Guild chat", false); public BooleanSetting getGuildChatWebhookEnabled() { return this.guildChatWebhookEnabled; }
-/*  98 */    private final StringSetting guildChatWebhook = new StringSetting("Guild chat Link", "", true, false, () -> ((Boolean)this.guildChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getGuildChatWebhook() { return this.guildChatWebhook; }
-/*  99 */    private final BooleanSetting partyChatWebhookEnabled = new BooleanSetting("Party chat", false); public BooleanSetting getPartyChatWebhookEnabled() { return this.partyChatWebhookEnabled; }
-/* 100 */    private final StringSetting partyChatWebhook = new StringSetting("Party chat Link", "", true, false, () -> ((Boolean)this.partyChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getPartyChatWebhook() { return this.partyChatWebhook; }
-/* 101 */    private final BooleanSetting privateMessagesWebhookEnabled = new BooleanSetting("Private Messages", false); public BooleanSetting getPrivateMessagesWebhookEnabled() { return this.privateMessagesWebhookEnabled; }
-/* 102 */    private final StringSetting privateMessagesWebhook = new StringSetting("Private Messages Link", "", true, false, () -> ((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue()); public StringSetting getPrivateMessagesWebhook() { return this.privateMessagesWebhook; }
+/*  96 */    private final StringSetting webhookLink = new StringSetting("Link", "", true, false, () -> ((Boolean)this.webhookEnabled.getValue()).booleanValue()); public StringSetting getWebhookLink() { return this.webhookLink; }
+/*  97 */    private final BooleanSetting guildChatWebhookEnabled = new BooleanSetting("Guild chat Webhook", false); public BooleanSetting getGuildChatWebhookEnabled() { return this.guildChatWebhookEnabled; }
+/*  98 */    private final StringSetting guildChatWebhook = new StringSetting("Link", "", true, false, () -> ((Boolean)this.guildChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getGuildChatWebhook() { return this.guildChatWebhook; }
+/*  99 */    private final BooleanSetting partyChatWebhookEnabled = new BooleanSetting("Party Chat Webhook", false); public BooleanSetting getPartyChatWebhookEnabled() { return this.partyChatWebhookEnabled; }
+/* 100 */    private final StringSetting partyChatWebhook = new StringSetting("Link", "", true, false, () -> ((Boolean)this.partyChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getPartyChatWebhook() { return this.partyChatWebhook; }
+/* 101 */    private final BooleanSetting privateMessagesWebhookEnabled = new BooleanSetting("Private Messages Webhook", false); public BooleanSetting getPrivateMessagesWebhookEnabled() { return this.privateMessagesWebhookEnabled; }
+/* 102 */    private final StringSetting privateMessagesWebhook = new StringSetting("Link", "", true, false, () -> ((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue()); public StringSetting getPrivateMessagesWebhook() { return this.privateMessagesWebhook; }
 /* 103 */    private final BooleanSetting loginNotifierWebhookEnabled = new BooleanSetting("Log in notifier", false); public BooleanSetting getLoginNotifierWebhookEnabled() { return this.loginNotifierWebhookEnabled; }
-/* 104 */    private final StringSetting loginNotifierWebhook = new StringSetting("Log in notifier Link", "", true, false, () -> ((Boolean)this.loginNotifierWebhookEnabled.getValue()).booleanValue()); public StringSetting getLoginNotifierWebhook() { return this.loginNotifierWebhook; }
+/* 104 */    private final StringSetting loginNotifierWebhook = new StringSetting("Link", "", true, false, () -> ((Boolean)this.loginNotifierWebhookEnabled.getValue()).booleanValue()); public StringSetting getLoginNotifierWebhook() { return this.loginNotifierWebhook; }
 /* 105 */    private final BooleanSetting accountShareEnabled = new BooleanSetting("Account Share", false); public BooleanSetting getAccountShareEnabled() { return this.accountShareEnabled; }
-/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook Link", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<class_2338> chestBlocks = new ArrayList<>(); private final List<class_238> customEntityBoxes = new ArrayList<>(); private final List<net.minecraft.class_1297> customMatchedEntities = new ArrayList<>(); private final IdentityHashMap<net.minecraft.class_1297, class_238> customSmoothedBoxes = new IdentityHashMap<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final List<Object> chestRenderTasks = new ArrayList<>(); private final List<Object> customEntityRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int customHighlightTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private boolean espScanInitialized; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Constructor<?> lineConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
+/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<class_2338> chestBlocks = new ArrayList<>(); private final List<class_238> customEntityBoxes = new ArrayList<>(); private final List<net.minecraft.class_1297> customMatchedEntities = new ArrayList<>(); private final IdentityHashMap<net.minecraft.class_1297, class_238> customSmoothedBoxes = new IdentityHashMap<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final List<Object> chestRenderTasks = new ArrayList<>(); private final List<Object> customEntityRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int customHighlightTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private boolean espScanInitialized; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Constructor<?> lineConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
 /* 107 */   public ChatCommands() { this.copyMinecraftSsidButton = new ButtonSetting("Copy Minecraft SSID", "", () -> {
 /*     */           if (this.mc.method_1548() == null) {
 /*     */             ChatUtils.chat(String.valueOf(class_124.field_1061) + "Unable to copy SSID: user not available.", new Object[0]);
@@ -476,7 +476,7 @@
 /* 362 */     registerOtherCommand("thetps987");
 /* 363 */     registerOtherCommand("serversaved");
 /*     */     
-/* 365 */     this.chatCommands1 = new MultiBoolSetting("Chat commands 1", this.category1Commands, new ArrayList<>(this.category1Commands));
+/* 365 */     this.chatCommands1 = new MultiBoolSetting("Chat Commands 1", this.category1Commands, new ArrayList<>(this.category1Commands));
 /* 366 */     this.chatCommands2 = new MultiBoolSetting("Chat Commands 2", this.category2Commands, new ArrayList<>(this.category2Commands));
 /* 367 */     this.chatCommands3 = new MultiBoolSetting("Chat Commands 3", this.category3Commands, new ArrayList<>(this.category3Commands));
 /* 368 */     this.otherCommandsSetting = new MultiBoolSetting("Other", this.otherCommands, new ArrayList<>(this.otherCommands));
@@ -513,7 +513,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets });
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.customTracerClosestOnly, (Setting)this.customTracerThicknessPx });
 /* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
@@ -1066,6 +1066,7 @@
 /* 495 */       this.mc.field_1724.field_3944.method_45730("pc !pt glorpiline");
 /* 496 */       CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
 /*     */     } 
+/*     */     
 /*     */     
 /* 505 */     if (!((Boolean)this.enableChatCommands.getValue()).booleanValue())
 /* 506 */       return;  sendWebhookMessage(message);
@@ -3664,7 +3665,7 @@
 /* 695 */     if (((Boolean)this.partyChatWebhookEnabled.getValue()).booleanValue() && clean.contains("Party > ")) {
 /* 696 */       postToConfiguredWebhook((String)this.partyChatWebhook.getValue(), content);
 /*     */     }
-/* 698 */     if (((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue() && (clean.contains("To ") || clean.contains("From ")) && !clean.contains("From stash: ")) {
+/* 698 */     if (((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue() && (clean.contains("To ") || clean.contains("From ")) && !clean.contains("From stash: ") && !clean.contains("[WARP] To Elizabeth")) {
 /* 699 */       postToConfiguredWebhook((String)this.privateMessagesWebhook.getValue(), content);
 /*     */     }
 /*     */     
@@ -3796,6 +3797,59 @@
 /*     */       return; 
 /* 828 */     this.mc.field_1724.field_3944.method_45730("pc !pt");
 /* 829 */     CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
+/*     */   }
+/*     */   
+/*     */   private String buildRsaPrefix() {
+/*     */     String r = toHexChatCode(RSA_R_COLOUR);
+/*     */     String s = toHexChatCode(RSA_S_COLOUR);
+/*     */     String a = toHexChatCode(RSA_A_COLOUR);
+/*     */     return r + "[R" + s + "S" + a + "A]" + "§r";
+/*     */   }
+/*     */   
+/*     */   private String toHexChatCode(Colour colour) {
+/*     */     int r = resolveColourChannel(colour, new String[] { "r", "red", "getRed", "getR" });
+/*     */     int g = resolveColourChannel(colour, new String[] { "g", "green", "getGreen", "getG" });
+/*     */     int b = resolveColourChannel(colour, new String[] { "b", "blue", "getBlue", "getB" });
+/*     */     String hex = String.format("%02x%02x%02x", new Object[] { Integer.valueOf(r), Integer.valueOf(g), Integer.valueOf(b) });
+/*     */     StringBuilder out = new StringBuilder("§x");
+/*     */     for (int i = 0; i < hex.length(); i++) {
+/*     */       out.append('§').append(hex.charAt(i));
+/*     */     }
+/*     */     return out.toString();
+/*     */   }
+/*     */   
+/*     */   private int resolveColourChannel(Colour colour, String... names) {
+/*     */     if (colour == null || names == null) {
+/*     */       return 255;
+/*     */     }
+/*     */     for (String name : names) {
+/*     */       try {
+/*     */         Method method = colour.getClass().getMethod(name, new Class[0]);
+/*     */         Object value = method.invoke(colour, new Object[0]);
+/*     */         if (value instanceof Number) {
+/*     */           return clampColourChannel(((Number)value).intValue());
+/*     */         }
+/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */       try {
+/*     */         Field field = colour.getClass().getDeclaredField(name);
+/*     */         field.setAccessible(true);
+/*     */         Object value = field.get(colour);
+/*     */         if (value instanceof Number) {
+/*     */           return clampColourChannel(((Number)value).intValue());
+/*     */         }
+/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     } 
+/*     */     return 255;
+/*     */   }
+/*     */   
+/*     */   private int clampColourChannel(int value) {
+/*     */     if (value < 0) {
+/*     */       return 0;
+/*     */     }
+/*     */     if (value > 255) {
+/*     */       return 255;
+/*     */     }
+/*     */     return value;
 /*     */   }
 /*     */   
 /*     */   private String extractEventMessage(Object event) {
