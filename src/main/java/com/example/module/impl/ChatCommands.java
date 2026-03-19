@@ -701,6 +701,9 @@
 /*     */       ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto locator is disabled.", new Object[0]);
 /*     */       return;
 /*     */     }
+/*     */     if (this.mc.field_1755 != null) {
+/*     */       return;
+/*     */     }
 /*     */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
 /*     */       return;
 /*     */     }
