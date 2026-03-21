@@ -25,6 +25,7 @@
 /*     */ import com.ricedotwho.rsm.utils.ChatUtils;
 /*     */ import com.ricedotwho.rsm.utils.render.render2d.Gradient;
 /*     */ import com.ricedotwho.rsm.utils.render.render2d.NVGUtils;
+/*     */ import java.math.BigDecimal;
 /*     */ import java.net.URI;
 /*     */ import java.net.http.HttpClient;
 /*     */ import java.net.http.HttpRequest;
@@ -32,6 +33,7 @@
 /*     */ import java.lang.reflect.Constructor;
 /*     */ import java.lang.reflect.Field;
 /*     */ import java.lang.reflect.Method;
+/*     */ import java.util.ArrayDeque;
 /*     */ import java.util.ArrayList;
 /*     */ import java.util.Collections;
 /*     */ import java.util.HashSet;
@@ -327,7 +329,7 @@
 /* 215 */     registerCommand(1, "!limbo", new String[] { "pc you are gent" });
 /* 216 */     registerCommand(1, "!meta", new String[] { "pc so meta" });
 /*     */     
-/* 218 */     registerCommandWithDelays(1, "!math", new long[] { 200L, 200L, 1200L }, new String[] { "pc 6 * 2 = 2", "pc 1% of 100 is 10", "pc -gentlemen1210" });
+/* 218 */     registerCommand(1, "!math");
 /*     */ 
 /*     */ 
 /*     */ 
@@ -1068,7 +1070,18 @@
 /* 521 */     int colonIndex = message.indexOf(": ");
 /* 522 */     if (colonIndex == -1)
 /*     */       return; 
-/* 524 */     String content = message.substring(colonIndex + 2).toLowerCase(Locale.ROOT);
+/* 524 */     String contentRaw = message.substring(colonIndex + 2);
+/* 525 */     String content = contentRaw.toLowerCase(Locale.ROOT);
+/*     */     
+/*     */     if (isMathCommand(content)) {
+/*     */       if (!isCommandEnabled("!math")) {
+/*     */         return;
+/*     */       }
+/*     */       String expression = contentRaw.substring(5).trim();
+/*     */       String response = evaluateMathCommand(expression);
+/*     */       scheduleResponses(List.of(new ScheduledLine(200L, response)), chatPrefix);
+/*     */       return;
+/*     */     }
 /*     */     
 /* 526 */     if (content.contains("dt") && !content.contains("holy dt")) {
 /* 527 */       scheduleResponses(List.of(new ScheduledLine(200L, "holy dt")), chatPrefix);
@@ -3595,6 +3608,200 @@
 /* 683 */     else if (out.startsWith("gc ")) out = out.substring(3);
 /* 684 */     return chatPrefix + " " + out;
 /*     */   }
+/*     */   
+/*     */   private static boolean isMathCommand(String content) {
+/*     */     return (content.equals("!math") || content.startsWith("!math ") || content.startsWith("!math("));
+/*     */   }
+/*     */   
+/*     */   private static String evaluateMathCommand(String expression) {
+/*     */     if (expression == null || expression.isBlank()) {
+/*     */       return "Invalid math expression.";
+/*     */     }
+/*     */     Double result = evaluateMathExpression(expression);
+/*     */     if (result == null || result.isNaN() || result.isInfinite()) {
+/*     */       return "Invalid math expression.";
+/*     */     }
+/*     */     return formatMathResult(result.doubleValue());
+/*     */   }
+/*     */   
+/*     */   private static String formatMathResult(double value) {
+/*     */     BigDecimal decimal = BigDecimal.valueOf(value).stripTrailingZeros();
+/*     */     String text = decimal.toPlainString();
+/*     */     return text.equals("-0") ? "0" : text;
+/*     */   }
+/*     */   
+/*     */   private static Double evaluateMathExpression(String expression) {
+/*     */     if (expression == null) return null; 
+/*     */     String input = expression.trim();
+/*     */     if (input.isEmpty()) return null; 
+/*     */     ArrayDeque<Double> values = new ArrayDeque<>();
+/*     */     ArrayDeque<Character> ops = new ArrayDeque<>();
+/*     */     int i = 0;
+/*     */     boolean expectNumber = true;
+/*     */     while (i < input.length()) {
+/*     */       char c = input.charAt(i);
+/*     */       if (Character.isWhitespace(c)) {
+/*     */         i++;
+/*     */         continue;
+/*     */       } 
+/*     */       if (c == '(') {
+/*     */         ops.push(Character.valueOf(c));
+/*     */         i++;
+/*     */         expectNumber = true;
+/*     */         continue;
+/*     */       } 
+/*     */       if (c == ')') {
+/*     */         while (!ops.isEmpty() && ((Character)ops.peek()).charValue() != '(') {
+/*     */           if (!applyMathOperator(values, ((Character)ops.pop()).charValue())) return null; 
+/*     */         } 
+/*     */         if (ops.isEmpty() || ((Character)ops.peek()).charValue() != '(') return null; 
+/*     */         ops.pop();
+/*     */         i++;
+/*     */         expectNumber = false;
+/*     */         continue;
+/*     */       } 
+/*     */       if (expectNumber) {
+/*     */         if (c == '+' || c == '-') {
+/*     */           int nextIndex = nextNonSpaceIndex(input, i + 1);
+/*     */           if (nextIndex == -1) return null; 
+/*     */           char next = input.charAt(nextIndex);
+/*     */           if (next == '(') {
+/*     */             if (c == '-') {
+/*     */               values.push(Double.valueOf(0.0D));
+/*     */               while (!ops.isEmpty() && ((Character)ops.peek()).charValue() != '(' && shouldApplyMathOperator(((Character)ops.peek()).charValue(), '-')) {
+/*     */                 if (!applyMathOperator(values, ((Character)ops.pop()).charValue())) return null; 
+/*     */               } 
+/*     */               ops.push(Character.valueOf('-'));
+/*     */             } 
+/*     */             i++;
+/*     */             expectNumber = true;
+/*     */             continue;
+/*     */           } 
+/*     */           if (Character.isDigit(next) || next == '.') {
+/*     */             NumberParse parsed = parseNumber(input, nextIndex);
+/*     */             if (parsed == null) return null; 
+/*     */             double value = parsed.value();
+/*     */             if (c == '-') value = -value; 
+/*     */             values.push(Double.valueOf(value));
+/*     */             i = parsed.nextIndex();
+/*     */             expectNumber = false;
+/*     */             continue;
+/*     */           } 
+/*     */           return null;
+/*     */         } 
+/*     */         if (Character.isDigit(c) || c == '.') {
+/*     */           NumberParse parsed = parseNumber(input, i);
+/*     */           if (parsed == null) return null; 
+/*     */           values.push(Double.valueOf(parsed.value()));
+/*     */           i = parsed.nextIndex();
+/*     */           expectNumber = false;
+/*     */           continue;
+/*     */         } 
+/*     */         return null;
+/*     */       } 
+/*     */       if (isMathOperator(c)) {
+/*     */         while (!ops.isEmpty() && ((Character)ops.peek()).charValue() != '(' && shouldApplyMathOperator(((Character)ops.peek()).charValue(), c)) {
+/*     */           if (!applyMathOperator(values, ((Character)ops.pop()).charValue())) return null; 
+/*     */         } 
+/*     */         ops.push(Character.valueOf(c));
+/*     */         i++;
+/*     */         expectNumber = true;
+/*     */         continue;
+/*     */       } 
+/*     */       return null;
+/*     */     } 
+/*     */     if (expectNumber) return null; 
+/*     */     while (!ops.isEmpty()) {
+/*     */       char op = ((Character)ops.pop()).charValue();
+/*     */       if (op == '(' || op == ')') return null; 
+/*     */       if (!applyMathOperator(values, op)) return null; 
+/*     */     } 
+/*     */     if (values.size() != 1) return null; 
+/*     */     return values.pop();
+/*     */   }
+/*     */   
+/*     */   private static boolean isMathOperator(char operator) {
+/*     */     return (operator == '+' || operator == '-' || operator == '*' || operator == '/' || operator == '%' || operator == '^');
+/*     */   }
+/*     */   
+/*     */   private static int mathOperatorPrecedence(char operator) {
+/*     */     if (operator == '+' || operator == '-') return 1; 
+/*     */     if (operator == '*' || operator == '/' || operator == '%') return 2; 
+/*     */     if (operator == '^') return 3; 
+/*     */     return -1;
+/*     */   }
+/*     */   
+/*     */   private static boolean shouldApplyMathOperator(char top, char current) {
+/*     */     int topPrecedence = mathOperatorPrecedence(top);
+/*     */     int currentPrecedence = mathOperatorPrecedence(current);
+/*     */     if (topPrecedence < currentPrecedence) return false; 
+/*     */     if (topPrecedence > currentPrecedence) return true; 
+/*     */     return (current != '^');
+/*     */   }
+/*     */   
+/*     */   private static boolean applyMathOperator(ArrayDeque<Double> values, char operator) {
+/*     */     if (values.size() < 2) return false; 
+/*     */     double right = ((Double)values.pop()).doubleValue();
+/*     */     double left = ((Double)values.pop()).doubleValue();
+/*     */     double result;
+/*     */     if (operator == '+') {
+/*     */       result = left + right;
+/*     */     } else if (operator == '-') {
+/*     */       result = left - right;
+/*     */     } else if (operator == '*') {
+/*     */       result = left * right;
+/*     */     } else if (operator == '/') {
+/*     */       if (Math.abs(right) < 1.0E-12D) return false; 
+/*     */       result = left / right;
+/*     */     } else if (operator == '%') {
+/*     */       if (Math.abs(right) < 1.0E-12D) return false; 
+/*     */       result = left % right;
+/*     */     } else if (operator == '^') {
+/*     */       result = Math.pow(left, right);
+/*     */     } else {
+/*     */       return false;
+/*     */     } 
+/*     */     if (Double.isNaN(result) || Double.isInfinite(result)) return false; 
+/*     */     values.push(Double.valueOf(result));
+/*     */     return true;
+/*     */   }
+/*     */   
+/*     */   private static int nextNonSpaceIndex(String input, int startIndex) {
+/*     */     for (int i = startIndex; i < input.length(); i++) {
+/*     */       if (!Character.isWhitespace(input.charAt(i))) return i; 
+/*     */     } 
+/*     */     return -1;
+/*     */   }
+/*     */   
+/*     */   private static NumberParse parseNumber(String input, int startIndex) {
+/*     */     int i = startIndex;
+/*     */     boolean seenDigit = false;
+/*     */     boolean seenDot = false;
+/*     */     while (i < input.length()) {
+/*     */       char ch = input.charAt(i);
+/*     */       if (Character.isDigit(ch)) {
+/*     */         seenDigit = true;
+/*     */         i++;
+/*     */         continue;
+/*     */       } 
+/*     */       if (ch == '.' && !seenDot) {
+/*     */         seenDot = true;
+/*     */         i++;
+/*     */         continue;
+/*     */       } 
+/*     */       break;
+/*     */     } 
+/*     */     if (!seenDigit) return null; 
+/*     */     String token = input.substring(startIndex, i);
+/*     */     try {
+/*     */       double value = Double.parseDouble(token);
+/*     */       return new NumberParse(value, i);
+/*     */     } catch (NumberFormatException ex) {
+/*     */       return null;
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private record NumberParse(double value, int nextIndex) {}
 /*     */   
 /*     */   private boolean isPartyChatMessage(String raw, String stripped) {
 /* 688 */     if (stripped != null && stripped.startsWith("Party >")) return true; 
