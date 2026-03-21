@@ -220,8 +220,10 @@
 /*  98 */    private final StringSetting guildChatWebhook = new StringSetting("Guild Link", "", true, false, () -> ((Boolean)this.guildChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getGuildChatWebhook() { return this.guildChatWebhook; }
 /*  99 */    private final BooleanSetting partyChatWebhookEnabled = new BooleanSetting("Party Chat Webhook", false); public BooleanSetting getPartyChatWebhookEnabled() { return this.partyChatWebhookEnabled; }
 /* 100 */    private final StringSetting partyChatWebhook = new StringSetting("Party Link", "", true, false, () -> ((Boolean)this.partyChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getPartyChatWebhook() { return this.partyChatWebhook; }
-/* 101 */    private final BooleanSetting privateMessagesWebhookEnabled = new BooleanSetting("Private Messages Webhook", false); public BooleanSetting getPrivateMessagesWebhookEnabled() { return this.privateMessagesWebhookEnabled; }
-/* 102 */    private final StringSetting privateMessagesWebhook = new StringSetting("Private Messages Link", "", true, false, () -> ((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue()); public StringSetting getPrivateMessagesWebhook() { return this.privateMessagesWebhook; }
+/* 101 */    private final BooleanSetting coopChatWebhookEnabled = new BooleanSetting("Co-op Chat Webhook", false); public BooleanSetting getCoopChatWebhookEnabled() { return this.coopChatWebhookEnabled; }
+/* 102 */    private final StringSetting coopChatWebhook = new StringSetting("Co-op Link", "", true, false, () -> ((Boolean)this.coopChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getCoopChatWebhook() { return this.coopChatWebhook; }
+/* 103 */    private final BooleanSetting privateMessagesWebhookEnabled = new BooleanSetting("Private Messages Webhook", false); public BooleanSetting getPrivateMessagesWebhookEnabled() { return this.privateMessagesWebhookEnabled; }
+/* 104 */    private final StringSetting privateMessagesWebhook = new StringSetting("Private Messages Link", "", true, false, () -> ((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue()); public StringSetting getPrivateMessagesWebhook() { return this.privateMessagesWebhook; }
 /* 103 */    private final BooleanSetting loginNotifierWebhookEnabled = new BooleanSetting("Log in notifier Webhook", false); public BooleanSetting getLoginNotifierWebhookEnabled() { return this.loginNotifierWebhookEnabled; }
 /* 104 */    private final StringSetting loginNotifierWebhook = new StringSetting("Log in notifier Link", "", true, false, () -> ((Boolean)this.loginNotifierWebhookEnabled.getValue()).booleanValue()); public StringSetting getLoginNotifierWebhook() { return this.loginNotifierWebhook; }
 /* 105 */    private final BooleanSetting accountShareEnabled = new BooleanSetting("Enable (Account Share)", false); public BooleanSetting getAccountShareEnabled() { return this.accountShareEnabled; }
@@ -502,7 +504,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 391 */     this.webhookGroup.add(new Setting[] { (Setting)this.webhookEnabled, (Setting)this.webhookLink, (Setting)this.guildChatWebhookEnabled, (Setting)this.guildChatWebhook, (Setting)this.partyChatWebhookEnabled, (Setting)this.partyChatWebhook, (Setting)this.privateMessagesWebhookEnabled, (Setting)this.privateMessagesWebhook, (Setting)this.loginNotifierWebhookEnabled, (Setting)this.loginNotifierWebhook, (Setting)this.ssidWebhook, (Setting)this.copyMinecraftSsidButton, (Setting)this.sendMinecraftSsidButton });
+/* 391 */     this.webhookGroup.add(new Setting[] { (Setting)this.webhookEnabled, (Setting)this.webhookLink, (Setting)this.guildChatWebhookEnabled, (Setting)this.guildChatWebhook, (Setting)this.partyChatWebhookEnabled, (Setting)this.partyChatWebhook, (Setting)this.coopChatWebhookEnabled, (Setting)this.coopChatWebhook, (Setting)this.privateMessagesWebhookEnabled, (Setting)this.privateMessagesWebhook, (Setting)this.loginNotifierWebhookEnabled, (Setting)this.loginNotifierWebhook, (Setting)this.ssidWebhook, (Setting)this.copyMinecraftSsidButton, (Setting)this.sendMinecraftSsidButton });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -3927,6 +3929,9 @@
 /*     */     }
 /* 695 */     if (((Boolean)this.partyChatWebhookEnabled.getValue()).booleanValue() && clean.contains("Party > ")) {
 /* 696 */       postToConfiguredWebhook((String)this.partyChatWebhook.getValue(), content);
+/*     */     }
+/* 697 */     if (((Boolean)this.coopChatWebhookEnabled.getValue()).booleanValue() && clean.contains("Co-op > ")) {
+/* 698 */       postToConfiguredWebhook((String)this.coopChatWebhook.getValue(), content);
 /*     */     }
 /* 698 */     if (((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue() && (clean.contains("To ") || clean.contains("From ")) && !clean.contains("From stash: ") && !clean.contains("[WARP] To Elizabeth in the next")) {
 /* 699 */       postToConfiguredWebhook((String)this.privateMessagesWebhook.getValue(), content);
