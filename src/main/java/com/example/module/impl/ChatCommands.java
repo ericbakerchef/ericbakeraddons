@@ -53,6 +53,7 @@
 /*     */ import net.minecraft.class_1661;
 /*     */ import net.minecraft.class_1937;
 /*     */ import net.minecraft.class_332;
+/*     */ import net.minecraft.class_465;
 /*     */ import net.minecraft.class_1799;
 /*     */ import net.minecraft.class_2338;
 /*     */ import net.minecraft.class_238;
@@ -223,6 +224,7 @@
 /*  91 */   private int tooltipScrollOffset;
 /*  91 */   private Object tooltipScrollSlot;
 /*  91 */   private Object tooltipScrollScreen;
+/*  91 */   private Field tooltipHoveredSlotField;
 /*  91 */   private Method tooltipSlotAtMethod;
 /*  91 */   private Method tooltipDrawTooltipMethod;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Chat Webhook", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
@@ -1346,6 +1348,10 @@
 /*     */   }
 /*     */   
 /*     */   private Object resolveHoveredSlot(class_437 screen, double mouseX, double mouseY) {
+/*     */     Object hovered = resolveHoveredSlotField(screen);
+/*     */     if (hovered != null) {
+/*     */       return hovered;
+/*     */     }
 /*     */     Method slotAtMethod = resolveSlotAtMethod(screen);
 /*     */     if (slotAtMethod == null) {
 /*     */       return null;
@@ -1353,6 +1359,22 @@
 /*     */     try {
 /*     */       return slotAtMethod.invoke(screen, new Object[] { Double.valueOf(mouseX), Double.valueOf(mouseY) });
 /*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
+/*     */       return null;
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private Object resolveHoveredSlotField(class_437 screen) {
+/*     */     if (!(screen instanceof class_465)) {
+/*     */       return null;
+/*     */     }
+/*     */     try {
+/*     */       if (this.tooltipHoveredSlotField == null) {
+/*     */         Field field = class_465.class.getDeclaredField("field_2787");
+/*     */         field.setAccessible(true);
+/*     */         this.tooltipHoveredSlotField = field;
+/*     */       }
+/*     */       return this.tooltipHoveredSlotField.get(screen);
+/*     */     } catch (Throwable throwable) {
 /*     */       return null;
 /*     */     } 
 /*     */   }
