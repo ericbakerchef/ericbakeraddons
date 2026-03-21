@@ -173,15 +173,12 @@
 /*  89 */    private final BooleanSetting nodeHighlightEnabled = new BooleanSetting("End Nodes", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getNodeHighlightEnabled() { return this.nodeHighlightEnabled; }
 /*  89 */    private final BooleanSetting chestHighlightEnabled = new BooleanSetting("Chests", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getChestHighlightEnabled() { return this.chestHighlightEnabled; }
 /*  90 */    private final BooleanSetting automatonHighlightEnabled = new BooleanSetting("Automaton", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getAutomatonHighlightEnabled() { return this.automatonHighlightEnabled; }
-/*  90 */    private final BooleanSetting tracerEnabled = new BooleanSetting("Tracer", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getTracerEnabled() { return this.tracerEnabled; }
-/*  91 */    private final BooleanSetting tracerClosestOnly = new BooleanSetting("Closest only", false, () -> (((Boolean)this.espEnabled.getValue()).booleanValue() && ((Boolean)this.tracerEnabled.getValue()).booleanValue())); public BooleanSetting getTracerClosestOnly() { return this.tracerClosestOnly; }
-/*  92 */    private final NumberSetting tracerThicknessPx = new NumberSetting("Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", () -> (((Boolean)this.espEnabled.getValue()).booleanValue() && ((Boolean)this.tracerEnabled.getValue()).booleanValue())); public NumberSetting getTracerThicknessPx() { return this.tracerThicknessPx; }
+/*  90 */    private final BooleanSetting tracerEnabled = new BooleanSetting("Tracer", true, () -> (((Boolean)this.espEnabled.getValue()).booleanValue() || ((Boolean)this.customHighlightEnabled.getValue()).booleanValue())); public BooleanSetting getTracerEnabled() { return this.tracerEnabled; }
+/*  91 */    private final BooleanSetting tracerClosestOnly = new BooleanSetting("Closest only", false, () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public BooleanSetting getTracerClosestOnly() { return this.tracerClosestOnly; }
+/*  92 */    private final NumberSetting tracerThicknessPx = new NumberSetting("Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public NumberSetting getTracerThicknessPx() { return this.tracerThicknessPx; }
 /*  93 */    private final BooleanSetting customHighlightEnabled = new BooleanSetting("Enable (Custom Highlight)", true); public BooleanSetting getCustomHighlightEnabled() { return this.customHighlightEnabled; }
 /*  94 */    private final StringSetting customHighlightNames = new StringSetting("Names", "", true, false, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public StringSetting getCustomHighlightNames() { return this.customHighlightNames; }
 /*  95 */    private final BooleanSetting customIgnoreZeroHealth = new BooleanSetting("Ignore 0 Health", true, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public BooleanSetting getCustomIgnoreZeroHealth() { return this.customIgnoreZeroHealth; }
-/*  95 */    private final BooleanSetting customTracerEnabled = new BooleanSetting("Tracer", false, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public BooleanSetting getCustomTracerEnabled() { return this.customTracerEnabled; }
-/*  96 */    private final BooleanSetting customTracerClosestOnly = new BooleanSetting("Closest only", false, () -> (((Boolean)this.customHighlightEnabled.getValue()).booleanValue() && ((Boolean)this.customTracerEnabled.getValue()).booleanValue())); public BooleanSetting getCustomTracerClosestOnly() { return this.customTracerClosestOnly; }
-/*  97 */    private final NumberSetting customTracerThicknessPx = new NumberSetting("Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", () -> (((Boolean)this.customHighlightEnabled.getValue()).booleanValue() && ((Boolean)this.customTracerEnabled.getValue()).booleanValue())); public NumberSetting getCustomTracerThicknessPx() { return this.customTracerThicknessPx; }
 /*  98 */    private final BooleanSetting commissionOverlayEnabled = new BooleanSetting("Enable (Commission Overlay)", true); public BooleanSetting getCommissionOverlayEnabled() { return this.commissionOverlayEnabled; }
 /*  98 */    private final BooleanSetting pickaxeAbilityCooldownEnabled = new BooleanSetting("Enable (Pickaxe Ability CD)", true); public BooleanSetting getPickaxeAbilityCooldownEnabled() { return this.pickaxeAbilityCooldownEnabled; }
 /*  98 */    private final ModeSetting commissionOverlayTheme = new ModeSetting("Theme", "RSA", List.of("RSA", "RSM", "Custom"), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public ModeSetting getCommissionOverlayTheme() { return this.commissionOverlayTheme; }
@@ -517,7 +514,7 @@
 /*     */ 
 /*     */     
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets });
-/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.customTracerClosestOnly, (Setting)this.customTracerThicknessPx });
+/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
 /* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
@@ -2813,7 +2810,7 @@
 /*     */   }
 /*     */   
 /*     */   private void renderCustomEntityTracers(Render3DEvent.Start event) {
-/* 679 */     if (!((Boolean)this.customHighlightEnabled.getValue()).booleanValue() || !((Boolean)this.customTracerEnabled.getValue()).booleanValue()) {
+/* 679 */     if (!((Boolean)this.customHighlightEnabled.getValue()).booleanValue() || !((Boolean)this.tracerEnabled.getValue()).booleanValue()) {
 /*     */       return;
 /*     */     }
 /* 682 */     if (this.customEntityBoxes.isEmpty()) {
@@ -2823,11 +2820,11 @@
 /* 686 */     if (tracerStart == null) {
 /*     */       return;
 /*     */     }
-/* 689 */     double thicknessPx = getCustomTracerThicknessPixels();
+/* 689 */     double thicknessPx = getTracerThicknessPixels();
 /* 690 */     if (thicknessPx <= 0.0D) {
 /*     */       return;
 /*     */     }
-/* 693 */     if (((Boolean)this.customTracerClosestOnly.getValue()).booleanValue()) {
+/* 693 */     if (((Boolean)this.tracerClosestOnly.getValue()).booleanValue()) {
 /* 694 */       class_238 closest = null;
 /* 695 */       double bestDistSq = Double.MAX_VALUE;
 /* 696 */       for (class_238 box : this.customEntityBoxes) {
@@ -2931,17 +2928,6 @@
 /* 748 */     } catch (Exception exception) {}
 /*     */     
 /* 750 */     return 30.0D;
-/*     */   }
-/*     */   
-/*     */   private double getCustomTracerThicknessPixels() {
-/*     */     try {
-/* 754 */       Object value = this.customTracerThicknessPx.getValue();
-/* 755 */       if (value instanceof java.math.BigDecimal) {
-/* 756 */         return Math.max(1.0D, Math.min(100.0D, ((java.math.BigDecimal)value).doubleValue()));
-/*     */       }
-/* 758 */     } catch (Exception exception) {}
-/*     */     
-/* 760 */     return 30.0D;
 /*     */   }
 /*     */   
 /*     */   
