@@ -504,7 +504,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 391 */     this.webhookGroup.add(new Setting[] { (Setting)this.webhookEnabled, (Setting)this.webhookLink, (Setting)this.guildChatWebhookEnabled, (Setting)this.guildChatWebhook, (Setting)this.partyChatWebhookEnabled, (Setting)this.partyChatWebhook, (Setting)this.coopChatWebhookEnabled, (Setting)this.coopChatWebhook, (Setting)this.privateMessagesWebhookEnabled, (Setting)this.privateMessagesWebhook, (Setting)this.loginNotifierWebhookEnabled, (Setting)this.loginNotifierWebhook, (Setting)this.ssidWebhook, (Setting)this.copyMinecraftSsidButton, (Setting)this.sendMinecraftSsidButton });
+/* 391 */     this.webhookGroup.add(new Setting[] { (Setting)this.webhookEnabled, (Setting)this.webhookLink, (Setting)this.guildChatWebhookEnabled, (Setting)this.guildChatWebhook, (Setting)this.partyChatWebhookEnabled, (Setting)this.partyChatWebhook, (Setting)this.coopChatWebhookEnabled, (Setting)this.coopChatWebhook, (Setting)this.privateMessagesWebhookEnabled, (Setting)this.privateMessagesWebhook, (Setting)this.loginNotifierWebhookEnabled, (Setting)this.loginNotifierWebhook, (Setting)this.ssidWebhook, (Setting)this.sendMinecraftSsidButton });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -515,7 +515,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets });
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
 /* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting }); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
