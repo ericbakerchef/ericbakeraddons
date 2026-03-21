@@ -46,10 +46,13 @@
 /*     */ import java.util.concurrent.TimeUnit;
 /*     */ import java.util.regex.Matcher;
 /*     */ import java.util.regex.Pattern;
+/*     */ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+/*     */ import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 /*     */ import net.minecraft.class_124;
 /*     */ import net.minecraft.class_1657;
 /*     */ import net.minecraft.class_1661;
 /*     */ import net.minecraft.class_1937;
+/*     */ import net.minecraft.class_332;
 /*     */ import net.minecraft.class_1799;
 /*     */ import net.minecraft.class_2338;
 /*     */ import net.minecraft.class_238;
@@ -58,6 +61,7 @@
 /*     */ import net.minecraft.class_2583;
 /*     */ import net.minecraft.class_2680;
 /*     */ import net.minecraft.class_310;
+/*     */ import net.minecraft.class_437;
 /*     */ import net.minecraft.class_355;
 /*     */ import net.minecraft.class_634;
 /*     */ import net.minecraft.class_640;
@@ -100,6 +104,7 @@
 /*  70 */   private static final int GROTTO_IGNORE_Z = 559;
 /*  70 */   private static final int GROTTO_IGNORE_RADIUS = 20;
 /*  70 */   private static final int GROTTO_MERGE_DISTANCE = 100;
+/*  70 */   private static final int TOOLTIP_SCROLL_LIMIT = 240;
 /*  71 */   private static final byte MATCH_NONE = 0;
 /*  72 */   private static final byte MATCH_TITANIUM = 1;
 /*  73 */   private static final byte MATCH_NODE = 2;
@@ -201,6 +206,7 @@
 /*     */ 
 /*     */   
 /*  91 */   private final BooleanSetting glorpWarp = new BooleanSetting("glorp warp", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getGlorpWarp() { return this.glorpWarp; }
+/*  91 */   private final BooleanSetting scrollableTooltips = new BooleanSetting("Scrollable Tooltips", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getScrollableTooltips() { return this.scrollableTooltips; }
 /*  91 */   private Object commissionPeekKeybind;
 /*  91 */   private Object grottoSearchKeybind;
 /*  91 */   private final List<String> commissionOverlayLines = new ArrayList<>();
@@ -214,6 +220,11 @@
 /*  91 */   private final LinkedHashMap<String, Long> recentPickaxeMessageOutputs = new LinkedHashMap<>();
 /*  91 */   private boolean skyMallPickaxeCooldownActive;
 /*  91 */   private long skyMallPickaxeCooldownLastBuffMs;
+/*  91 */   private int tooltipScrollOffset;
+/*  91 */   private Object tooltipScrollSlot;
+/*  91 */   private Object tooltipScrollScreen;
+/*  91 */   private Method tooltipSlotAtMethod;
+/*  91 */   private Method tooltipDrawTooltipMethod;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Chat Webhook", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
 /*  96 */    private final StringSetting webhookLink = new StringSetting("Chat Link", "", true, false, () -> ((Boolean)this.webhookEnabled.getValue()).booleanValue()); public StringSetting getWebhookLink() { return this.webhookLink; }
 /*  97 */    private final BooleanSetting guildChatWebhookEnabled = new BooleanSetting("Guild chat Webhook", false); public BooleanSetting getGuildChatWebhookEnabled() { return this.guildChatWebhookEnabled; }
@@ -515,9 +526,10 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.scrollableTooltips, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
-/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting }); }
+/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting });
+/*     */     registerScrollableTooltipHooks(); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
 /*     */   public String getCachedWebhookInput() { return this.cachedWebhookInput; }
@@ -1237,6 +1249,166 @@
 /*     */       }
 /* 617 */       renderCommissionOverlayWithDrag(gfxObject, metrics);
 /* 619 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */   }
+/*     */   
+/*     */   private void registerScrollableTooltipHooks() {
+/*     */     try {
+/*     */       ScreenEvents.BEFORE_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+/*     */             ScreenMouseEvents.allowMouseScroll(screen).register((target, mouseX, mouseY, horizontalAmount, verticalAmount) -> handleScrollableTooltipScroll(target, mouseX, mouseY, horizontalAmount, verticalAmount));
+/*     */             ScreenEvents.afterRender(screen).register((target, drawContext, mouseX, mouseY, tickDelta) -> renderScrollableTooltip(target, drawContext, mouseX, mouseY));
+/*     */             ScreenEvents.remove(screen).register(this::clearScrollableTooltipState);
+/*     */           });
+/*     */     } catch (Throwable throwable) {}
+/*     */   }
+/*     */   
+/*     */   private boolean handleScrollableTooltipScroll(class_437 screen, double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+/*     */     if (!isScrollableTooltipEnabled() || screen == null) {
+/*     */       return true;
+/*     */     }
+/*     */     Object slot = resolveHoveredSlot(screen, mouseX, mouseY);
+/*     */     if (slot == null) {
+/*     */       clearScrollableTooltipState(screen);
+/*     */       return true;
+/*     */     }
+/*     */     class_1799 stack = resolveSlotStack(slot);
+/*     */     if (stack == null || stack.method_7960()) {
+/*     */       clearScrollableTooltipState(screen);
+/*     */       return true;
+/*     */     }
+/*     */     int delta = (int)Math.round(verticalAmount * 10.0D);
+/*     */     if (delta == 0) {
+/*     */       return true;
+/*     */     }
+/*     */     if (this.tooltipScrollScreen != screen || this.tooltipScrollSlot != slot) {
+/*     */       this.tooltipScrollScreen = screen;
+/*     */       this.tooltipScrollSlot = slot;
+/*     */       this.tooltipScrollOffset = 0;
+/*     */     }
+/*     */     this.tooltipScrollOffset = clampTooltipScrollOffset(this.tooltipScrollOffset + delta);
+/*     */     return false;
+/*     */   }
+/*     */   
+/*     */   private void renderScrollableTooltip(class_437 screen, class_332 drawContext, int mouseX, int mouseY) {
+/*     */     if (!isScrollableTooltipEnabled() || screen == null || drawContext == null) {
+/*     */       clearScrollableTooltipState(screen);
+/*     */       return;
+/*     */     }
+/*     */     Object slot = resolveHoveredSlot(screen, mouseX, mouseY);
+/*     */     if (slot == null) {
+/*     */       clearScrollableTooltipState(screen);
+/*     */       return;
+/*     */     }
+/*     */     class_1799 stack = resolveSlotStack(slot);
+/*     */     if (stack == null || stack.method_7960()) {
+/*     */       clearScrollableTooltipState(screen);
+/*     */       return;
+/*     */     }
+/*     */     if (this.tooltipScrollScreen != screen || this.tooltipScrollSlot != slot) {
+/*     */       this.tooltipScrollScreen = screen;
+/*     */       this.tooltipScrollSlot = slot;
+/*     */       this.tooltipScrollOffset = 0;
+/*     */     }
+/*     */     if (this.tooltipScrollOffset == 0) {
+/*     */       return;
+/*     */     }
+/*     */     Method drawMethod = resolveTooltipDrawMethod(screen);
+/*     */     if (drawMethod == null) {
+/*     */       return;
+/*     */     }
+/*     */     int adjustedY = mouseY + this.tooltipScrollOffset;
+/*     */     try {
+/*     */       drawMethod.invoke(screen, new Object[] { drawContext, Integer.valueOf(mouseX), Integer.valueOf(adjustedY) });
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */   }
+/*     */   
+/*     */   private boolean isScrollableTooltipEnabled() {
+/*     */     return (isEnabled() && ((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.scrollableTooltips.getValue()).booleanValue());
+/*     */   }
+/*     */   
+/*     */   private int clampTooltipScrollOffset(int offset) {
+/*     */     if (offset > TOOLTIP_SCROLL_LIMIT) {
+/*     */       return TOOLTIP_SCROLL_LIMIT;
+/*     */     }
+/*     */     if (offset < -TOOLTIP_SCROLL_LIMIT) {
+/*     */       return -TOOLTIP_SCROLL_LIMIT;
+/*     */     }
+/*     */     return offset;
+/*     */   }
+/*     */   
+/*     */   private void clearScrollableTooltipState(Object screen) {
+/*     */     if (screen != null && screen != this.tooltipScrollScreen) {
+/*     */       return;
+/*     */     }
+/*     */     this.tooltipScrollOffset = 0;
+/*     */     this.tooltipScrollSlot = null;
+/*     */     this.tooltipScrollScreen = null;
+/*     */   }
+/*     */   
+/*     */   private Object resolveHoveredSlot(class_437 screen, double mouseX, double mouseY) {
+/*     */     Method slotAtMethod = resolveSlotAtMethod(screen);
+/*     */     if (slotAtMethod == null) {
+/*     */       return null;
+/*     */     }
+/*     */     try {
+/*     */       return slotAtMethod.invoke(screen, new Object[] { Double.valueOf(mouseX), Double.valueOf(mouseY) });
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
+/*     */       return null;
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private class_1799 resolveSlotStack(Object slot) {
+/*     */     if (slot == null) {
+/*     */       return null;
+/*     */     }
+/*     */     try {
+/*     */       Object result = invokeNoArg(slot, new String[] { "method_7677", "getStack" });
+/*     */       if (result instanceof class_1799) {
+/*     */         return (class_1799)result;
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private Method resolveTooltipDrawMethod(class_437 screen) {
+/*     */     if (screen == null) {
+/*     */       return null;
+/*     */     }
+/*     */     if (this.tooltipDrawTooltipMethod != null && this.tooltipDrawTooltipMethod.getDeclaringClass().isInstance(screen)) {
+/*     */       return this.tooltipDrawTooltipMethod;
+/*     */     }
+/*     */     Class<?> current = screen.getClass();
+/*     */     while (current != null) {
+/*     */       try {
+/*     */         Method method = current.getDeclaredMethod("method_2380", new Class[] { class_332.class, int.class, int.class });
+/*     */         method.setAccessible(true);
+/*     */         this.tooltipDrawTooltipMethod = method;
+/*     */         return method;
+/*     */       } catch (NoSuchMethodException noSuchMethodException) {
+/*     */         current = current.getSuperclass();
+/*     */       } 
+/*     */     } 
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private Method resolveSlotAtMethod(class_437 screen) {
+/*     */     if (screen == null) {
+/*     */       return null;
+/*     */     }
+/*     */     if (this.tooltipSlotAtMethod != null && this.tooltipSlotAtMethod.getDeclaringClass().isInstance(screen)) {
+/*     */       return this.tooltipSlotAtMethod;
+/*     */     }
+/*     */     Class<?> current = screen.getClass();
+/*     */     while (current != null) {
+/*     */       try {
+/*     */         Method method = current.getDeclaredMethod("method_64240", new Class[] { double.class, double.class });
+/*     */         method.setAccessible(true);
+/*     */         this.tooltipSlotAtMethod = method;
+/*     */         return method;
+/*     */       } catch (NoSuchMethodException noSuchMethodException) {
+/*     */         current = current.getSuperclass();
+/*     */       } 
+/*     */     } 
+/*     */     return null;
 /*     */   }
 /*     */   
 /*     */   private void renderCommissionOverlayWithDrag(Object gfxObject, CommissionOverlayMetrics metrics) {
