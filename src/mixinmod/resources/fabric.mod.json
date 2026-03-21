@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "ericbakeraddons-mixins",
+  "version": "${version}",
+  "name": "ericbakeraddons-mixins",
+  "description": "Mixin bootstrap for ericbakeraddons",
+  "environment": "client",
+  "mixins": [
+    "ericbakeraddons-mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.17.3",
+    "minecraft": "~1.21.10",
+    "java": ">=21"
+  }
+}

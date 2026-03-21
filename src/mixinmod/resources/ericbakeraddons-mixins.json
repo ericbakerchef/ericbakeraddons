@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "com.example.mixins",
+  "compatibilityLevel": "JAVA_21",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "LevelPrefixDrawContextMixin",
+    "ScrollableTooltipContainerMixin",
+    "ScrollableTooltipDrawContextMixin"
+  ]
+}

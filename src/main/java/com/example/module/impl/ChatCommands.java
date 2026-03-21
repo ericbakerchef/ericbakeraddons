@@ -25,6 +25,8 @@
 /*     */ import com.ricedotwho.rsm.utils.ChatUtils;
 /*     */ import com.ricedotwho.rsm.utils.render.render2d.Gradient;
 /*     */ import com.ricedotwho.rsm.utils.render.render2d.NVGUtils;
+/*     */ import com.example.mixinmod.LevelPrefixState;
+/*     */ import com.example.mixinmod.ScrollableTooltipState;
 /*     */ import java.math.BigDecimal;
 /*     */ import java.net.URI;
 /*     */ import java.net.http.HttpClient;
@@ -540,6 +542,7 @@
 /*     */   public String getLastLoginNotifierEvent() { return this.lastLoginNotifierEvent; }
 /*     */   public boolean isPendingSsidSend() { return this.pendingSsidSend; }
 /* 435 */   public static boolean isLevelPrefixEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.levelPrefixEnable.getValue()).booleanValue()); }
+/*     */   public static boolean isScrollableTooltipsEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.miscEnabled.getValue()).booleanValue() && ((Boolean)instance.scrollableTooltips.getValue()).booleanValue()); }
 /*     */   
 /*     */   public static boolean shouldSuppressPickaxeChat(class_2561 message) {
 /*     */     return false;
@@ -1125,6 +1128,8 @@
 /*     */   
 /*     */   @SubscribeEvent
 /*     */   public void onClientTick(ClientTickEvent.End event) {
+/* 551 */     syncScrollableTooltipState();
+/* 551 */     syncLevelPrefixState();
 /* 551 */     if (!isEnabled()) {
 /* 552 */       clearEspData();
 /* 553 */       clearCustomHighlightData();
@@ -1175,6 +1180,23 @@
 /* 594 */       clearCommissionOverlayData();
 /*     */     } 
 /*     */     
+/*     */   }
+/*     */   
+/*     */   private void syncScrollableTooltipState() {
+/*     */     boolean enabled = isScrollableTooltipsEnabled();
+/*     */     try {
+/*     */       ScrollableTooltipState.setEnabled(enabled);
+/*     */     } catch (Throwable throwable) {}
+/*     */   }
+/*     */   
+/*     */   private void syncLevelPrefixState() {
+/*     */     boolean enabled = isLevelPrefixEnabled();
+/*     */     boolean red = isRed480PlusEnabled();
+/*     */     boolean gold = isGoldBracketsEnabled();
+/*     */     boolean diamond = isDiamondBracketsEnabled();
+/*     */     try {
+/*     */       LevelPrefixState.setSettings(enabled, red, gold, diamond);
+/*     */     } catch (Throwable throwable) {}
 /*     */   }
 /*     */   
 /*     */   @SubscribeEvent
@@ -1254,13 +1276,6 @@
 /*     */   }
 /*     */   
 /*     */   private void registerScrollableTooltipHooks() {
-/*     */     try {
-/*     */       ScreenEvents.BEFORE_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-/*     */             ScreenMouseEvents.beforeMouseScroll(screen).register((target, mouseX, mouseY, horizontalAmount, verticalAmount) -> updateScrollableTooltipScroll(target, mouseX, mouseY, horizontalAmount, verticalAmount));
-/*     */             ScreenEvents.afterRender(screen).register((target, drawContext, mouseX, mouseY, tickDelta) -> renderScrollableTooltip(target, drawContext, mouseX, mouseY));
-/*     */             ScreenEvents.remove(screen).register(this::clearScrollableTooltipState);
-/*     */           });
-/*     */     } catch (Throwable throwable) {}
 /*     */   }
 /*     */   
 /*     */   private void updateScrollableTooltipScroll(class_437 screen, double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {

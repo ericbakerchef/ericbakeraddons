@@ -81,3 +81,24 @@ jar {
 		rename { "${it}_${inputs.properties.archivesName}"}
 	}
 }
+
+tasks.register("mixinModJar", Jar) {
+	group = "build"
+	description = "Builds the mixin bootstrap mod jar."
+	archiveBaseName = "${project.archives_base_name}-mixins"
+	archiveVersion = project.version
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+	from(sourceSets.main.output) {
+		include "com/example/mixins/LevelPrefixDrawContextMixin.class"
+		include "com/example/mixins/ScrollableTooltipContainerMixin.class"
+		include "com/example/mixins/ScrollableTooltipDrawContextMixin.class"
+		include "com/example/mixinmod/**"
+	}
+
+	from("src/mixinmod/resources") {
+		expand "version": project.version
+	}
+}
+
+tasks.assemble.dependsOn tasks.mixinModJar
