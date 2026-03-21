@@ -1254,30 +1254,31 @@
 /*     */   private void registerScrollableTooltipHooks() {
 /*     */     try {
 /*     */       ScreenEvents.BEFORE_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-/*     */             ScreenMouseEvents.allowMouseScroll(screen).register((target, mouseX, mouseY, horizontalAmount, verticalAmount) -> handleScrollableTooltipScroll(target, mouseX, mouseY, horizontalAmount, verticalAmount));
+/*     */             ScreenMouseEvents.beforeMouseScroll(screen).register((target, mouseX, mouseY, horizontalAmount, verticalAmount) -> updateScrollableTooltipScroll(target, mouseX, mouseY, horizontalAmount, verticalAmount));
 /*     */             ScreenEvents.afterRender(screen).register((target, drawContext, mouseX, mouseY, tickDelta) -> renderScrollableTooltip(target, drawContext, mouseX, mouseY));
 /*     */             ScreenEvents.remove(screen).register(this::clearScrollableTooltipState);
 /*     */           });
 /*     */     } catch (Throwable throwable) {}
 /*     */   }
 /*     */   
-/*     */   private boolean handleScrollableTooltipScroll(class_437 screen, double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+/*     */   private void updateScrollableTooltipScroll(class_437 screen, double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
 /*     */     if (!isScrollableTooltipEnabled() || screen == null) {
-/*     */       return true;
+/*     */       return;
 /*     */     }
 /*     */     Object slot = resolveHoveredSlot(screen, mouseX, mouseY);
 /*     */     if (slot == null) {
 /*     */       clearScrollableTooltipState(screen);
-/*     */       return true;
+/*     */       return;
 /*     */     }
 /*     */     class_1799 stack = resolveSlotStack(slot);
 /*     */     if (stack == null || stack.method_7960()) {
 /*     */       clearScrollableTooltipState(screen);
-/*     */       return true;
+/*     */       return;
 /*     */     }
-/*     */     int delta = (int)Math.round(verticalAmount * 10.0D);
+/*     */     double rawAmount = (verticalAmount != 0.0D) ? verticalAmount : horizontalAmount;
+/*     */     int delta = (int)Math.round(rawAmount * 12.0D);
 /*     */     if (delta == 0) {
-/*     */       return true;
+/*     */       return;
 /*     */     }
 /*     */     if (this.tooltipScrollScreen != screen || this.tooltipScrollSlot != slot) {
 /*     */       this.tooltipScrollScreen = screen;
@@ -1285,7 +1286,6 @@
 /*     */       this.tooltipScrollOffset = 0;
 /*     */     }
 /*     */     this.tooltipScrollOffset = clampTooltipScrollOffset(this.tooltipScrollOffset + delta);
-/*     */     return false;
 /*     */   }
 /*     */   
 /*     */   private void renderScrollableTooltip(class_437 screen, class_332 drawContext, int mouseX, int mouseY) {
@@ -1317,6 +1317,7 @@
 /*     */     }
 /*     */     int adjustedY = mouseY + this.tooltipScrollOffset;
 /*     */     try {
+/*     */       drawContext.method_71048();
 /*     */       drawMethod.invoke(screen, new Object[] { drawContext, Integer.valueOf(mouseX), Integer.valueOf(adjustedY) });
 /*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
 /*     */   }
