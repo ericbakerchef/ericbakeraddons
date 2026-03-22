@@ -1,9 +1,11 @@
 package com.example.mixinmod;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.class_124;
 import net.minecraft.class_2561;
+import net.minecraft.class_2583;
 import net.minecraft.class_5250;
 
 public final class LevelPrefixState {
@@ -28,14 +30,23 @@ public final class LevelPrefixState {
         if (!enabled || input == null) {
             return null;
         }
-        String raw = input.getString();
-        if (raw == null || raw.isBlank()) {
-            return null;
-        }
         class_5250 out = class_2561.method_43473();
+        boolean[] changed = new boolean[] { false };
+        class_2583 baseStyle = input.method_10866();
+        input.method_27658((style, text) -> {
+            appendStyled(out, text, style, changed);
+            return Optional.empty();
+        }, baseStyle);
+        return changed[0] ? out : null;
+    }
+
+    private static void appendStyled(class_5250 out, String text, class_2583 style, boolean[] changed) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        class_2583 effectiveStyle = style == null ? class_2583.field_24360 : style;
+        Matcher matcher = BRACKET_NUMBER.matcher(text);
         int index = 0;
-        Matcher matcher = BRACKET_NUMBER.matcher(raw);
-        boolean changed = false;
         while (matcher.find()) {
             int value;
             try {
@@ -46,33 +57,25 @@ public final class LevelPrefixState {
             if (value < 480 || value > 559) {
                 continue;
             }
+            int start = matcher.start();
+            int end = matcher.end();
+            if (start > index) {
+                out.method_10852(class_2561.method_43470(text.substring(index, start)).method_10862(effectiveStyle));
+            }
             class_124 bracketColor = (value <= 519)
                     ? (goldBrackets ? class_124.field_1065 : class_124.field_1063)
                     : (diamondBrackets ? class_124.field_1075 : class_124.field_1063);
             class_124 numberColor = red480Plus ? class_124.field_1061 : class_124.field_1079;
-            int start = matcher.start();
-            int end = matcher.end();
-            if (start > index) {
-                out.method_10852(class_2561.method_43470(raw.substring(index, start)));
-            }
-            out.method_10852(buildReplacement(value, bracketColor, numberColor).method_27661());
+            class_2583 bracketStyle = effectiveStyle.method_10977(bracketColor);
+            class_2583 numberStyle = effectiveStyle.method_10977(numberColor);
+            out.method_10852(class_2561.method_43470("[").method_10862(bracketStyle));
+            out.method_10852(class_2561.method_43470(String.valueOf(value)).method_10862(numberStyle));
+            out.method_10852(class_2561.method_43470("]").method_10862(bracketStyle));
             index = end;
-            changed = true;
+            changed[0] = true;
         }
-        if (!changed) {
-            return null;
+        if (index < text.length()) {
+            out.method_10852(class_2561.method_43470(text.substring(index)).method_10862(effectiveStyle));
         }
-        if (index < raw.length()) {
-            out.method_10852(class_2561.method_43470(raw.substring(index)));
-        }
-        return out;
-    }
-
-    private static class_5250 buildReplacement(int value, class_124 bracketColor, class_124 numberColor) {
-        class_5250 replacement = class_2561.method_43470("");
-        replacement.method_10852(class_2561.method_43470("[").method_27692(bracketColor));
-        replacement.method_10852(class_2561.method_43470(String.valueOf(value)).method_27692(numberColor));
-        replacement.method_10852(class_2561.method_43470("]").method_27692(bracketColor));
-        return replacement;
     }
 }
