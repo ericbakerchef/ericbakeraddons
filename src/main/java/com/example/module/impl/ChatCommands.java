@@ -102,6 +102,8 @@
 /*  64 */   private static final Colour CHEST_OUTLINE_COLOUR = new Colour(255, 220, 120, 200);
 /*  64 */   private static final Colour AUTOMATON_FILL_COLOUR = new Colour(170, 170, 180, 55);
 /*  64 */   private static final Colour AUTOMATON_OUTLINE_COLOUR = new Colour(215, 215, 230, 200);
+/*  64 */   private static final Colour HIDEONLEAF_FILL_COLOUR = new Colour(30, 120, 30, 55);
+/*  64 */   private static final Colour HIDEONLEAF_OUTLINE_COLOUR = new Colour(60, 170, 60, 190);
 /*  65 */   private static final Colour CUSTOM_FILL_COLOUR = new Colour(255, 120, 50, 120);
 /*  66 */   private static final Colour CUSTOM_OUTLINE_COLOUR = new Colour(255, 195, 90, 255);
 /*  67 */   private static final double CUSTOM_BOX_PADDING = 0.08D;
@@ -112,7 +114,7 @@
 /*  68 */   private static final int TEMPLE_SKIP_SCAN_INTERVAL_TICKS = 10;
 /*  69 */   private static final int ESP_SCAN_INTERVAL_TICKS = 10;
 /*  70 */   private static final int ESP_SCAN_IDLE_INTERVAL_TICKS = 40;
-/*  70 */   private static final int ESP_SCAN_BLOCKS_PER_STEP = 10;
+/*  70 */   private static final int ESP_SCAN_BLOCKS_PER_STEP = 16;
 /*  70 */   private static final int GROTTO_IGNORE_X = 513;
 /*  70 */   private static final int GROTTO_IGNORE_Y = 116;
 /*  70 */   private static final int GROTTO_IGNORE_Z = 559;
@@ -123,6 +125,7 @@
 /*  72 */   private static final byte MATCH_TITANIUM = 1;
 /*  73 */   private static final byte MATCH_NODE = 2;
 /*  73 */   private static final byte MATCH_CHEST = 4;
+/*  73 */   private static final byte MATCH_HIDEONLEAF = 8;
 /*  74 */   private static final Pattern HEALTH_FRACTION_PATTERN = Pattern.compile("(?<!\\d)(\\d+)\\s*/\\s*(\\d+)(?!\\d)");
 /*  75 */   private static final Pattern COMMISSION_PERCENT_PATTERN = Pattern.compile("(?<!\\d)(\\d+(?:\\.\\d+)?)\\s*%");
 /*  75 */   private static final Pattern PICKAXE_ABILITY_USED_PATTERN = Pattern.compile("You used your\\s+(.+?)\\s+Pickaxe Ability!", Pattern.CASE_INSENSITIVE);
@@ -188,10 +191,11 @@
 /*  86 */    private final DefaultGroupSetting grottoLocatorGroup = new DefaultGroupSetting("Grotto locator", this); public DefaultGroupSetting getGrottoLocatorGroup() { return this.grottoLocatorGroup; }
 /*  86 */    private final BooleanSetting miscEnabled = new BooleanSetting("Enable (Misc)", true); public BooleanSetting getMiscEnabled() { return this.miscEnabled; }
 /*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("Enable (ESP)", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
-/*  88 */    private final NumberSetting espScanDistance = new NumberSetting("Scan Distance", 1.0D, 12.0D, 2.0D, 1.0D, "x10 blocks", () -> (((Boolean)this.espEnabled.getValue()).booleanValue() || ((Boolean)this.customHighlightEnabled.getValue()).booleanValue())); public NumberSetting getEspScanDistance() { return this.espScanDistance; }
+/*  88 */    private final NumberSetting espScanDistance = new NumberSetting("Scan Distance", 1.0D, 12.0D, 2.0D, 1.0D, "chunks", () -> (((Boolean)this.espEnabled.getValue()).booleanValue() || ((Boolean)this.customHighlightEnabled.getValue()).booleanValue())); public NumberSetting getEspScanDistance() { return this.espScanDistance; }
 /*  88 */    private final BooleanSetting titaniumHighlightEnabled = new BooleanSetting("Titanium", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getTitaniumHighlightEnabled() { return this.titaniumHighlightEnabled; }
 /*  89 */    private final BooleanSetting nodeHighlightEnabled = new BooleanSetting("End Nodes", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getNodeHighlightEnabled() { return this.nodeHighlightEnabled; }
 /*  89 */    private final BooleanSetting chestHighlightEnabled = new BooleanSetting("Chests", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getChestHighlightEnabled() { return this.chestHighlightEnabled; }
+/*  90 */    private final BooleanSetting hideonleafHighlightEnabled = new BooleanSetting("Hideonleaf", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getHideonleafHighlightEnabled() { return this.hideonleafHighlightEnabled; }
 /*  90 */    private final BooleanSetting automatonHighlightEnabled = new BooleanSetting("Automaton", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getAutomatonHighlightEnabled() { return this.automatonHighlightEnabled; }
 /*  90 */    private final BooleanSetting tracerEnabled = new BooleanSetting("Tracer", true, () -> (((Boolean)this.espEnabled.getValue()).booleanValue() || ((Boolean)this.customHighlightEnabled.getValue()).booleanValue())); public BooleanSetting getTracerEnabled() { return this.tracerEnabled; }
 /*  91 */    private final BooleanSetting tracerClosestOnly = new BooleanSetting("Closest only", false, () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public BooleanSetting getTracerClosestOnly() { return this.tracerClosestOnly; }
@@ -258,7 +262,7 @@
 /* 103 */    private final BooleanSetting loginNotifierWebhookEnabled = new BooleanSetting("Log in notifier Webhook", false); public BooleanSetting getLoginNotifierWebhookEnabled() { return this.loginNotifierWebhookEnabled; }
 /* 104 */    private final StringSetting loginNotifierWebhook = new StringSetting("Notifier Link", "", true, false, () -> ((Boolean)this.loginNotifierWebhookEnabled.getValue()).booleanValue()); public StringSetting getLoginNotifierWebhook() { return this.loginNotifierWebhook; }
 /* 105 */    private final BooleanSetting accountShareEnabled = new BooleanSetting("Enable (Account Share)", false); public BooleanSetting getAccountShareEnabled() { return this.accountShareEnabled; }
-/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<class_2338> chestBlocks = new ArrayList<>(); private final List<class_238> automatonBoxes = new ArrayList<>(); private final List<class_238> customEntityBoxes = new ArrayList<>(); private final List<net.minecraft.class_1297> customMatchedEntities = new ArrayList<>(); private final IdentityHashMap<net.minecraft.class_1297, class_238> customSmoothedBoxes = new IdentityHashMap<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final List<Object> chestRenderTasks = new ArrayList<>(); private final List<Object> automatonRenderTasks = new ArrayList<>(); private final List<Object> customEntityRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int customHighlightTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private boolean espScanInitialized; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Constructor<?> lineConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method entityTypeMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
+/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<class_2338> chestBlocks = new ArrayList<>(); private final List<class_2338> hideonleafBlocks = new ArrayList<>(); private final List<class_238> automatonBoxes = new ArrayList<>(); private final List<class_238> hideonleafEntityBoxes = new ArrayList<>(); private final List<class_238> customEntityBoxes = new ArrayList<>(); private final List<net.minecraft.class_1297> customMatchedEntities = new ArrayList<>(); private final IdentityHashMap<net.minecraft.class_1297, class_238> customSmoothedBoxes = new IdentityHashMap<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final List<Object> chestRenderTasks = new ArrayList<>(); private final List<Object> hideonleafRenderTasks = new ArrayList<>(); private final List<Object> automatonRenderTasks = new ArrayList<>(); private final List<Object> hideonleafEntityRenderTasks = new ArrayList<>(); private final List<Object> customEntityRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int customHighlightTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private boolean espScanInitialized; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Constructor<?> lineConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method entityTypeMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
 /* 107 */   public ChatCommands() { this.copyMinecraftSsidButton = new ButtonSetting("Copy Minecraft SSID", "", () -> {
 /*     */           if (this.mc.method_1548() == null) {
 /*     */             ChatUtils.chat(String.valueOf(class_124.field_1061) + "Unable to copy SSID: user not available.", new Object[0]);
@@ -547,7 +551,7 @@
 /*     */ 
 /*     */     
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.scrollableTooltips, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
-/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espScanDistance, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
+/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espScanDistance, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
 /* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
@@ -1239,13 +1243,21 @@
 /* 578 */       if (((Boolean)this.chestHighlightEnabled.getValue()).booleanValue() && this.chestRenderTasks.isEmpty() && !this.chestBlocks.isEmpty()) {
 /* 579 */         rebuildRenderTasks(this.chestBlocks, this.chestRenderTasks, CHEST_FILL_COLOUR, CHEST_OUTLINE_COLOUR);
 /*     */       }
+/*     */       if (((Boolean)this.hideonleafHighlightEnabled.getValue()).booleanValue() && this.hideonleafRenderTasks.isEmpty() && !this.hideonleafBlocks.isEmpty()) {
+/*     */         rebuildRenderTasks(this.hideonleafBlocks, this.hideonleafRenderTasks, HIDEONLEAF_FILL_COLOUR, HIDEONLEAF_OUTLINE_COLOUR);
+/*     */       }
 /*     */       if (((Boolean)this.automatonHighlightEnabled.getValue()).booleanValue() && this.automatonRenderTasks.isEmpty() && !this.automatonBoxes.isEmpty()) {
 /*     */         rebuildEntityRenderTasks(this.automatonBoxes, this.automatonRenderTasks, AUTOMATON_FILL_COLOUR, AUTOMATON_OUTLINE_COLOUR);
+/*     */       }
+/*     */       if (((Boolean)this.hideonleafHighlightEnabled.getValue()).booleanValue() && this.hideonleafEntityRenderTasks.isEmpty() && !this.hideonleafEntityBoxes.isEmpty()) {
+/*     */         rebuildEntityRenderTasks(this.hideonleafEntityBoxes, this.hideonleafEntityRenderTasks, HIDEONLEAF_FILL_COLOUR, HIDEONLEAF_OUTLINE_COLOUR);
 /*     */       }
 /* 581 */       renderBlockTasks(this.titaniumRenderTasks, (Boolean)this.titaniumHighlightEnabled.getValue());
 /* 582 */       renderBlockTasks(this.nodeRenderTasks, (Boolean)this.nodeHighlightEnabled.getValue());
 /* 583 */       renderBlockTasks(this.chestRenderTasks, (Boolean)this.chestHighlightEnabled.getValue());
+/*     */       renderBlockTasks(this.hideonleafRenderTasks, (Boolean)this.hideonleafHighlightEnabled.getValue());
 /*     */       renderBlockTasks(this.automatonRenderTasks, (Boolean)this.automatonHighlightEnabled.getValue());
+/*     */       renderBlockTasks(this.hideonleafEntityRenderTasks, (Boolean)this.hideonleafHighlightEnabled.getValue());
 /*     */     }
 /*     */     try {
 /* 582 */       renderBlockTasks(this.customEntityRenderTasks, (Boolean)this.customHighlightEnabled.getValue());
@@ -2976,7 +2988,9 @@
 /* 622 */     collectTracerTargets(this.titaniumBlocks, (Boolean)this.titaniumHighlightEnabled.getValue(), TITANIUM_OUTLINE_COLOUR, targets, targetColours);
 /* 623 */     collectTracerTargets(this.nodeBlocks, (Boolean)this.nodeHighlightEnabled.getValue(), NODE_OUTLINE_COLOUR, targets, targetColours);
 /* 624 */     collectTracerTargets(this.chestBlocks, (Boolean)this.chestHighlightEnabled.getValue(), CHEST_OUTLINE_COLOUR, targets, targetColours);
+/* 624 */     collectTracerTargets(this.hideonleafBlocks, (Boolean)this.hideonleafHighlightEnabled.getValue(), HIDEONLEAF_OUTLINE_COLOUR, targets, targetColours);
 /*     */     collectEntityTracerTargets(this.automatonBoxes, (Boolean)this.automatonHighlightEnabled.getValue(), AUTOMATON_OUTLINE_COLOUR, targets, targetColours);
+/*     */     collectEntityTracerTargets(this.hideonleafEntityBoxes, (Boolean)this.hideonleafHighlightEnabled.getValue(), HIDEONLEAF_OUTLINE_COLOUR, targets, targetColours);
 /* 624 */     if (targets.isEmpty()) {
 /*     */       return;
 /*     */     }
@@ -3504,6 +3518,18 @@
 /*     */     return (raw.contains("iron_golem") || raw.contains("iron golem") || raw.contains("irongolem"));
 /*     */   }
 /*     */   
+/*     */   private boolean isGreenShulkerEntity(net.minecraft.class_1297 entity) {
+/*     */     if (entity == null) {
+/*     */       return false;
+/*     */     }
+/*     */     String typeText = getEntityTypeText(entity);
+/*     */     if (typeText != null && (typeText.contains("green_shulker") || (typeText.contains("shulker") && typeText.contains("green")))) {
+/*     */       return true;
+/*     */     }
+/*     */     String raw = String.valueOf(entity).toLowerCase(Locale.ROOT);
+/*     */     return (raw.contains("green_shulker") || (raw.contains("shulker") && raw.contains("green")));
+/*     */   }
+/*     */   
 /*     */   private String getEntityTypeText(net.minecraft.class_1297 entity) {
 /*     */     if (entity == null) return null; 
 /*     */     if (this.entityTypeMethod == null) {
@@ -3803,13 +3829,16 @@
 /* 619 */     this.titaniumBlocks.clear();
 /* 620 */     this.nodeBlocks.clear();
 /* 620 */     this.chestBlocks.clear();
+/* 620 */     this.hideonleafBlocks.clear();
 /* 620 */     this.automatonBoxes.clear();
+/* 620 */     this.hideonleafEntityBoxes.clear();
 /* 621 */     boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
 /* 622 */     boolean nodeOn = ((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue();
 /* 622 */     boolean chestOn = ((Boolean)this.chestHighlightEnabled.getValue()).booleanValue();
+/* 622 */     boolean hideonleafOn = ((Boolean)this.hideonleafHighlightEnabled.getValue()).booleanValue();
 /* 622 */     boolean automatonOn = ((Boolean)this.automatonHighlightEnabled.getValue()).booleanValue();
-/* 623 */     boolean blockScanOn = (titaniumOn || nodeOn || chestOn);
-/* 623 */     if (!blockScanOn && !automatonOn) {
+/* 623 */     boolean blockScanOn = (titaniumOn || nodeOn || chestOn || hideonleafOn);
+/* 623 */     if (!blockScanOn && !automatonOn && !hideonleafOn) {
 /* 624 */       this.espScanInitialized = true;
 /*     */       return;
 /*     */     }
@@ -3823,12 +3852,16 @@
 /* 632 */             if (titaniumOn && (highlightMatch & MATCH_TITANIUM) != 0) this.titaniumBlocks.add(pos); 
 /* 633 */             if (nodeOn && (highlightMatch & MATCH_NODE) != 0) this.nodeBlocks.add(pos); 
 /* 634 */             if (chestOn && (highlightMatch & MATCH_CHEST) != 0) this.chestBlocks.add(pos); 
+/* 634 */             if (hideonleafOn && (highlightMatch & MATCH_HIDEONLEAF) != 0) this.hideonleafBlocks.add(pos); 
 /*     */           } 
 /*     */         } 
 /*     */       } 
 /*     */     } 
 /*     */     if (automatonOn) {
 /*     */       updateAutomatonEntities(world);
+/*     */     }
+/*     */     if (hideonleafOn) {
+/*     */       updateHideonleafEntities(world);
 /*     */     }
 /* 637 */     this.lastEspScanX = px;
 /* 638 */     this.lastEspScanY = py;
@@ -3837,7 +3870,9 @@
 /* 641 */     rebuildRenderTasks(this.titaniumBlocks, this.titaniumRenderTasks, TITANIUM_FILL_COLOUR, TITANIUM_OUTLINE_COLOUR);
 /* 642 */     rebuildRenderTasks(this.nodeBlocks, this.nodeRenderTasks, NODE_FILL_COLOUR, NODE_OUTLINE_COLOUR);
 /* 643 */     rebuildRenderTasks(this.chestBlocks, this.chestRenderTasks, CHEST_FILL_COLOUR, CHEST_OUTLINE_COLOUR);
+/* 643 */     rebuildRenderTasks(this.hideonleafBlocks, this.hideonleafRenderTasks, HIDEONLEAF_FILL_COLOUR, HIDEONLEAF_OUTLINE_COLOUR);
 /*     */     rebuildEntityRenderTasks(this.automatonBoxes, this.automatonRenderTasks, AUTOMATON_FILL_COLOUR, AUTOMATON_OUTLINE_COLOUR);
+/*     */     rebuildEntityRenderTasks(this.hideonleafEntityBoxes, this.hideonleafEntityRenderTasks, HIDEONLEAF_FILL_COLOUR, HIDEONLEAF_OUTLINE_COLOUR);
 /*     */   }
 /*     */   
 /*     */   private void updateAutomatonEntities(class_1937 world) {
@@ -3867,15 +3902,46 @@
 /*     */     }
 /*     */   }
 /*     */   
+/*     */   private void updateHideonleafEntities(class_1937 world) {
+/*     */     if (world == null) {
+/*     */       return;
+/*     */     }
+/*     */     Iterable<?> entities = getEntityIterable(world);
+/*     */     if (entities == null) {
+/*     */       return;
+/*     */     }
+/*     */     for (Object obj : entities) {
+/*     */       if (!(obj instanceof net.minecraft.class_1297)) {
+/*     */         continue;
+/*     */       }
+/*     */       net.minecraft.class_1297 entity = (net.minecraft.class_1297)obj;
+/*     */       if (entity == this.mc.field_1724) {
+/*     */         continue;
+/*     */       }
+/*     */       if (!isGreenShulkerEntity(entity)) {
+/*     */         continue;
+/*     */       }
+/*     */       class_238 box = getEntityBox(entity);
+/*     */       if (box == null) {
+/*     */         continue;
+/*     */       }
+/*     */       this.hideonleafEntityBoxes.add(box);
+/*     */     }
+/*     */   }
+/*     */   
 /*     */   private void clearEspData() {
 /* 645 */     this.titaniumBlocks.clear();
 /* 646 */     this.nodeBlocks.clear();
 /* 646 */     this.chestBlocks.clear();
+/*     */     this.hideonleafBlocks.clear();
 /*     */     this.automatonBoxes.clear();
+/*     */     this.hideonleafEntityBoxes.clear();
 /* 647 */     this.titaniumRenderTasks.clear();
 /* 648 */     this.nodeRenderTasks.clear();
 /* 648 */     this.chestRenderTasks.clear();
 /*     */     this.automatonRenderTasks.clear();
+/*     */     this.hideonleafRenderTasks.clear();
+/*     */     this.hideonleafEntityRenderTasks.clear();
 /* 649 */     this.espScanInitialized = false;
 /*     */   }
 /*     */   
@@ -3898,6 +3964,7 @@
 /* 660 */     if (blockText.contains("polished_diorite")) match = (byte)(match | MATCH_TITANIUM); 
 /* 661 */     if (blockText.contains("purple_terracotta")) match = (byte)(match | MATCH_NODE); 
 /* 662 */     if (blockText.contains("chest")) match = (byte)(match | MATCH_CHEST); 
+/* 662 */     if (blockText.contains("green_shulker_box")) match = (byte)(match | MATCH_HIDEONLEAF); 
 /* 662 */     this.blockHighlightTypeCache.put(block, Byte.valueOf(match));
 /* 663 */     return match;
 /*     */   }

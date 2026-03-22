@@ -27,7 +27,7 @@ import java.util.Locale;
 
 @ModuleInfo(aliases = {"Titanium ESP"}, id = "titanium_esp", category = Category.RENDER)
 public class TitaniumEsp extends Module {
-    private static final int SCAN_BLOCKS_PER_STEP = 10;
+    private static final int SCAN_BLOCKS_PER_STEP = 16;
     private static final int SCAN_INTERVAL_TICKS = 10;
 
     private static final Colour FILL_COLOUR = new Colour(80, 180, 255, 55);
@@ -37,7 +37,7 @@ public class TitaniumEsp extends Module {
     private final DefaultGroupSetting titaniumGroup = new DefaultGroupSetting("ESP", this);
     private final BooleanSetting enable = new BooleanSetting("Enable", true);
     private final BooleanSetting tracer = new BooleanSetting("Tracer", true);
-    private final NumberSetting scanDistance = new NumberSetting("Scan Distance", 1.0D, 12.0D, 2.0D, 1.0D, "x10 blocks", () -> ((Boolean) this.enable.getValue()).booleanValue());
+    private final NumberSetting scanDistance = new NumberSetting("Scan Distance", 1.0D, 12.0D, 2.0D, 1.0D, "chunks", () -> ((Boolean) this.enable.getValue()).booleanValue());
     private final List<class_2338> highlightedBlocks = new ArrayList<>();
 
     private int tickCounter;

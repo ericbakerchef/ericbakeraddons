@@ -28,7 +28,7 @@ import java.util.Locale;
 
 @ModuleInfo(aliases = {"Hideonleaf"}, id = "hideonleaf_esp", category = Category.RENDER)
 public class HideonleafEsp extends Module {
-    private static final int SCAN_BLOCKS_PER_STEP = 10;
+    private static final int SCAN_BLOCKS_PER_STEP = 16;
     private static final int SCAN_INTERVAL_TICKS = 10;
 
     private static final Colour FILL_COLOUR = new Colour(30, 120, 30, 55);
@@ -38,7 +38,7 @@ public class HideonleafEsp extends Module {
     private final DefaultGroupSetting espGroup = new DefaultGroupSetting("ESP", this);
     private final BooleanSetting enable = new BooleanSetting("Enable", true);
     private final BooleanSetting tracer = new BooleanSetting("Tracer", true);
-    private final NumberSetting scanDistance = new NumberSetting("Scan Distance", 1.0D, 12.0D, 2.0D, 1.0D, "x10 blocks", () -> ((Boolean) this.enable.getValue()).booleanValue());
+    private final NumberSetting scanDistance = new NumberSetting("Scan Distance", 1.0D, 12.0D, 2.0D, 1.0D, "chunks", () -> ((Boolean) this.enable.getValue()).booleanValue());
     private final List<class_2338> highlightedBlocks = new ArrayList<>();
     private final List<class_238> highlightedEntityBoxes = new ArrayList<>();
     private final List<class_2338> highlightedEntityTracerTargets = new ArrayList<>();
