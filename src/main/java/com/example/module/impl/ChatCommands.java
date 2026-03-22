@@ -112,6 +112,7 @@
 /*  68 */   private static final int TEMPLE_SKIP_SCAN_INTERVAL_TICKS = 10;
 /*  69 */   private static final int ESP_SCAN_INTERVAL_TICKS = 10;
 /*  70 */   private static final int ESP_SCAN_IDLE_INTERVAL_TICKS = 40;
+/*  70 */   private static final int ESP_SCAN_BLOCKS_PER_STEP = 10;
 /*  70 */   private static final int GROTTO_IGNORE_X = 513;
 /*  70 */   private static final int GROTTO_IGNORE_Y = 116;
 /*  70 */   private static final int GROTTO_IGNORE_Z = 559;
@@ -187,6 +188,7 @@
 /*  86 */    private final DefaultGroupSetting grottoLocatorGroup = new DefaultGroupSetting("Grotto locator", this); public DefaultGroupSetting getGrottoLocatorGroup() { return this.grottoLocatorGroup; }
 /*  86 */    private final BooleanSetting miscEnabled = new BooleanSetting("Enable (Misc)", true); public BooleanSetting getMiscEnabled() { return this.miscEnabled; }
 /*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("Enable (ESP)", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
+/*  88 */    private final NumberSetting espScanDistance = new NumberSetting("Scan Distance", 1.0D, 12.0D, 2.0D, 1.0D, "x10 blocks", () -> (((Boolean)this.espEnabled.getValue()).booleanValue() || ((Boolean)this.customHighlightEnabled.getValue()).booleanValue())); public NumberSetting getEspScanDistance() { return this.espScanDistance; }
 /*  88 */    private final BooleanSetting titaniumHighlightEnabled = new BooleanSetting("Titanium", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getTitaniumHighlightEnabled() { return this.titaniumHighlightEnabled; }
 /*  89 */    private final BooleanSetting nodeHighlightEnabled = new BooleanSetting("End Nodes", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getNodeHighlightEnabled() { return this.nodeHighlightEnabled; }
 /*  89 */    private final BooleanSetting chestHighlightEnabled = new BooleanSetting("Chests", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getChestHighlightEnabled() { return this.chestHighlightEnabled; }
@@ -545,7 +547,7 @@
 /*     */ 
 /*     */     
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.scrollableTooltips, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
-/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
+/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espScanDistance, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
 /* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
@@ -3405,7 +3407,8 @@
 /*     */   private Iterable<?> getEntityIterable(class_1937 world) {
 /* 657 */     if (world == null || this.mc.field_1724 == null) return null; 
 /* 658 */     class_2338 p = this.mc.field_1724.method_24515();
-/* 659 */     class_238 box = new class_238((p.method_10263() - 192), (p.method_10264() - 128), (p.method_10260() - 192), (p.method_10263() + 192), (p.method_10264() + 128), (p.method_10260() + 192));
+/* 659 */     int range = getEspScanRange();
+/* 660 */     class_238 box = new class_238((p.method_10263() - range), (p.method_10264() - range), (p.method_10260() - range), (p.method_10263() + range), (p.method_10264() + range), (p.method_10260() + range));
 /* 660 */     return world.method_8333(null, box, entity -> true);
 /*     */   }
 /*     */   
@@ -3779,6 +3782,12 @@
 /* 604 */     return start;
 /*     */   }
 /*     */   
+/*     */   private int getEspScanRange() {
+/*     */     double scale = ((Number)this.espScanDistance.getValue()).doubleValue();
+/*     */     int range = (int)Math.round(scale * ESP_SCAN_BLOCKS_PER_STEP);
+/*     */     return Math.max(ESP_SCAN_BLOCKS_PER_STEP, range);
+/*     */   }
+/*     */   
 /*     */   private void updateEspBlocks() {
 /* 608 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
 /* 609 */       clearEspData();
@@ -3789,6 +3798,7 @@
 /* 615 */     int px = playerPos.method_10263();
 /* 616 */     int py = playerPos.method_10264();
 /* 617 */     int pz = playerPos.method_10260();
+/*     */     int range = getEspScanRange();
 /*     */     
 /* 619 */     this.titaniumBlocks.clear();
 /* 620 */     this.nodeBlocks.clear();
@@ -3804,9 +3814,9 @@
 /*     */       return;
 /*     */     }
 /* 626 */     if (blockScanOn) {
-/* 626 */       for (int x = px - 24; x <= px + 24; x++) {
-/* 627 */         for (int y = py - 16; y <= py + 16; y++) {
-/* 628 */           for (int z = pz - 24; z <= pz + 24; z++) {
+/* 626 */       for (int x = px - range; x <= px + range; x++) {
+/* 627 */         for (int y = py - range; y <= py + range; y++) {
+/* 628 */           for (int z = pz - range; z <= pz + range; z++) {
 /* 629 */             class_2338 pos = new class_2338(x, y, z);
 /* 630 */             class_2680 state = world.method_8320(pos);
 /* 631 */             byte highlightMatch = getHighlightMatch(state);

@@ -11,6 +11,7 @@ import com.ricedotwho.rsm.module.api.ModuleInfo;
 import com.ricedotwho.rsm.ui.clickgui.settings.Setting;
 import com.ricedotwho.rsm.ui.clickgui.settings.group.DefaultGroupSetting;
 import com.ricedotwho.rsm.ui.clickgui.settings.impl.BooleanSetting;
+import com.ricedotwho.rsm.ui.clickgui.settings.impl.NumberSetting;
 import net.minecraft.class_1937;
 import net.minecraft.class_2338;
 import net.minecraft.class_238;
@@ -26,8 +27,7 @@ import java.util.Locale;
 
 @ModuleInfo(aliases = {"Titanium ESP"}, id = "titanium_esp", category = Category.RENDER)
 public class TitaniumEsp extends Module {
-    private static final int HORIZONTAL_RANGE = 24;
-    private static final int VERTICAL_RANGE = 16;
+    private static final int SCAN_BLOCKS_PER_STEP = 10;
     private static final int SCAN_INTERVAL_TICKS = 10;
 
     private static final Colour FILL_COLOUR = new Colour(80, 180, 255, 55);
@@ -37,6 +37,7 @@ public class TitaniumEsp extends Module {
     private final DefaultGroupSetting titaniumGroup = new DefaultGroupSetting("ESP", this);
     private final BooleanSetting enable = new BooleanSetting("Enable", true);
     private final BooleanSetting tracer = new BooleanSetting("Tracer", true);
+    private final NumberSetting scanDistance = new NumberSetting("Scan Distance", 1.0D, 12.0D, 2.0D, 1.0D, "x10 blocks", () -> ((Boolean) this.enable.getValue()).booleanValue());
     private final List<class_2338> highlightedBlocks = new ArrayList<>();
 
     private int tickCounter;
@@ -50,7 +51,7 @@ public class TitaniumEsp extends Module {
     public TitaniumEsp() {
         setGroup(this.titaniumGroup);
         registerProperty(new Setting[] { this.titaniumGroup });
-        this.titaniumGroup.add(new Setting[] { this.enable, this.tracer });
+        this.titaniumGroup.add(new Setting[] { this.enable, this.tracer, this.scanDistance });
         this.renderBridgeReady = initRenderBridge();
     }
 
@@ -145,11 +146,12 @@ public class TitaniumEsp extends Module {
         int px = playerPos.method_10263();
         int py = playerPos.method_10264();
         int pz = playerPos.method_10260();
+        int range = getScanRange();
 
         this.highlightedBlocks.clear();
-        for (int x = px - HORIZONTAL_RANGE; x <= px + HORIZONTAL_RANGE; x++) {
-            for (int y = py - VERTICAL_RANGE; y <= py + VERTICAL_RANGE; y++) {
-                for (int z = pz - HORIZONTAL_RANGE; z <= pz + HORIZONTAL_RANGE; z++) {
+        for (int x = px - range; x <= px + range; x++) {
+            for (int y = py - range; y <= py + range; y++) {
+                for (int z = pz - range; z <= pz + range; z++) {
                     class_2338 pos = new class_2338(x, y, z);
                     class_2680 state = world.method_8320(pos);
                     if (isPolishedDiorite(state)) {
@@ -172,6 +174,12 @@ public class TitaniumEsp extends Module {
 
         String blockText = String.valueOf(state.method_26204()).toLowerCase(Locale.ROOT);
         return blockText.contains("polished_diorite");
+    }
+
+    private int getScanRange() {
+        double scale = ((Number) this.scanDistance.getValue()).doubleValue();
+        int range = (int) Math.round(scale * SCAN_BLOCKS_PER_STEP);
+        return Math.max(SCAN_BLOCKS_PER_STEP, range);
     }
 
     private boolean initRenderBridge() {

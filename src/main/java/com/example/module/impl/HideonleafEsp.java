@@ -11,6 +11,7 @@ import com.ricedotwho.rsm.module.api.ModuleInfo;
 import com.ricedotwho.rsm.ui.clickgui.settings.Setting;
 import com.ricedotwho.rsm.ui.clickgui.settings.group.DefaultGroupSetting;
 import com.ricedotwho.rsm.ui.clickgui.settings.impl.BooleanSetting;
+import com.ricedotwho.rsm.ui.clickgui.settings.impl.NumberSetting;
 import net.minecraft.class_1297;
 import net.minecraft.class_1937;
 import net.minecraft.class_2338;
@@ -27,8 +28,7 @@ import java.util.Locale;
 
 @ModuleInfo(aliases = {"Hideonleaf"}, id = "hideonleaf_esp", category = Category.RENDER)
 public class HideonleafEsp extends Module {
-    private static final int HORIZONTAL_RANGE = 24;
-    private static final int VERTICAL_RANGE = 16;
+    private static final int SCAN_BLOCKS_PER_STEP = 10;
     private static final int SCAN_INTERVAL_TICKS = 10;
 
     private static final Colour FILL_COLOUR = new Colour(30, 120, 30, 55);
@@ -38,6 +38,7 @@ public class HideonleafEsp extends Module {
     private final DefaultGroupSetting espGroup = new DefaultGroupSetting("ESP", this);
     private final BooleanSetting enable = new BooleanSetting("Enable", true);
     private final BooleanSetting tracer = new BooleanSetting("Tracer", true);
+    private final NumberSetting scanDistance = new NumberSetting("Scan Distance", 1.0D, 12.0D, 2.0D, 1.0D, "x10 blocks", () -> ((Boolean) this.enable.getValue()).booleanValue());
     private final List<class_2338> highlightedBlocks = new ArrayList<>();
     private final List<class_238> highlightedEntityBoxes = new ArrayList<>();
     private final List<class_2338> highlightedEntityTracerTargets = new ArrayList<>();
@@ -55,7 +56,7 @@ public class HideonleafEsp extends Module {
     public HideonleafEsp() {
         setGroup(this.espGroup);
         registerProperty(new Setting[] { this.espGroup });
-        this.espGroup.add(new Setting[] { this.enable, this.tracer });
+        this.espGroup.add(new Setting[] { this.enable, this.tracer, this.scanDistance });
         this.renderBridgeReady = initRenderBridge();
     }
 
@@ -170,13 +171,14 @@ public class HideonleafEsp extends Module {
         int px = playerPos.method_10263();
         int py = playerPos.method_10264();
         int pz = playerPos.method_10260();
+        int range = getScanRange();
 
         this.highlightedBlocks.clear();
         this.highlightedEntityBoxes.clear();
         this.highlightedEntityTracerTargets.clear();
-        for (int x = px - HORIZONTAL_RANGE; x <= px + HORIZONTAL_RANGE; x++) {
-            for (int y = py - VERTICAL_RANGE; y <= py + VERTICAL_RANGE; y++) {
-                for (int z = pz - HORIZONTAL_RANGE; z <= pz + HORIZONTAL_RANGE; z++) {
+        for (int x = px - range; x <= px + range; x++) {
+            for (int y = py - range; y <= py + range; y++) {
+                for (int z = pz - range; z <= pz + range; z++) {
                     class_2338 pos = new class_2338(x, y, z);
                     class_2680 state = world.method_8320(pos);
                     if (isGreenShulkerBox(state)) {
@@ -186,17 +188,17 @@ public class HideonleafEsp extends Module {
             }
         }
 
-        updateEntities(world, px, py, pz);
+        updateEntities(world, px, py, pz, range);
     }
 
-    private void updateEntities(class_1937 world, int px, int py, int pz) {
+    private void updateEntities(class_1937 world, int px, int py, int pz, int range) {
         class_238 scanBox = new class_238(
-            px - HORIZONTAL_RANGE,
-            py - VERTICAL_RANGE,
-            pz - HORIZONTAL_RANGE,
-            px + HORIZONTAL_RANGE,
-            py + VERTICAL_RANGE,
-            pz + HORIZONTAL_RANGE
+            px - range,
+            py - range,
+            pz - range,
+            px + range,
+            py + range,
+            pz + range
         );
         Iterable<?> entities = world.method_8333(null, scanBox, entity -> true);
         if (entities == null) {
@@ -239,6 +241,12 @@ public class HideonleafEsp extends Module {
 
         String blockText = String.valueOf(state.method_26204()).toLowerCase(Locale.ROOT);
         return blockText.contains("green_shulker_box");
+    }
+
+    private int getScanRange() {
+        double scale = ((Number) this.scanDistance.getValue()).doubleValue();
+        int range = (int) Math.round(scale * SCAN_BLOCKS_PER_STEP);
+        return Math.max(SCAN_BLOCKS_PER_STEP, range);
     }
 
     private boolean isGreenShulkerEntity(class_1297 entity) {
