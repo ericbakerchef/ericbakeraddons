@@ -630,7 +630,7 @@
 /*     */   public MultiBoolSetting getChatCommands1() { return this.chatCommands1; }
 /*     */   public MultiBoolSetting getChatCommands2() { return this.chatCommands2; }
 /* 439 */   public MultiBoolSetting getChatCommands3() { return this.chatCommands3; } public MultiBoolSetting getOtherCommandsSetting() { return this.otherCommandsSetting; } public ButtonSetting getEnableAllButton() { return this.enableAllButton; } public ButtonSetting getDisableAllButton() { return this.disableAllButton; } public static boolean isRed480PlusEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.red480Plus.getValue()).booleanValue()); }
-/*     */ 
+/*     */
 /*     */   
 /*     */   public static boolean isGoldBracketsEnabled() {
 /* 443 */     return (instance != null && instance.isEnabled() && ((Boolean)instance.goldBrackets.getValue()).booleanValue());
