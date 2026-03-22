@@ -3,17 +3,12 @@ package com.example.mixinmod;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import net.minecraft.class_124;
 import net.minecraft.class_2561;
 import net.minecraft.class_2583;
 import net.minecraft.class_5250;
 
 public final class LevelPrefixState {
-    private static final Pattern BRACKET_NUMBER = Pattern.compile("\\[(\\d{3})\\]");
-    private static final Pattern THREE_DIGITS = Pattern.compile("\\d{3}");
-
     private static boolean enabled;
     private static boolean red480Plus;
     private static boolean goldBrackets;
@@ -33,7 +28,7 @@ public final class LevelPrefixState {
         if (!enabled || input == null) {
             return null;
         }
-        List<Segment> segments = new ArrayList<>();
+        List<CharSpan> spans = new ArrayList<>();
         class_2583 baseStyle = input.method_10866();
         input.method_27658((style, text) -> {
             if (text != null && !text.isEmpty()) {
@@ -41,100 +36,92 @@ public final class LevelPrefixState {
                 if (effectiveStyle == null) {
                     effectiveStyle = class_2583.field_24360;
                 }
-                segments.add(new Segment(text, effectiveStyle));
+                for (int i = 0; i < text.length(); i++) {
+                    spans.add(new CharSpan(text.charAt(i), effectiveStyle));
+                }
             }
             return Optional.empty();
         }, baseStyle);
-        if (segments.isEmpty()) {
+        if (spans.isEmpty()) {
             return null;
         }
         class_5250 out = class_2561.method_43473();
         boolean[] changed = new boolean[] { false };
-        for (int i = 0; i < segments.size(); i++) {
-            Segment segment = segments.get(i);
-            if (matchesSplitPrefix(segments, i)) {
-                int value = Integer.parseInt(segments.get(i + 1).text);
-                if (value >= 480 && value <= 559) {
-                    class_124 bracketColor = (value <= 519)
-                            ? (goldBrackets ? class_124.field_1065 : class_124.field_1063)
-                            : (diamondBrackets ? class_124.field_1075 : class_124.field_1063);
-                    class_124 numberColor = red480Plus ? class_124.field_1061 : class_124.field_1079;
-                    appendColored(out, "[", segment.style, bracketColor);
-                    appendColored(out, segments.get(i + 1).text, segments.get(i + 1).style, numberColor);
-                    appendColored(out, "]", segments.get(i + 2).style, bracketColor);
-                    changed[0] = true;
-                    i += 2;
-                    continue;
+        StringBuilder buffer = new StringBuilder();
+        class_2583 bufferStyle = null;
+        int index = 0;
+        while (index < spans.size()) {
+            CharSpan span = spans.get(index);
+            if (span.ch == '[' && index + 4 < spans.size()) {
+                CharSpan d1 = spans.get(index + 1);
+                CharSpan d2 = spans.get(index + 2);
+                CharSpan d3 = spans.get(index + 3);
+                CharSpan close = spans.get(index + 4);
+                if (isDigit(d1.ch) && isDigit(d2.ch) && isDigit(d3.ch) && close.ch == ']') {
+                    int value = (d1.ch - '0') * 100 + (d2.ch - '0') * 10 + (d3.ch - '0');
+                    if (value >= 480 && value <= 559) {
+                        class_124 bracketColor = (value <= 519)
+                                ? (goldBrackets ? class_124.field_1065 : class_124.field_1063)
+                                : (diamondBrackets ? class_124.field_1075 : class_124.field_1063);
+                        class_124 numberColor = red480Plus ? class_124.field_1061 : class_124.field_1079;
+                        bufferStyle = appendChar(out, buffer, bufferStyle, '[', recolor(span.style, bracketColor));
+                        bufferStyle = appendChar(out, buffer, bufferStyle, d1.ch, recolor(d1.style, numberColor));
+                        bufferStyle = appendChar(out, buffer, bufferStyle, d2.ch, recolor(d2.style, numberColor));
+                        bufferStyle = appendChar(out, buffer, bufferStyle, d3.ch, recolor(d3.style, numberColor));
+                        bufferStyle = appendChar(out, buffer, bufferStyle, ']', recolor(close.style, bracketColor));
+                        changed[0] = true;
+                        index += 5;
+                        continue;
+                    }
                 }
             }
-            appendStyled(out, segment.text, segment.style, changed);
+            bufferStyle = appendChar(out, buffer, bufferStyle, span.ch, span.style);
+            index++;
         }
+        flush(out, buffer, bufferStyle);
         return changed[0] ? out : null;
     }
 
-    private static void appendStyled(class_5250 out, String text, class_2583 style, boolean[] changed) {
-        if (text == null || text.isEmpty()) {
+    private static class_2583 appendChar(
+            class_5250 out,
+            StringBuilder buffer,
+            class_2583 bufferStyle,
+            char ch,
+            class_2583 style
+    ) {
+        class_2583 effectiveStyle = style == null ? class_2583.field_24360 : style;
+        if (bufferStyle == null || !bufferStyle.equals(effectiveStyle)) {
+            flush(out, buffer, bufferStyle);
+            bufferStyle = effectiveStyle;
+        }
+        buffer.append(ch);
+        return bufferStyle;
+    }
+
+    private static void flush(class_5250 out, StringBuilder buffer, class_2583 style) {
+        if (buffer.length() == 0) {
             return;
         }
         class_2583 effectiveStyle = style == null ? class_2583.field_24360 : style;
-        Matcher matcher = BRACKET_NUMBER.matcher(text);
-        int index = 0;
-        while (matcher.find()) {
-            int value;
-            try {
-                value = Integer.parseInt(matcher.group(1));
-            } catch (NumberFormatException ex) {
-                continue;
-            }
-            if (value < 480 || value > 559) {
-                continue;
-            }
-            int start = matcher.start();
-            int end = matcher.end();
-            if (start > index) {
-                out.method_10852(class_2561.method_43470(text.substring(index, start)).method_10862(effectiveStyle));
-            }
-            class_124 bracketColor = (value <= 519)
-                    ? (goldBrackets ? class_124.field_1065 : class_124.field_1063)
-                    : (diamondBrackets ? class_124.field_1075 : class_124.field_1063);
-            class_124 numberColor = red480Plus ? class_124.field_1061 : class_124.field_1079;
-            class_2583 bracketStyle = effectiveStyle.method_10977(bracketColor);
-            class_2583 numberStyle = effectiveStyle.method_10977(numberColor);
-            out.method_10852(class_2561.method_43470("[").method_10862(bracketStyle));
-            out.method_10852(class_2561.method_43470(String.valueOf(value)).method_10862(numberStyle));
-            out.method_10852(class_2561.method_43470("]").method_10862(bracketStyle));
-            index = end;
-            changed[0] = true;
-        }
-        if (index < text.length()) {
-            out.method_10852(class_2561.method_43470(text.substring(index)).method_10862(effectiveStyle));
-        }
+        out.method_10852(class_2561.method_43470(buffer.toString()).method_10862(effectiveStyle));
+        buffer.setLength(0);
     }
 
-    private static void appendColored(class_5250 out, String text, class_2583 baseStyle, class_124 color) {
-        if (text == null || text.isEmpty()) {
-            return;
-        }
-        class_2583 effectiveStyle = baseStyle == null ? class_2583.field_24360 : baseStyle;
-        out.method_10852(class_2561.method_43470(text).method_10862(effectiveStyle.method_10977(color)));
+    private static class_2583 recolor(class_2583 style, class_124 color) {
+        class_2583 effectiveStyle = style == null ? class_2583.field_24360 : style;
+        return effectiveStyle.method_10977(color);
     }
 
-    private static boolean matchesSplitPrefix(List<Segment> segments, int index) {
-        if (index + 2 >= segments.size()) {
-            return false;
-        }
-        String open = segments.get(index).text;
-        String number = segments.get(index + 1).text;
-        String close = segments.get(index + 2).text;
-        return "[".equals(open) && "]".equals(close) && THREE_DIGITS.matcher(number).matches();
+    private static boolean isDigit(char ch) {
+        return ch >= '0' && ch <= '9';
     }
 
-    private static final class Segment {
-        private final String text;
+    private static final class CharSpan {
+        private final char ch;
         private final class_2583 style;
 
-        private Segment(String text, class_2583 style) {
-            this.text = text;
+        private CharSpan(char ch, class_2583 style) {
+            this.ch = ch;
             this.style = style;
         }
     }
