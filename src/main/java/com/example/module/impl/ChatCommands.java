@@ -54,6 +54,7 @@
 /*     */ import net.minecraft.class_1657;
 /*     */ import net.minecraft.class_1661;
 /*     */ import net.minecraft.class_1937;
+/*     */ import net.minecraft.class_2246;
 /*     */ import net.minecraft.class_332;
 /*     */ import net.minecraft.class_465;
 /*     */ import net.minecraft.class_1799;
@@ -62,12 +63,17 @@
 /*     */ import net.minecraft.class_243;
 /*     */ import net.minecraft.class_2561;
 /*     */ import net.minecraft.class_2583;
+/*     */ import net.minecraft.class_266;
+/*     */ import net.minecraft.class_268;
+/*     */ import net.minecraft.class_269;
 /*     */ import net.minecraft.class_2680;
 /*     */ import net.minecraft.class_310;
 /*     */ import net.minecraft.class_437;
 /*     */ import net.minecraft.class_355;
 /*     */ import net.minecraft.class_634;
 /*     */ import net.minecraft.class_640;
+/*     */ import net.minecraft.class_8646;
+/*     */ import net.minecraft.class_9015;
 /*     */ import net.minecraft.class_5250;
 /*     */ import org.joml.Vector2d;
 /*     */ 
@@ -100,6 +106,10 @@
 /*  66 */   private static final Colour CUSTOM_OUTLINE_COLOUR = new Colour(255, 195, 90, 255);
 /*  67 */   private static final double CUSTOM_BOX_PADDING = 0.08D;
 /*  68 */   private static final double CUSTOM_BOX_SMOOTHING = 0.45D;
+/*  68 */   private static final Colour TEMPLE_SKIP_DEFAULT_COLOUR = new Colour(127, 0, 255, 255);
+/*  68 */   private static final String TEMPLE_SKIP_GUARDIAN_NAME = "Kalhuiki Door Guardian";
+/*  68 */   private static final String JUNGLE_TEMPLE_AREA = "Jungle Temple";
+/*  68 */   private static final int TEMPLE_SKIP_SCAN_INTERVAL_TICKS = 10;
 /*  69 */   private static final int ESP_SCAN_INTERVAL_TICKS = 10;
 /*  70 */   private static final int ESP_SCAN_IDLE_INTERVAL_TICKS = 40;
 /*  70 */   private static final int GROTTO_IGNORE_X = 513;
@@ -198,6 +208,8 @@
 /*  99 */    private final DragSetting commissionOverlayPosition = new DragSetting("Commission Overlay", new Vector2d(8.0D, 8.0D), new Vector2d(180.0D, 80.0D), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public DragSetting getCommissionOverlayPosition() { return this.commissionOverlayPosition; }
 /* 100 */    private final BooleanSetting commissionPeekEnabled = new BooleanSetting("Peek", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionPeekEnabled() { return this.commissionPeekEnabled; }
 /* 100 */    private final BooleanSetting grottoLocatorEnabled = new BooleanSetting("Enable (Grotto locator)", true); public BooleanSetting getGrottoLocatorEnabled() { return this.grottoLocatorEnabled; }
+/* 100 */    private final BooleanSetting templeSkipEnabled = new BooleanSetting("Temple Skip", false); public BooleanSetting getTempleSkipEnabled() { return this.templeSkipEnabled; }
+/* 100 */    private final ColourSetting templeSkipColor = new ColourSetting("Temple Skip Color", TEMPLE_SKIP_DEFAULT_COLOUR, () -> ((Boolean)this.templeSkipEnabled.getValue()).booleanValue()); public ColourSetting getTempleSkipColor() { return this.templeSkipColor; }
 /* 101 */    private final Setting<?> commissionPeekKeybindSetting = createCommissionPeekKeybindSetting(); public Setting<?> getCommissionPeekKeybindSetting() { return this.commissionPeekKeybindSetting; }
 /* 101 */    private final Setting<?> grottoSearchKeybindSetting = createGrottoSearchKeybindSetting(); public Setting<?> getGrottoSearchKeybindSetting() { return this.grottoSearchKeybindSetting; }
 /* 102 */    private final BooleanSetting commissionOnlyRoyalPigeonInventory = new BooleanSetting("Only display if Royal Pigeon is in inventory", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonInventory() { return this.commissionOnlyRoyalPigeonInventory; }
@@ -229,6 +241,8 @@
 /*  91 */   private Field tooltipHoveredSlotField;
 /*  91 */   private Method tooltipSlotAtMethod;
 /*  91 */   private Method tooltipDrawTooltipMethod;
+/*  91 */   private int templeSkipTickCounter;
+/*  91 */   private class_2338 templeSkipSpot;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Chat Webhook", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
 /*  96 */    private final StringSetting webhookLink = new StringSetting("Chat Link", "", true, false, () -> ((Boolean)this.webhookEnabled.getValue()).booleanValue()); public StringSetting getWebhookLink() { return this.webhookLink; }
 /*  97 */    private final BooleanSetting guildChatWebhookEnabled = new BooleanSetting("Guild chat Webhook", false); public BooleanSetting getGuildChatWebhookEnabled() { return this.guildChatWebhookEnabled; }
@@ -532,7 +546,7 @@
 /*     */     
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.scrollableTooltips, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
-/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting });
+/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
@@ -1134,12 +1148,14 @@
 /* 552 */       clearEspData();
 /* 553 */       clearCustomHighlightData();
 /* 554 */       clearCommissionOverlayData();
+/* 554 */       clearTempleSkipData();
 /*     */       return;
 /*     */     }
 /* 556 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
 /* 557 */       clearEspData();
 /* 558 */       clearCustomHighlightData();
 /* 559 */       clearCommissionOverlayData();
+/* 559 */       clearTempleSkipData();
 /*     */       return;
 /*     */     }
 /* 561 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
@@ -1179,6 +1195,7 @@
 /*     */     } else {
 /* 594 */       clearCommissionOverlayData();
 /*     */     } 
+/* 594 */     updateTempleSkipSpot();
 /*     */     
 /*     */   }
 /*     */   
@@ -1233,6 +1250,7 @@
 /* 583 */     } catch (Throwable throwable) {
 /* 584 */       clearCustomHighlightData();
 /*     */     } 
+/*     */     renderTempleSkip(event);
 /*     */   }
 /*     */   
 /*     */   @SubscribeEvent
@@ -3603,6 +3621,162 @@
 /*     */     
 /* 603 */     postToConfiguredWebhook((String)this.loginNotifierWebhook.getValue(), username + " left " + this.lastKnownServerAddress);
 /* 604 */     this.lastLoginNotifierEvent = "leave";
+/*     */   }
+/*     */   
+/*     */   private void updateTempleSkipSpot() {
+/* 604 */     if (!isTempleSkipEnabled()) {
+/* 604 */       clearTempleSkipData();
+/* 604 */       return;
+/*     */     }
+/* 604 */     if (this.templeSkipSpot != null) {
+/* 604 */       return;
+/*     */     }
+/* 604 */     this.templeSkipTickCounter++;
+/* 604 */     if (this.templeSkipTickCounter % TEMPLE_SKIP_SCAN_INTERVAL_TICKS != 0) {
+/* 604 */       return;
+/*     */     }
+/* 604 */     Iterable<?> entities = getEntityIterable(this.mc.field_1687);
+/* 604 */     if (entities == null) {
+/* 604 */       return;
+/*     */     }
+/* 604 */     for (Object obj : entities) {
+/* 604 */       if (!(obj instanceof net.minecraft.class_1297)) {
+/* 604 */         continue;
+/*     */       }
+/* 604 */       net.minecraft.class_1297 entity = (net.minecraft.class_1297)obj;
+/* 604 */       String name = getEntityNametag(entity);
+/* 604 */       if (!TEMPLE_SKIP_GUARDIAN_NAME.equals(name)) {
+/* 604 */         continue;
+/*     */       }
+/* 604 */       class_2338 basePos = entity.method_24515();
+/* 604 */       class_2338 ground = findGround(basePos, 4);
+/* 604 */       if (ground == null) {
+/* 604 */         continue;
+/*     */       }
+/* 604 */       class_2680 state = this.mc.field_1687.method_8320(ground);
+/* 604 */       if (state == null || !state.method_26204().equals(class_2246.field_10056)) {
+/* 604 */         continue;
+/*     */       }
+/* 604 */       this.templeSkipSpot = ground.method_10069(20, -45, -35);
+/* 604 */       return;
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private void clearTempleSkipData() {
+/* 604 */     this.templeSkipSpot = null;
+/* 604 */     this.templeSkipTickCounter = 0;
+/*     */   }
+/*     */   
+/*     */   private boolean isTempleSkipEnabled() {
+/* 604 */     return (isEnabled() && ((Boolean)this.templeSkipEnabled.getValue()).booleanValue());
+/*     */   }
+/*     */   
+/*     */   private Colour getTempleSkipColour() {
+/* 604 */     if (this.templeSkipColor == null) {
+/* 604 */       return TEMPLE_SKIP_DEFAULT_COLOUR;
+/*     */     }
+/* 604 */     Object value = this.templeSkipColor.getValue();
+/* 604 */     return (value instanceof Colour) ? (Colour)value : TEMPLE_SKIP_DEFAULT_COLOUR;
+/*     */   }
+/*     */   
+/*     */   private void renderTempleSkip(Render3DEvent.Last event) {
+/* 604 */     if (!isTempleSkipEnabled() || this.templeSkipSpot == null) {
+/* 604 */       return;
+/*     */     }
+/* 604 */     if (!this.titaniumRenderBridgeReady) {
+/* 604 */       this.titaniumRenderBridgeReady = initTitaniumRenderBridge();
+/* 604 */       if (!this.titaniumRenderBridgeReady) {
+/* 604 */         return;
+/*     */       }
+/*     */     }
+/* 604 */     if (this.outlineBoxConstructor == null || this.addRenderTaskMethod == null) {
+/* 604 */       return;
+/*     */     }
+/* 604 */     Colour colour = getTempleSkipColour();
+/*     */     try {
+/* 604 */       class_238 baseBox = new class_238(this.templeSkipSpot);
+/* 604 */       Object baseTask = this.outlineBoxConstructor.newInstance(new Object[] { baseBox, colour, Boolean.valueOf(false) });
+/* 604 */       this.addRenderTaskMethod.invoke(null, new Object[] { baseTask });
+/* 604 */       class_2338 standPos = this.templeSkipSpot.method_10087(8);
+/* 604 */       class_238 standBox = new class_238(standPos);
+/* 604 */       Object standTask = this.outlineBoxConstructor.newInstance(new Object[] { standBox, colour, Boolean.valueOf(false) });
+/* 604 */       this.addRenderTaskMethod.invoke(null, new Object[] { standTask });
+/* 604 */     } catch (ReflectiveOperationException ignored) {
+/* 604 */       this.titaniumRenderBridgeReady = false;
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private boolean isInTempleArea() {
+/* 604 */     List<String> lines = getScoreboardLines();
+/* 604 */     for (String line : lines) {
+/* 604 */       if (line != null && line.contains(JUNGLE_TEMPLE_AREA)) {
+/* 604 */         return true;
+/*     */       }
+/*     */     } 
+/* 604 */     return false;
+/*     */   }
+/*     */   
+/*     */   private String getSkyblockArea() {
+/* 604 */     List<String> lines = getScoreboardLines();
+/* 604 */     for (String line : lines) {
+/* 604 */       if (line == null || line.isBlank()) continue; 
+/* 604 */       if (line.startsWith("Area:") || line.startsWith("Dungeon:")) {
+/* 604 */         String[] split = line.split(":", 2);
+/* 604 */         if (split.length > 1) {
+/* 604 */           return split[1].trim();
+/*     */         }
+/*     */       } 
+/*     */     } 
+/* 604 */     return "";
+/*     */   }
+/*     */   
+/*     */   private List<String> getScoreboardLines() {
+/* 604 */     if (this.mc == null || this.mc.field_1724 == null) {
+/* 604 */       return List.of();
+/*     */     }
+/* 604 */     class_634 handler = this.mc.field_1724.field_3944;
+/* 604 */     if (handler == null) {
+/* 604 */       return List.of();
+/*     */     }
+/* 604 */     class_269 scoreboard = handler.method_55823();
+/* 604 */     if (scoreboard == null) {
+/* 604 */       return List.of();
+/*     */     }
+/* 604 */     class_8646 displaySlot = (class_8646)class_8646.field_45176.apply(1);
+/* 604 */     class_266 objective = scoreboard.method_1189(displaySlot);
+/* 604 */     if (objective == null) {
+/* 604 */       return List.of();
+/*     */     }
+/* 604 */     List<String> lines = new ArrayList<>();
+/* 604 */     for (class_9015 holder : scoreboard.method_1178()) {
+/* 604 */       if (!scoreboard.method_1166(holder).containsKey(objective)) {
+/* 604 */         continue;
+/*     */       }
+/* 604 */       class_268 team = scoreboard.method_1164(holder.method_5820());
+/* 604 */       if (team == null) {
+/* 604 */         continue;
+/*     */       }
+/* 604 */       String line = class_124.method_539(team.method_1144().getString() + team.method_1136().getString()).trim();
+/* 604 */       if (!line.isEmpty()) {
+/* 604 */         lines.add(line);
+/*     */       }
+/*     */     } 
+/* 604 */     return lines;
+/*     */   }
+/*     */   
+/*     */   private class_2338 findGround(class_2338 start, int range) {
+/* 604 */     if (start == null || this.mc.field_1687 == null) {
+/* 604 */       return start;
+/*     */     }
+/* 604 */     int max = Math.max(0, Math.min(256, range));
+/* 604 */     for (int i = 0; i <= max; i++) {
+/* 604 */       class_2338 pos = start.method_10087(i);
+/* 604 */       class_2680 state = this.mc.field_1687.method_8320(pos);
+/* 604 */       if (state != null && !state.method_26215()) {
+/* 604 */         return pos;
+/*     */       }
+/*     */     } 
+/* 604 */     return start;
 /*     */   }
 /*     */   
 /*     */   private void updateEspBlocks() {
