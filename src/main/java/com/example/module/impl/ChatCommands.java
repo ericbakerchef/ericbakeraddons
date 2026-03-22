@@ -262,7 +262,23 @@
 /* 103 */    private final BooleanSetting loginNotifierWebhookEnabled = new BooleanSetting("Log in notifier Webhook", false); public BooleanSetting getLoginNotifierWebhookEnabled() { return this.loginNotifierWebhookEnabled; }
 /* 104 */    private final StringSetting loginNotifierWebhook = new StringSetting("Notifier Link", "", true, false, () -> ((Boolean)this.loginNotifierWebhookEnabled.getValue()).booleanValue()); public StringSetting getLoginNotifierWebhook() { return this.loginNotifierWebhook; }
 /* 105 */    private final BooleanSetting accountShareEnabled = new BooleanSetting("Enable (Account Share)", false); public BooleanSetting getAccountShareEnabled() { return this.accountShareEnabled; }
-/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<class_2338> chestBlocks = new ArrayList<>(); private final List<class_2338> hideonleafBlocks = new ArrayList<>(); private final List<class_238> automatonBoxes = new ArrayList<>(); private final List<class_238> hideonleafEntityBoxes = new ArrayList<>(); private final List<class_238> customEntityBoxes = new ArrayList<>(); private final List<net.minecraft.class_1297> customMatchedEntities = new ArrayList<>(); private final IdentityHashMap<net.minecraft.class_1297, class_238> customSmoothedBoxes = new IdentityHashMap<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final List<Object> chestRenderTasks = new ArrayList<>(); private final List<Object> hideonleafRenderTasks = new ArrayList<>(); private final List<Object> automatonRenderTasks = new ArrayList<>(); private final List<Object> hideonleafEntityRenderTasks = new ArrayList<>(); private final List<Object> customEntityRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int customHighlightTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private boolean espScanInitialized; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Constructor<?> lineConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method entityTypeMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
+/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<class_2338> chestBlocks = new ArrayList<>(); private final List<class_2338> hideonleafBlocks = new ArrayList<>(); private final List<class_238> automatonBoxes = new ArrayList<>(); private final List<class_238> hideonleafEntityBoxes = new ArrayList<>(); private final List<class_238> customEntityBoxes = new ArrayList<>(); private final List<net.minecraft.class_1297> customMatchedEntities = new ArrayList<>(); private final IdentityHashMap<net.minecraft.class_1297, class_238> customSmoothedBoxes = new IdentityHashMap<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final List<Object> chestRenderTasks = new ArrayList<>(); private final List<Object> hideonleafRenderTasks = new ArrayList<>(); private final List<Object> automatonRenderTasks = new ArrayList<>(); private final List<Object> hideonleafEntityRenderTasks = new ArrayList<>(); private final List<Object> customEntityRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int customHighlightTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private int lastEspScanRange = Integer.MIN_VALUE; private boolean espScanInitialized; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Constructor<?> lineConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method entityTypeMethod; private Method shulkerColorMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
+/*     */   private static final int ESP_SCAN_BLOCK_BUDGET = 4000;
+/*     */   private boolean espScanActive;
+/*     */   private int espScanMinX;
+/*     */   private int espScanMaxX;
+/*     */   private int espScanMinY;
+/*     */   private int espScanMaxY;
+/*     */   private int espScanMinZ;
+/*     */   private int espScanMaxZ;
+/*     */   private int espScanCursorX;
+/*     */   private int espScanCursorY;
+/*     */   private int espScanCursorZ;
+/*     */   private int espScanOriginChunkX = Integer.MIN_VALUE;
+/*     */   private int espScanOriginChunkY = Integer.MIN_VALUE;
+/*     */   private int espScanOriginChunkZ = Integer.MIN_VALUE;
+/*     */   private int espScanOriginRange = Integer.MIN_VALUE;
+/*     */   private int espScanMask;
 /* 107 */   public ChatCommands() { this.copyMinecraftSsidButton = new ButtonSetting("Copy Minecraft SSID", "", () -> {
 /*     */           if (this.mc.method_1548() == null) {
 /*     */             ChatUtils.chat(String.valueOf(class_124.field_1061) + "Unable to copy SSID: user not available.", new Object[0]);
@@ -1168,8 +1184,9 @@
 /* 562 */       boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
 /* 563 */       boolean nodeOn = ((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue();
 /* 563 */       boolean chestOn = ((Boolean)this.chestHighlightEnabled.getValue()).booleanValue();
+/* 564 */       boolean hideonleafOn = ((Boolean)this.hideonleafHighlightEnabled.getValue()).booleanValue();
 /* 564 */       boolean automatonOn = ((Boolean)this.automatonHighlightEnabled.getValue()).booleanValue();
-/* 564 */       if (!titaniumOn && !nodeOn && !chestOn && !automatonOn) {
+/* 564 */       if (!titaniumOn && !nodeOn && !chestOn && !hideonleafOn && !automatonOn) {
 /* 565 */         clearEspData();
 /* 566 */         this.espScanInitialized = true;
 /*     */       } else {
@@ -1178,7 +1195,11 @@
 /* 570 */         int px = playerPos.method_10263();
 /* 571 */         int py = playerPos.method_10264();
 /* 572 */         int pz = playerPos.method_10260();
-/* 573 */         boolean moved = (px != this.lastEspScanX || py != this.lastEspScanY || pz != this.lastEspScanZ);
+/* 573 */         int range = getEspScanRange();
+/* 574 */         int chunkX = px >> 4;
+/* 575 */         int chunkY = py >> 4;
+/* 576 */         int chunkZ = pz >> 4;
+/* 577 */         boolean moved = (chunkX != this.lastEspScanX || chunkY != this.lastEspScanY || chunkZ != this.lastEspScanZ || range != this.lastEspScanRange);
 /* 574 */         int interval = moved ? ESP_SCAN_INTERVAL_TICKS : ESP_SCAN_IDLE_INTERVAL_TICKS;
 /* 575 */         if (!this.espScanInitialized || moved || this.titaniumTickCounter % interval == 0) {
 /* 576 */           updateEspBlocks();
@@ -3523,11 +3544,23 @@
 /*     */       return false;
 /*     */     }
 /*     */     String typeText = getEntityTypeText(entity);
-/*     */     if (typeText != null && (typeText.contains("green_shulker") || (typeText.contains("shulker") && typeText.contains("green")))) {
+/*     */     String raw = String.valueOf(entity).toLowerCase(Locale.ROOT);
+/*     */     boolean isShulker = (typeText != null && typeText.contains("shulker")) || raw.contains("shulker");
+/*     */     if (!isShulker) {
+/*     */       return false;
+/*     */     }
+/*     */     if (typeText != null && (typeText.contains("green") || typeText.contains("lime"))) {
 /*     */       return true;
 /*     */     }
-/*     */     String raw = String.valueOf(entity).toLowerCase(Locale.ROOT);
-/*     */     return (raw.contains("green_shulker") || (raw.contains("shulker") && raw.contains("green")));
+/*     */     if (raw.contains("green") || raw.contains("lime")) {
+/*     */       return true;
+/*     */     }
+/*     */     String colour = getShulkerColorText(entity);
+/*     */     if (colour != null && (colour.contains("green") || colour.contains("lime"))) {
+/*     */       return true;
+/*     */     }
+/*     */     String nametag = getEntityNametag(entity);
+/*     */     return (nametag != null && (nametag.contains("green") || nametag.contains("lime")));
 /*     */   }
 /*     */   
 /*     */   private String getEntityTypeText(net.minecraft.class_1297 entity) {
@@ -3559,6 +3592,72 @@
 /*     */       try {
 /*     */         return entity.getClass().getMethod(name, new Class[0]);
 /*     */       } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     } 
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private String getShulkerColorText(net.minecraft.class_1297 entity) {
+/*     */     if (entity == null) {
+/*     */       return null;
+/*     */     }
+/*     */     if (this.shulkerColorMethod == null || !this.shulkerColorMethod.getDeclaringClass().isInstance(entity)) {
+/*     */       this.shulkerColorMethod = resolveShulkerColorMethod(entity);
+/*     */     }
+/*     */     if (this.shulkerColorMethod == null) {
+/*     */       return null;
+/*     */     }
+/*     */     try {
+/*     */       Object colour = this.shulkerColorMethod.invoke(entity, new Object[0]);
+/*     */       return (colour == null) ? null : String.valueOf(colour).toLowerCase(Locale.ROOT);
+/*     */     } catch (ReflectiveOperationException ignored) {
+/*     */       this.shulkerColorMethod = null;
+/*     */       return null;
+/*     */     } 
+/*     */   }
+/*     */   
+/*     */   private Method resolveShulkerColorMethod(Object entity) {
+/*     */     if (entity == null) {
+/*     */       return null;
+/*     */     }
+/*     */     for (Method method : entity.getClass().getMethods()) {
+/*     */       Method candidate = resolveDyeEnumMethod(method);
+/*     */       if (candidate != null) {
+/*     */         return candidate;
+/*     */       }
+/*     */     } 
+/*     */     for (Method method : entity.getClass().getDeclaredMethods()) {
+/*     */       Method candidate = resolveDyeEnumMethod(method);
+/*     */       if (candidate != null) {
+/*     */         return candidate;
+/*     */       }
+/*     */     } 
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private Method resolveDyeEnumMethod(Method method) {
+/*     */     if (method == null || method.getParameterCount() != 0) {
+/*     */       return null;
+/*     */     }
+/*     */     Class<?> returnType = method.getReturnType();
+/*     */     if (returnType == null || !returnType.isEnum()) {
+/*     */       return null;
+/*     */     }
+/*     */     Object[] constants = returnType.getEnumConstants();
+/*     */     if (constants == null || constants.length == 0) {
+/*     */       return null;
+/*     */     }
+/*     */     boolean hasGreen = false;
+/*     */     boolean hasLime = false;
+/*     */     for (Object constant : constants) {
+/*     */       String name = String.valueOf(constant).toLowerCase(Locale.ROOT);
+/*     */       if (name.contains("green")) hasGreen = true; 
+/*     */       if (name.contains("lime")) hasLime = true; 
+/*     */       if (hasGreen && hasLime) {
+/*     */         try {
+/*     */           method.setAccessible(true);
+/*     */         } catch (Exception exception) {}
+/*     */         return method;
+/*     */       }
 /*     */     } 
 /*     */     return null;
 /*     */   }
@@ -3826,46 +3925,88 @@
 /* 617 */     int pz = playerPos.method_10260();
 /*     */     int range = getEspScanRange();
 /*     */     
-/* 619 */     this.titaniumBlocks.clear();
-/* 620 */     this.nodeBlocks.clear();
-/* 620 */     this.chestBlocks.clear();
-/* 620 */     this.hideonleafBlocks.clear();
-/* 620 */     this.automatonBoxes.clear();
-/* 620 */     this.hideonleafEntityBoxes.clear();
 /* 621 */     boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
 /* 622 */     boolean nodeOn = ((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue();
 /* 622 */     boolean chestOn = ((Boolean)this.chestHighlightEnabled.getValue()).booleanValue();
 /* 622 */     boolean hideonleafOn = ((Boolean)this.hideonleafHighlightEnabled.getValue()).booleanValue();
 /* 622 */     boolean automatonOn = ((Boolean)this.automatonHighlightEnabled.getValue()).booleanValue();
-/* 623 */     boolean blockScanOn = (titaniumOn || nodeOn || chestOn || hideonleafOn);
+/* 623 */     boolean blockScanOn = (titaniumOn || nodeOn || chestOn);
 /* 623 */     if (!blockScanOn && !automatonOn && !hideonleafOn) {
-/* 624 */       this.espScanInitialized = true;
+/* 624 */       clearEspData();
+/* 625 */       this.espScanInitialized = true;
 /*     */       return;
 /*     */     }
-/* 626 */     if (blockScanOn) {
-/* 626 */       for (int x = px - range; x <= px + range; x++) {
-/* 627 */         for (int y = py - range; y <= py + range; y++) {
-/* 628 */           for (int z = pz - range; z <= pz + range; z++) {
-/* 629 */             class_2338 pos = new class_2338(x, y, z);
-/* 630 */             class_2680 state = world.method_8320(pos);
-/* 631 */             byte highlightMatch = getHighlightMatch(state);
-/* 632 */             if (titaniumOn && (highlightMatch & MATCH_TITANIUM) != 0) this.titaniumBlocks.add(pos); 
-/* 633 */             if (nodeOn && (highlightMatch & MATCH_NODE) != 0) this.nodeBlocks.add(pos); 
-/* 634 */             if (chestOn && (highlightMatch & MATCH_CHEST) != 0) this.chestBlocks.add(pos); 
-/* 634 */             if (hideonleafOn && (highlightMatch & MATCH_HIDEONLEAF) != 0) this.hideonleafBlocks.add(pos); 
-/*     */           } 
-/*     */         } 
-/*     */       } 
-/*     */     } 
-/*     */     if (automatonOn) {
-/*     */       updateAutomatonEntities(world);
+/*     */     int scanMask = 0;
+/*     */     if (titaniumOn) scanMask |= 1; 
+/*     */     if (nodeOn) scanMask |= 2; 
+/*     */     if (chestOn) scanMask |= 4; 
+/*     */     if (hideonleafOn) scanMask |= 8; 
+/*     */     if (automatonOn) scanMask |= 16; 
+/*     */     int chunkX = px >> 4;
+/*     */     int chunkY = py >> 4;
+/*     */     int chunkZ = pz >> 4;
+/*     */     boolean restart = (!this.espScanActive || chunkX != this.espScanOriginChunkX || chunkY != this.espScanOriginChunkY || chunkZ != this.espScanOriginChunkZ || range != this.espScanOriginRange || scanMask != this.espScanMask);
+/*     */     if (restart) {
+/*     */       clearEspScanData();
+/*     */       this.espScanInitialized = false;
+/*     */       this.espScanMask = scanMask;
+/*     */       this.espScanOriginChunkX = chunkX;
+/*     */       this.espScanOriginChunkY = chunkY;
+/*     */       this.espScanOriginChunkZ = chunkZ;
+/*     */       this.espScanOriginRange = range;
+/*     */       this.espScanMinX = px - range;
+/*     */       this.espScanMaxX = px + range;
+/*     */       this.espScanMinY = py - range;
+/*     */       this.espScanMaxY = py + range;
+/*     */       this.espScanMinZ = pz - range;
+/*     */       this.espScanMaxZ = pz + range;
+/*     */       this.espScanCursorX = this.espScanMinX;
+/*     */       this.espScanCursorY = this.espScanMinY;
+/*     */       this.espScanCursorZ = this.espScanMinZ;
+/*     */       this.espScanActive = blockScanOn;
+/*     */       if (!blockScanOn) {
+/*     */         if (automatonOn) updateAutomatonEntities(world); 
+/*     */         if (hideonleafOn) updateHideonleafEntities(world); 
+/*     */         finishEspScan(range, px, py, pz);
+/*     */         return;
+/*     */       }
 /*     */     }
-/*     */     if (hideonleafOn) {
-/*     */       updateHideonleafEntities(world);
+/*     */     if (!this.espScanActive) {
+/*     */       return;
 /*     */     }
-/* 637 */     this.lastEspScanX = px;
-/* 638 */     this.lastEspScanY = py;
-/* 639 */     this.lastEspScanZ = pz;
+/*     */     int budget = ESP_SCAN_BLOCK_BUDGET;
+/*     */     while (budget > 0 && this.espScanCursorX <= this.espScanMaxX) {
+/*     */       class_2338 pos = new class_2338(this.espScanCursorX, this.espScanCursorY, this.espScanCursorZ);
+/*     */       class_2680 state = world.method_8320(pos);
+/*     */       byte highlightMatch = getHighlightMatch(state);
+/*     */       if (titaniumOn && (highlightMatch & MATCH_TITANIUM) != 0) this.titaniumBlocks.add(pos); 
+/*     */       if (nodeOn && (highlightMatch & MATCH_NODE) != 0) this.nodeBlocks.add(pos); 
+/*     */       if (chestOn && (highlightMatch & MATCH_CHEST) != 0) this.chestBlocks.add(pos); 
+/*     */       if (hideonleafOn && (highlightMatch & MATCH_HIDEONLEAF) != 0) this.hideonleafBlocks.add(pos); 
+/*     */       budget--;
+/*     */       this.espScanCursorZ++;
+/*     */       if (this.espScanCursorZ > this.espScanMaxZ) {
+/*     */         this.espScanCursorZ = this.espScanMinZ;
+/*     */         this.espScanCursorY++;
+/*     */         if (this.espScanCursorY > this.espScanMaxY) {
+/*     */           this.espScanCursorY = this.espScanMinY;
+/*     */           this.espScanCursorX++;
+/*     */         }
+/*     */       }
+/*     */     }
+/*     */     if (this.espScanCursorX > this.espScanMaxX) {
+/*     */       this.espScanActive = false;
+/*     */       if (automatonOn) updateAutomatonEntities(world); 
+/*     */       if (hideonleafOn) updateHideonleafEntities(world); 
+/*     */       finishEspScan(range, px, py, pz);
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private void finishEspScan(int range, int px, int py, int pz) {
+/* 637 */     this.lastEspScanX = px >> 4;
+/* 638 */     this.lastEspScanY = py >> 4;
+/* 639 */     this.lastEspScanZ = pz >> 4;
+/* 639 */     this.lastEspScanRange = range;
 /* 640 */     this.espScanInitialized = true;
 /* 641 */     rebuildRenderTasks(this.titaniumBlocks, this.titaniumRenderTasks, TITANIUM_FILL_COLOUR, TITANIUM_OUTLINE_COLOUR);
 /* 642 */     rebuildRenderTasks(this.nodeBlocks, this.nodeRenderTasks, NODE_FILL_COLOUR, NODE_OUTLINE_COLOUR);
@@ -3929,6 +4070,15 @@
 /*     */     }
 /*     */   }
 /*     */   
+/*     */   private void clearEspScanData() {
+/*     */     this.titaniumBlocks.clear();
+/*     */     this.nodeBlocks.clear();
+/*     */     this.chestBlocks.clear();
+/*     */     this.hideonleafBlocks.clear();
+/*     */     this.automatonBoxes.clear();
+/*     */     this.hideonleafEntityBoxes.clear();
+/*     */   }
+/*     */   
 /*     */   private void clearEspData() {
 /* 645 */     this.titaniumBlocks.clear();
 /* 646 */     this.nodeBlocks.clear();
@@ -3943,6 +4093,12 @@
 /*     */     this.hideonleafRenderTasks.clear();
 /*     */     this.hideonleafEntityRenderTasks.clear();
 /* 649 */     this.espScanInitialized = false;
+/*     */     this.espScanActive = false;
+/*     */     this.espScanMask = 0;
+/*     */     this.espScanOriginChunkX = Integer.MIN_VALUE;
+/*     */     this.espScanOriginChunkY = Integer.MIN_VALUE;
+/*     */     this.espScanOriginChunkZ = Integer.MIN_VALUE;
+/*     */     this.espScanOriginRange = Integer.MIN_VALUE;
 /*     */   }
 /*     */   
 /*     */   private void clearCustomHighlightData() {
@@ -3964,7 +4120,15 @@
 /* 660 */     if (blockText.contains("polished_diorite")) match = (byte)(match | MATCH_TITANIUM); 
 /* 661 */     if (blockText.contains("purple_terracotta")) match = (byte)(match | MATCH_NODE); 
 /* 662 */     if (blockText.contains("chest")) match = (byte)(match | MATCH_CHEST); 
-/* 662 */     if (blockText.contains("green_shulker_box")) match = (byte)(match | MATCH_HIDEONLEAF); 
+/* 662 */     if (blockText.contains("green_shulker_box") || blockText.contains("lime_shulker_box")) match = (byte)(match | MATCH_HIDEONLEAF); 
+/* 662 */     if ((match & MATCH_HIDEONLEAF) == 0) {
+/* 662 */       String stateText = String.valueOf(state).toLowerCase(Locale.ROOT);
+/* 662 */       if (stateText.contains("green_shulker_box") || stateText.contains("lime_shulker_box")) {
+/* 662 */         match = (byte)(match | MATCH_HIDEONLEAF);
+/* 662 */       } else if (blockText.contains("shulker_box") && (stateText.contains("color=green") || stateText.contains("color=lime"))) {
+/* 662 */         match = (byte)(match | MATCH_HIDEONLEAF);
+/* 662 */       }
+/* 662 */     }
 /* 662 */     this.blockHighlightTypeCache.put(block, Byte.valueOf(match));
 /* 663 */     return match;
 /*     */   }

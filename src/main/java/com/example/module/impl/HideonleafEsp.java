@@ -17,6 +17,7 @@ import net.minecraft.class_1937;
 import net.minecraft.class_2338;
 import net.minecraft.class_238;
 import net.minecraft.class_243;
+import net.minecraft.class_2561;
 import net.minecraft.class_2680;
 import net.minecraft.class_310;
 
@@ -30,6 +31,7 @@ import java.util.Locale;
 public class HideonleafEsp extends Module {
     private static final int SCAN_BLOCKS_PER_STEP = 16;
     private static final int SCAN_INTERVAL_TICKS = 10;
+    private static final int SCAN_IDLE_INTERVAL_TICKS = 40;
 
     private static final Colour FILL_COLOUR = new Colour(30, 120, 30, 55);
     private static final Colour OUTLINE_COLOUR = new Colour(60, 170, 60, 190);
@@ -44,6 +46,11 @@ public class HideonleafEsp extends Module {
     private final List<class_2338> highlightedEntityTracerTargets = new ArrayList<>();
 
     private int tickCounter;
+    private int lastScanChunkX = Integer.MIN_VALUE;
+    private int lastScanChunkY = Integer.MIN_VALUE;
+    private int lastScanChunkZ = Integer.MIN_VALUE;
+    private int lastScanRange = Integer.MIN_VALUE;
+    private boolean scanInitialized;
 
     private Constructor<?> filledBoxConstructor;
     private Constructor<?> outlineBoxConstructor;
@@ -52,6 +59,7 @@ public class HideonleafEsp extends Module {
     private boolean renderBridgeReady;
     private Method entityBoundingBoxMethod;
     private Method entityTypeMethod;
+    private Method shulkerColorMethod;
 
     public HideonleafEsp() {
         setGroup(this.espGroup);
@@ -66,12 +74,31 @@ public class HideonleafEsp extends Module {
             this.highlightedBlocks.clear();
             this.highlightedEntityBoxes.clear();
             this.highlightedEntityTracerTargets.clear();
+            this.scanInitialized = false;
+            return;
+        }
+
+        if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
+            this.highlightedBlocks.clear();
+            this.highlightedEntityBoxes.clear();
+            this.highlightedEntityTracerTargets.clear();
+            this.scanInitialized = false;
             return;
         }
 
         this.tickCounter++;
-        if (this.tickCounter % SCAN_INTERVAL_TICKS == 0) {
-            updateBlocks();
+        class_2338 playerPos = this.mc.field_1724.method_24515();
+        int px = playerPos.method_10263();
+        int py = playerPos.method_10264();
+        int pz = playerPos.method_10260();
+        int range = getScanRange();
+        int chunkX = px >> 4;
+        int chunkY = py >> 4;
+        int chunkZ = pz >> 4;
+        boolean moved = (chunkX != this.lastScanChunkX || chunkY != this.lastScanChunkY || chunkZ != this.lastScanChunkZ || range != this.lastScanRange);
+        int interval = moved ? SCAN_INTERVAL_TICKS : SCAN_IDLE_INTERVAL_TICKS;
+        if (!this.scanInitialized || moved || this.tickCounter % interval == 0) {
+            updateBlocks(range);
         }
     }
 
@@ -86,10 +113,6 @@ public class HideonleafEsp extends Module {
             if (!this.renderBridgeReady) {
                 return;
             }
-        }
-
-        if (this.highlightedBlocks.isEmpty()) {
-            updateBlocks();
         }
 
         List<class_2338> tracerTargets = ((Boolean) this.tracer.getValue()).booleanValue() ? new ArrayList<>() : null;
@@ -157,21 +180,13 @@ public class HideonleafEsp extends Module {
         }
     }
 
-    private void updateBlocks() {
-        if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
-            this.highlightedBlocks.clear();
-            this.highlightedEntityBoxes.clear();
-            this.highlightedEntityTracerTargets.clear();
-            return;
-        }
-
+    private void updateBlocks(int range) {
         class_1937 world = this.mc.field_1687;
         class_2338 playerPos = this.mc.field_1724.method_24515();
 
         int px = playerPos.method_10263();
         int py = playerPos.method_10264();
         int pz = playerPos.method_10260();
-        int range = getScanRange();
 
         this.highlightedBlocks.clear();
         this.highlightedEntityBoxes.clear();
@@ -189,6 +204,11 @@ public class HideonleafEsp extends Module {
         }
 
         updateEntities(world, px, py, pz, range);
+        this.lastScanChunkX = px >> 4;
+        this.lastScanChunkY = py >> 4;
+        this.lastScanChunkZ = pz >> 4;
+        this.lastScanRange = range;
+        this.scanInitialized = true;
     }
 
     private void updateEntities(class_1937 world, int px, int py, int pz, int range) {
@@ -235,12 +255,18 @@ public class HideonleafEsp extends Module {
         }
 
         String stateText = String.valueOf(state).toLowerCase(Locale.ROOT);
-        if (stateText.contains("green_shulker_box")) {
+        if (stateText.contains("green_shulker_box") || stateText.contains("lime_shulker_box")) {
             return true;
         }
 
         String blockText = String.valueOf(state.method_26204()).toLowerCase(Locale.ROOT);
-        return blockText.contains("green_shulker_box");
+        if (blockText.contains("green_shulker_box") || blockText.contains("lime_shulker_box")) {
+            return true;
+        }
+        if (blockText.contains("shulker_box")) {
+            return stateText.contains("color=green") || stateText.contains("color=lime");
+        }
+        return false;
     }
 
     private int getScanRange() {
@@ -255,12 +281,24 @@ public class HideonleafEsp extends Module {
         }
 
         String typeText = getEntityTypeText(entity);
-        if (typeText != null && (typeText.contains("green_shulker") || (typeText.contains("shulker") && typeText.contains("green")))) {
-            return true;
+        String raw = String.valueOf(entity).toLowerCase(Locale.ROOT);
+        boolean isShulker = (typeText != null && typeText.contains("shulker")) || raw.contains("shulker");
+        if (!isShulker) {
+            return false;
         }
 
-        String raw = String.valueOf(entity).toLowerCase(Locale.ROOT);
-        return raw.contains("green_shulker") || (raw.contains("shulker") && raw.contains("green"));
+        if (typeText != null && (typeText.contains("green") || typeText.contains("lime"))) {
+            return true;
+        }
+        if (raw.contains("green") || raw.contains("lime")) {
+            return true;
+        }
+        String colour = getShulkerColorText(entity);
+        if (colour != null && (colour.contains("green") || colour.contains("lime"))) {
+            return true;
+        }
+        String nametag = getEntityNametag(entity);
+        return nametag != null && (nametag.contains("green") || nametag.contains("lime"));
     }
 
     private String getEntityTypeText(class_1297 entity) {
@@ -295,6 +333,97 @@ public class HideonleafEsp extends Module {
                 return entity.getClass().getMethod(name, new Class[0]);
             } catch (ReflectiveOperationException ignored) {
                 // try next
+            }
+        }
+        return null;
+    }
+
+    private String getEntityNametag(class_1297 entity) {
+        if (entity == null) {
+            return null;
+        }
+        try {
+            if (!entity.method_16914()) {
+                return null;
+            }
+            class_2561 text = entity.method_5797();
+            if (text == null) {
+                return null;
+            }
+            String cleaned = text.getString().trim().toLowerCase(Locale.ROOT);
+            return cleaned.isEmpty() ? null : cleaned;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private String getShulkerColorText(class_1297 entity) {
+        if (entity == null) {
+            return null;
+        }
+        if (this.shulkerColorMethod == null || !this.shulkerColorMethod.getDeclaringClass().isInstance(entity)) {
+            this.shulkerColorMethod = resolveShulkerColorMethod(entity);
+        }
+        if (this.shulkerColorMethod == null) {
+            return null;
+        }
+        try {
+            Object colour = this.shulkerColorMethod.invoke(entity, new Object[0]);
+            return colour == null ? null : String.valueOf(colour).toLowerCase(Locale.ROOT);
+        } catch (ReflectiveOperationException ignored) {
+            this.shulkerColorMethod = null;
+            return null;
+        }
+    }
+
+    private Method resolveShulkerColorMethod(Object entity) {
+        if (entity == null) {
+            return null;
+        }
+        for (Method method : entity.getClass().getMethods()) {
+            Method candidate = resolveDyeEnumMethod(method);
+            if (candidate != null) {
+                return candidate;
+            }
+        }
+        for (Method method : entity.getClass().getDeclaredMethods()) {
+            Method candidate = resolveDyeEnumMethod(method);
+            if (candidate != null) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private Method resolveDyeEnumMethod(Method method) {
+        if (method == null || method.getParameterCount() != 0) {
+            return null;
+        }
+        Class<?> returnType = method.getReturnType();
+        if (returnType == null || !returnType.isEnum()) {
+            return null;
+        }
+        Object[] constants = returnType.getEnumConstants();
+        if (constants == null || constants.length == 0) {
+            return null;
+        }
+        boolean hasGreen = false;
+        boolean hasLime = false;
+        for (Object constant : constants) {
+            String name = String.valueOf(constant).toLowerCase(Locale.ROOT);
+            if (name.contains("green")) {
+                hasGreen = true;
+            }
+            if (name.contains("lime")) {
+                hasLime = true;
+            }
+            if (hasGreen && hasLime) {
+                try {
+                    method.setAccessible(true);
+                } catch (Exception ignored) {
+                    // ignore
+                }
+                return method;
             }
         }
         return null;
