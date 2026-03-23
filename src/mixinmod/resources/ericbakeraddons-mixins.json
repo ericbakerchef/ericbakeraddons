@@ -9,6 +9,9 @@
     "LevelPrefixChatHudMixin",
     "LevelPrefixDrawContextMixin",
     "ScrollableTooltipContainerMixin",
-    "ScrollableTooltipDrawContextMixin"
+    "ScrollableTooltipDrawContextMixin",
+    "ChatHudPickaxeSuppressMixin",
+    "MessageHandlerPickaxeSuppressMixin",
+    "PlayerSendMessageMixin"
   ]
 }

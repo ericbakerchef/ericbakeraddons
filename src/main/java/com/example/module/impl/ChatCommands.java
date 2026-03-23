@@ -86,6 +86,7 @@
 /*     */   public static final String SSID_CONFIRM_TOKEN = "__ssid_confirm_internal__";
 /*     */   private static ChatCommands instance;
 /*  52 */   private static final List<String> WEBHOOK_IGNORE = List.of("You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "You are sending commands too fast! Please slow down.", "No one has a network booster active right now! Try again later.");
+/*  52 */   private static final List<String> USELESS_TIP_MESSAGES = List.of("Slow down! You can only use /tip every few seconds.", "You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "No one has a network booster active right now! Try again later.");
 /*     */ 
 /*     */ 
 /*     */ 
@@ -134,6 +135,8 @@
 /*  75 */   private static final Pattern PICKAXE_USED_CHAT_PATTERN = Pattern.compile("You used your\\s+(.+?)\\s+Pickaxe Ability!", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern PICKAXE_AVAILABLE_CHAT_PATTERN = Pattern.compile("Pickobulus\\s+is\\s+now\\s+available!", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern PICKAXE_AVAILABLE_GENERIC_CHAT_PATTERN = Pattern.compile("(?:Your\\s+)?(.+?)\\s+is\\s+now\\s+available!?", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern TIP_TIPPED_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+player\\(s\\)\\s+in\\s+\\d+\\s+game\\(s\\)!?", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern TIP_TIPPED_DIFFERENT_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+players\\s+in\\s+\\d+\\s+different\\s+games!?", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Set<String> PICKAXE_ABILITY_NAMES = Set.of("pickobulus", "mining speed boost", "maniac miner", "tunnel vision");
 /*  75 */   private static final long SKY_MALL_PICKAXE_GRACE_MS = TimeUnit.SECONDS.toMillis(10L);
 /*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 1;
@@ -225,6 +228,10 @@
 /*     */   
 /*  91 */   private final BooleanSetting glorpWarp = new BooleanSetting("glorp warp", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getGlorpWarp() { return this.glorpWarp; }
 /*  91 */   private final BooleanSetting scrollableTooltips = new BooleanSetting("Scrollable Tooltips", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getScrollableTooltips() { return this.scrollableTooltips; }
+/*  91 */   private final BooleanSetting autoTipEnabled = new BooleanSetting("Auto Tip", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getAutoTipEnabled() { return this.autoTipEnabled; }
+/*  91 */   private final NumberSetting autoTipIntervalSeconds = new NumberSetting("Auto Tip Delay", 5.0D, 20.0D, 10.0D, 1.0D, "s", () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public NumberSetting getAutoTipIntervalSeconds() { return this.autoTipIntervalSeconds; }
+/*  91 */   private final BooleanSetting hideUselessMessages = new BooleanSetting("Hide useless messages", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getHideUselessMessages() { return this.hideUselessMessages; }
+/*  91 */   private final BooleanSetting hideTipMessages = new BooleanSetting("Hide Tip Messages", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getHideTipMessages() { return this.hideTipMessages; }
 /*  91 */   private Object commissionPeekKeybind;
 /*  91 */   private Object grottoSearchKeybind;
 /*  91 */   private final List<String> commissionOverlayLines = new ArrayList<>();
@@ -236,6 +243,8 @@
 /*  91 */   private final LinkedHashMap<String, Long> pickaxeAbilityCooldowns = new LinkedHashMap<>();
 /*  91 */   private final List<String> pendingChatSuppressions = new ArrayList<>();
 /*  91 */   private final LinkedHashMap<String, Long> recentPickaxeMessageOutputs = new LinkedHashMap<>();
+/*  91 */   private long autoTipNextSendMs;
+/*  91 */   private long autoTipIntervalMs;
 /*  91 */   private boolean skyMallPickaxeCooldownActive;
 /*  91 */   private long skyMallPickaxeCooldownLastBuffMs;
 /*  91 */   private int tooltipScrollOffset;
@@ -547,7 +556,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.scrollableTooltips, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.scrollableTooltips, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
 /* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
@@ -562,19 +571,117 @@
 /*     */   public static boolean isScrollableTooltipsEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.miscEnabled.getValue()).booleanValue() && ((Boolean)instance.scrollableTooltips.getValue()).booleanValue()); }
 /*     */   
 /*     */   public static boolean shouldSuppressPickaxeChat(class_2561 message) {
-/*     */     return false;
+/*     */     if (message == null) {
+/*     */       return false;
+/*     */     }
+/*     */     return shouldSuppressPickaxeChat(message.getString());
 /*     */   }
 /*     */   
 /*     */   public static boolean shouldSuppressPickaxeChat(String message) {
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     ChatCommands current = instance;
+/*     */     if (current == null || !current.isEnabled()) {
+/*     */       return false;
+/*     */     }
+/*     */     String normalized = current.normalizeChatText(message);
+/*     */     String cleaned = (normalized == null) ? message.trim() : normalized.replace('\u00A0', ' ').trim();
+/*     */     if (cleaned == null || cleaned.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     if (current.shouldHideTipMessages(cleaned)) {
+/*     */       return true;
+/*     */     }
+/*     */     if (((Boolean)current.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
+/*     */       if (PICKAXE_COOLDOWN_CHAT_PATTERN.matcher(cleaned).find()) {
+/*     */         return true;
+/*     */       }
+/*     */       if (matchesPickaxeAbilityUsed(cleaned)) {
+/*     */         return true;
+/*     */       }
+/*     */       if (matchesPickaxeAbilityAvailable(cleaned)) {
+/*     */         return true;
+/*     */       }
+/*     */       if (looksLikePickaxeAbilityLine(cleaned)) {
+/*     */         return true;
+/*     */       }
+/*     */     }
 /*     */     return false;
 /*     */   }
 /*     */   
 /*     */   public static void handleSuppressedPickaxeMessage(class_2561 message) {
-/*     */     return;
+/*     */     if (message == null) {
+/*     */       return;
+/*     */     }
+/*     */     handleSuppressedPickaxeMessage(message.getString());
 /*     */   }
 /*     */   
 /*     */   public static void handleSuppressedPickaxeMessage(String message) {
-/*     */     return;
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return;
+/*     */     }
+/*     */     ChatCommands current = instance;
+/*     */     if (current == null || !current.isEnabled()) {
+/*     */       return;
+/*     */     }
+/*     */     String normalized = current.normalizeChatText(message);
+/*     */     String cleaned = (normalized == null) ? message.trim() : normalized.replace('\u00A0', ' ').trim();
+/*     */     if (cleaned == null || cleaned.isBlank()) {
+/*     */       return;
+/*     */     }
+/*     */     if (((Boolean)current.pickaxeAbilityCooldownEnabled.getValue()).booleanValue()) {
+/*     */       current.handlePickaxeAbilityChat(cleaned);
+/*     */       if (current.handlePickaxeCooldownMessage(cleaned)) {
+/*     */         return;
+/*     */       }
+/*     */       if (current.handlePickaxeAbilityUsedMessage(cleaned)) {
+/*     */         return;
+/*     */       }
+/*     */       if (current.isPickaxeAbilityAvailableMessage(cleaned)) {
+/*     */         return;
+/*     */       }
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private boolean shouldHideTipMessages(String message) {
+/*     */     if (!((Boolean)this.miscEnabled.getValue()).booleanValue()) {
+/*     */       return false;
+/*     */     }
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     String cleaned = message.replace('\u00A0', ' ').trim();
+/*     */     if (cleaned.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     if (((Boolean)this.hideUselessMessages.getValue()).booleanValue() && isUselessTipMessage(cleaned)) {
+/*     */       return true;
+/*     */     }
+/*     */     if (((Boolean)this.hideTipMessages.getValue()).booleanValue() && isTipResultMessage(cleaned)) {
+/*     */       return true;
+/*     */     }
+/*     */     return false;
+/*     */   }
+/*     */   
+/*     */   private static boolean isUselessTipMessage(String message) {
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     String cleaned = message.replace('\u00A0', ' ').trim();
+/*     */     for (String target : USELESS_TIP_MESSAGES) {
+/*     */       if (cleaned.equalsIgnoreCase(target)) {
+/*     */         return true;
+/*     */       }
+/*     */     }
+/*     */     return false;
+/*     */   }
+/*     */   
+/*     */   private static boolean isTipResultMessage(String message) {
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     return (TIP_TIPPED_GAMES_PATTERN.matcher(message).find() || TIP_TIPPED_DIFFERENT_GAMES_PATTERN.matcher(message).find());
 /*     */   }
 /*     */   
 /*     */   private static boolean matchesPickaxeAbilityUsed(String message) {
@@ -1152,6 +1259,7 @@
 /* 553 */       clearCustomHighlightData();
 /* 554 */       clearCommissionOverlayData();
 /* 554 */       clearTempleSkipData();
+/* 554 */       resetAutoTipState();
 /*     */       return;
 /*     */     }
 /* 556 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
@@ -1159,8 +1267,10 @@
 /* 558 */       clearCustomHighlightData();
 /* 559 */       clearCommissionOverlayData();
 /* 559 */       clearTempleSkipData();
+/* 559 */       resetAutoTipState();
 /*     */       return;
 /*     */     }
+/* 560 */     tickAutoTip();
 /* 561 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
 /* 562 */       boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
 /* 563 */       boolean nodeOn = ((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue();
@@ -1218,6 +1328,56 @@
 /*     */     try {
 /*     */       LevelPrefixState.setSettings(enabled, red, gold, diamond);
 /*     */     } catch (Throwable throwable) {}
+/*     */   }
+/*     */   
+/*     */   private void tickAutoTip() {
+/*     */     if (!((Boolean)this.miscEnabled.getValue()).booleanValue() || !((Boolean)this.autoTipEnabled.getValue()).booleanValue()) {
+/*     */       resetAutoTipState();
+/*     */       return;
+/*     */     }
+/*     */     if (this.mc == null || this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null) {
+/*     */       return;
+/*     */     }
+/*     */     long intervalMs = getAutoTipIntervalMs();
+/*     */     long nowMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+/*     */     if (intervalMs <= 0L) {
+/*     */       intervalMs = 5000L;
+/*     */     }
+/*     */     if (this.autoTipIntervalMs != intervalMs) {
+/*     */       this.autoTipIntervalMs = intervalMs;
+/*     */       this.autoTipNextSendMs = nowMs + intervalMs;
+/*     */       return;
+/*     */     }
+/*     */     if (this.autoTipNextSendMs == 0L) {
+/*     */       this.autoTipNextSendMs = nowMs + intervalMs;
+/*     */       return;
+/*     */     }
+/*     */     if (nowMs >= this.autoTipNextSendMs) {
+/*     */       this.mc.field_1724.field_3944.method_45730("tipall");
+/*     */       this.autoTipNextSendMs = nowMs + intervalMs;
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private void resetAutoTipState() {
+/*     */     this.autoTipNextSendMs = 0L;
+/*     */     this.autoTipIntervalMs = 0L;
+/*     */   }
+/*     */   
+/*     */   private long getAutoTipIntervalMs() {
+/*     */     try {
+/*     */       Object value = this.autoTipIntervalSeconds.getValue();
+/*     */       if (value instanceof java.math.BigDecimal) {
+/*     */         double seconds = ((java.math.BigDecimal)value).doubleValue();
+/*     */         seconds = Math.max(5.0D, Math.min(20.0D, seconds));
+/*     */         return Math.round(seconds * 1000.0D);
+/*     */       }
+/*     */       if (value instanceof Number) {
+/*     */         double seconds = ((Number)value).doubleValue();
+/*     */         seconds = Math.max(5.0D, Math.min(20.0D, seconds));
+/*     */         return Math.round(seconds * 1000.0D);
+/*     */       }
+/*     */     } catch (Exception exception) {}
+/*     */     return 10000L;
 /*     */   }
 /*     */   
 /*     */   @SubscribeEvent
