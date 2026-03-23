@@ -2,7 +2,6 @@
 /*    */ 
 /*    */ import com.example.chat.ChatRewriter;
 /*    */ import com.example.module.impl.ChatCommands;
-/*    */ import com.example.module.impl.HideonleafEsp;
 /*    */ import com.ricedotwho.rsm.addon.Addon;
 /*    */ import com.ricedotwho.rsm.command.Command;
 /*    */ import com.ricedotwho.rsm.component.api.ModComponent;
@@ -24,7 +23,7 @@
 /*    */ 
 /*    */   
 /*    */   public List<Class<? extends Module>> getModules() {
-/* 38 */     return (List)List.of(ChatCommands.class, HideonleafEsp.class);
+/* 38 */     return (List)List.of(ChatCommands.class);
 /*    */   }
 /*    */ 
 /*    */   

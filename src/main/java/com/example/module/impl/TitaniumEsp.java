@@ -11,7 +11,6 @@ import com.ricedotwho.rsm.module.api.ModuleInfo;
 import com.ricedotwho.rsm.ui.clickgui.settings.Setting;
 import com.ricedotwho.rsm.ui.clickgui.settings.group.DefaultGroupSetting;
 import com.ricedotwho.rsm.ui.clickgui.settings.impl.BooleanSetting;
-import com.ricedotwho.rsm.ui.clickgui.settings.impl.NumberSetting;
 import net.minecraft.class_1937;
 import net.minecraft.class_2338;
 import net.minecraft.class_238;
@@ -27,9 +26,9 @@ import java.util.Locale;
 
 @ModuleInfo(aliases = {"Titanium ESP"}, id = "titanium_esp", category = Category.RENDER)
 public class TitaniumEsp extends Module {
-    private static final int SCAN_BLOCKS_PER_STEP = 16;
+    private static final int HORIZONTAL_RANGE = 24;
+    private static final int VERTICAL_RANGE = 16;
     private static final int SCAN_INTERVAL_TICKS = 10;
-    private static final int SCAN_IDLE_INTERVAL_TICKS = 40;
 
     private static final Colour FILL_COLOUR = new Colour(80, 180, 255, 55);
     private static final Colour OUTLINE_COLOUR = new Colour(110, 210, 255, 180);
@@ -38,15 +37,9 @@ public class TitaniumEsp extends Module {
     private final DefaultGroupSetting titaniumGroup = new DefaultGroupSetting("ESP", this);
     private final BooleanSetting enable = new BooleanSetting("Enable", true);
     private final BooleanSetting tracer = new BooleanSetting("Tracer", true);
-    private final NumberSetting scanDistance = new NumberSetting("Scan Distance", 1.0D, 12.0D, 2.0D, 1.0D, "chunks", () -> ((Boolean) this.enable.getValue()).booleanValue());
     private final List<class_2338> highlightedBlocks = new ArrayList<>();
 
     private int tickCounter;
-    private int lastScanChunkX = Integer.MIN_VALUE;
-    private int lastScanChunkY = Integer.MIN_VALUE;
-    private int lastScanChunkZ = Integer.MIN_VALUE;
-    private int lastScanRange = Integer.MIN_VALUE;
-    private boolean scanInitialized;
 
     private Constructor<?> filledBoxConstructor;
     private Constructor<?> outlineBoxConstructor;
@@ -57,7 +50,7 @@ public class TitaniumEsp extends Module {
     public TitaniumEsp() {
         setGroup(this.titaniumGroup);
         registerProperty(new Setting[] { this.titaniumGroup });
-        this.titaniumGroup.add(new Setting[] { this.enable, this.tracer, this.scanDistance });
+        this.titaniumGroup.add(new Setting[] { this.enable, this.tracer });
         this.renderBridgeReady = initRenderBridge();
     }
 
@@ -65,29 +58,12 @@ public class TitaniumEsp extends Module {
     public void onTick(ClientTickEvent.End event) {
         if (!isEnabled() || !((Boolean) this.enable.getValue()).booleanValue()) {
             this.highlightedBlocks.clear();
-            this.scanInitialized = false;
-            return;
-        }
-
-        if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
-            this.highlightedBlocks.clear();
-            this.scanInitialized = false;
             return;
         }
 
         this.tickCounter++;
-        class_2338 playerPos = this.mc.field_1724.method_24515();
-        int px = playerPos.method_10263();
-        int py = playerPos.method_10264();
-        int pz = playerPos.method_10260();
-        int range = getScanRange();
-        int chunkX = px >> 4;
-        int chunkY = py >> 4;
-        int chunkZ = pz >> 4;
-        boolean moved = (chunkX != this.lastScanChunkX || chunkY != this.lastScanChunkY || chunkZ != this.lastScanChunkZ || range != this.lastScanRange);
-        int interval = moved ? SCAN_INTERVAL_TICKS : SCAN_IDLE_INTERVAL_TICKS;
-        if (!this.scanInitialized || moved || this.tickCounter % interval == 0) {
-            updateBlocks(range);
+        if (this.tickCounter % SCAN_INTERVAL_TICKS == 0) {
+            updateBlocks();
         }
     }
 
@@ -102,6 +78,10 @@ public class TitaniumEsp extends Module {
             if (!this.renderBridgeReady) {
                 return;
             }
+        }
+
+        if (this.highlightedBlocks.isEmpty()) {
+            updateBlocks();
         }
 
         List<class_2338> tracerTargets = ((Boolean) this.tracer.getValue()).booleanValue() ? new ArrayList<>() : null;
@@ -153,7 +133,12 @@ public class TitaniumEsp extends Module {
         }
     }
 
-    private void updateBlocks(int range) {
+    private void updateBlocks() {
+        if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
+            this.highlightedBlocks.clear();
+            return;
+        }
+
         class_1937 world = this.mc.field_1687;
         class_2338 playerPos = this.mc.field_1724.method_24515();
 
@@ -162,9 +147,9 @@ public class TitaniumEsp extends Module {
         int pz = playerPos.method_10260();
 
         this.highlightedBlocks.clear();
-        for (int x = px - range; x <= px + range; x++) {
-            for (int y = py - range; y <= py + range; y++) {
-                for (int z = pz - range; z <= pz + range; z++) {
+        for (int x = px - HORIZONTAL_RANGE; x <= px + HORIZONTAL_RANGE; x++) {
+            for (int y = py - VERTICAL_RANGE; y <= py + VERTICAL_RANGE; y++) {
+                for (int z = pz - HORIZONTAL_RANGE; z <= pz + HORIZONTAL_RANGE; z++) {
                     class_2338 pos = new class_2338(x, y, z);
                     class_2680 state = world.method_8320(pos);
                     if (isPolishedDiorite(state)) {
@@ -173,11 +158,6 @@ public class TitaniumEsp extends Module {
                 }
             }
         }
-        this.lastScanChunkX = px >> 4;
-        this.lastScanChunkY = py >> 4;
-        this.lastScanChunkZ = pz >> 4;
-        this.lastScanRange = range;
-        this.scanInitialized = true;
     }
 
     private boolean isPolishedDiorite(class_2680 state) {
@@ -192,12 +172,6 @@ public class TitaniumEsp extends Module {
 
         String blockText = String.valueOf(state.method_26204()).toLowerCase(Locale.ROOT);
         return blockText.contains("polished_diorite");
-    }
-
-    private int getScanRange() {
-        double scale = ((Number) this.scanDistance.getValue()).doubleValue();
-        int range = (int) Math.round(scale * SCAN_BLOCKS_PER_STEP);
-        return Math.max(SCAN_BLOCKS_PER_STEP, range);
     }
 
     private boolean initRenderBridge() {
