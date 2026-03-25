@@ -1,6 +1,6 @@
 package com.example.mixins;
 
-import com.example.module.impl.ChatCommands;
+import com.example.mixinmod.ChatCommandsBridge;
 import com.mojang.authlib.GameProfile;
 import java.time.Instant;
 import net.minecraft.class_2556;
@@ -17,24 +17,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MessageHandlerPickaxeSuppressMixin {
     @Inject(method = "onGameMessage", at = @At("HEAD"), cancellable = true, require = 0)
     private void suppressGameMessage(class_2561 message, boolean overlay, CallbackInfo ci) {
-        if (ChatCommands.shouldSuppressPickaxeChat(message)) {
-            ChatCommands.handleSuppressedPickaxeMessage(message);
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
             ci.cancel();
         }
     }
 
     @Inject(method = "method_45745", at = @At("HEAD"), cancellable = true, require = 0)
     private void suppressProfilelessChat(class_2556.class_7602 params, class_2561 content, Instant receptionTimestamp, CallbackInfoReturnable<Boolean> cir) {
-        if (ChatCommands.shouldSuppressPickaxeChat(content)) {
-            ChatCommands.handleSuppressedPickaxeMessage(content);
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(content)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(content);
             cir.setReturnValue(false);
         }
     }
 
     @Inject(method = "processChatMessageInternal", at = @At("HEAD"), cancellable = true, require = 0)
     private void suppressSignedChat(class_2556.class_7602 params, class_7471 message, class_2561 decorated, GameProfile sender, boolean onlyShowSecureChat, Instant receptionTimestamp, CallbackInfoReturnable<Boolean> cir) {
-        if (ChatCommands.shouldSuppressPickaxeChat(decorated)) {
-            ChatCommands.handleSuppressedPickaxeMessage(decorated);
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(decorated)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(decorated);
             cir.setReturnValue(false);
         }
     }

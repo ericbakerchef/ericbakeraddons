@@ -192,6 +192,7 @@
 /*  86 */    private final DefaultGroupSetting grottoLocatorGroup = new DefaultGroupSetting("Grotto locator", this); public DefaultGroupSetting getGrottoLocatorGroup() { return this.grottoLocatorGroup; }
 /*  86 */    private final BooleanSetting miscEnabled = new BooleanSetting("Enable (Misc)", true); public BooleanSetting getMiscEnabled() { return this.miscEnabled; }
 /*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("Enable (ESP)", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
+/*  87 */    private final NumberSetting espRangeChunks = new NumberSetting("ESP Range", 1.0D, 8.0D, 2.0D, 1.0D, "chunks", () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public NumberSetting getEspRangeChunks() { return this.espRangeChunks; }
 /*  88 */    private final BooleanSetting titaniumHighlightEnabled = new BooleanSetting("Titanium", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getTitaniumHighlightEnabled() { return this.titaniumHighlightEnabled; }
 /*  89 */    private final BooleanSetting nodeHighlightEnabled = new BooleanSetting("End Nodes", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getNodeHighlightEnabled() { return this.nodeHighlightEnabled; }
 /*  89 */    private final BooleanSetting chestHighlightEnabled = new BooleanSetting("Chests", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getChestHighlightEnabled() { return this.chestHighlightEnabled; }
@@ -230,8 +231,8 @@
 /*  91 */   private final BooleanSetting scrollableTooltips = new BooleanSetting("Scrollable Tooltips", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getScrollableTooltips() { return this.scrollableTooltips; }
 /*  91 */   private final BooleanSetting autoTipEnabled = new BooleanSetting("Auto Tip", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getAutoTipEnabled() { return this.autoTipEnabled; }
 /*  91 */   private final NumberSetting autoTipIntervalSeconds = new NumberSetting("Auto Tip Delay", 5.0D, 20.0D, 10.0D, 1.0D, "s", () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public NumberSetting getAutoTipIntervalSeconds() { return this.autoTipIntervalSeconds; }
-/*  91 */   private final BooleanSetting hideUselessMessages = new BooleanSetting("Hide useless messages", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getHideUselessMessages() { return this.hideUselessMessages; }
-/*  91 */   private final BooleanSetting hideTipMessages = new BooleanSetting("Hide Tip Messages", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getHideTipMessages() { return this.hideTipMessages; }
+/*  91 */   private final BooleanSetting hideUselessMessages = new BooleanSetting("Hide useless messages", false, () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public BooleanSetting getHideUselessMessages() { return this.hideUselessMessages; }
+/*  91 */   private final BooleanSetting hideTipMessages = new BooleanSetting("Hide Tip Messages", false, () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public BooleanSetting getHideTipMessages() { return this.hideTipMessages; }
 /*  91 */   private Object commissionPeekKeybind;
 /*  91 */   private Object grottoSearchKeybind;
 /*  91 */   private final List<String> commissionOverlayLines = new ArrayList<>();
@@ -557,7 +558,7 @@
 /*     */ 
 /*     */     
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.scrollableTooltips, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
-/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
+/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espRangeChunks, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
 /* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
@@ -652,13 +653,19 @@
 /*     */       return false;
 /*     */     }
 /*     */     String cleaned = message.replace('\u00A0', ' ').trim();
+/*     */     String stripped = class_124.method_539(cleaned);
+/*     */     if (stripped != null && !stripped.isBlank()) {
+/*     */       cleaned = stripped.trim();
+/*     */     }
 /*     */     if (cleaned.isBlank()) {
 /*     */       return false;
 /*     */     }
-/*     */     if (((Boolean)this.hideUselessMessages.getValue()).booleanValue() && isUselessTipMessage(cleaned)) {
+/*     */     boolean hideUseless = ((Boolean)this.hideUselessMessages.getValue()).booleanValue();
+/*     */     boolean hideTip = ((Boolean)this.hideTipMessages.getValue()).booleanValue();
+/*     */     if ((hideUseless || hideTip) && isUselessTipMessage(cleaned)) {
 /*     */       return true;
 /*     */     }
-/*     */     if (((Boolean)this.hideTipMessages.getValue()).booleanValue() && isTipResultMessage(cleaned)) {
+/*     */     if (hideTip && isTipResultMessage(cleaned)) {
 /*     */       return true;
 /*     */     }
 /*     */     return false;
@@ -668,13 +675,33 @@
 /*     */     if (message == null || message.isBlank()) {
 /*     */       return false;
 /*     */     }
-/*     */     String cleaned = message.replace('\u00A0', ' ').trim();
+/*     */     String normalized = normalizeTipMessage(message);
+/*     */     if (normalized == null || normalized.isBlank()) {
+/*     */       return false;
+/*     */     }
 /*     */     for (String target : USELESS_TIP_MESSAGES) {
-/*     */       if (cleaned.equalsIgnoreCase(target)) {
+/*     */       String normalizedTarget = normalizeTipMessage(target);
+/*     */       if (normalizedTarget != null && !normalizedTarget.isBlank() && normalized.contains(normalizedTarget)) {
 /*     */         return true;
 /*     */       }
 /*     */     }
 /*     */     return false;
+/*     */   }
+/*     */   
+/*     */   private static String normalizeTipMessage(String message) {
+/*     */     if (message == null) {
+/*     */       return null;
+/*     */     }
+/*     */     String cleaned = message.replace('\u00A0', ' ').trim();
+/*     */     if (cleaned.isEmpty()) {
+/*     */       return cleaned;
+/*     */     }
+/*     */     cleaned = cleaned.replace('\u2019', '\'')
+/*     */       .replace('\u2018', '\'')
+/*     */       .replace('\u02BC', '\'')
+/*     */       .replace('\uFF07', '\'');
+/*     */     cleaned = cleaned.replaceAll("\\s+", " ");
+/*     */     return cleaned.toLowerCase(Locale.ROOT);
 /*     */   }
 /*     */   
 /*     */   private static boolean isTipResultMessage(String message) {
@@ -4038,6 +4065,21 @@
 /* 604 */     return start;
 /*     */   }
 /*     */   
+/*     */   private int getEspRangeBlocks() {
+/*     */     try {
+/*     */       Object value = this.espRangeChunks.getValue();
+/*     */       double chunks = 2.0D;
+/*     */       if (value instanceof java.math.BigDecimal) {
+/*     */         chunks = ((java.math.BigDecimal)value).doubleValue();
+/*     */       } else if (value instanceof Number) {
+/*     */         chunks = ((Number)value).doubleValue();
+/*     */       }
+/*     */       chunks = Math.max(1.0D, Math.min(8.0D, chunks));
+/*     */       return (int)Math.round(chunks * 16.0D);
+/*     */     } catch (Exception exception) {}
+/*     */     return 32;
+/*     */   }
+/*     */   
 /*     */   private void updateEspBlocks() {
 /* 608 */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
 /* 609 */       clearEspData();
@@ -4048,6 +4090,8 @@
 /* 615 */     int px = playerPos.method_10263();
 /* 616 */     int py = playerPos.method_10264();
 /* 617 */     int pz = playerPos.method_10260();
+/*     */     int rangeBlocks = getEspRangeBlocks();
+/*     */     int rangeY = rangeBlocks;
 /*     */     
 /* 619 */     this.titaniumBlocks.clear();
 /* 620 */     this.nodeBlocks.clear();
@@ -4065,9 +4109,9 @@
 /*     */       return;
 /*     */     }
 /* 626 */     if (blockScanOn) {
-/* 626 */       for (int x = px - 24; x <= px + 24; x++) {
-/* 627 */         for (int y = py - 16; y <= py + 16; y++) {
-/* 628 */           for (int z = pz - 24; z <= pz + 24; z++) {
+/* 626 */       for (int x = px - rangeBlocks; x <= px + rangeBlocks; x++) {
+/* 627 */         for (int y = py - rangeY; y <= py + rangeY; y++) {
+/* 628 */           for (int z = pz - rangeBlocks; z <= pz + rangeBlocks; z++) {
 /* 629 */             class_2338 pos = new class_2338(x, y, z);
 /* 630 */             class_2680 state = world.method_8320(pos);
 /* 631 */             byte highlightMatch = getHighlightMatch(state);

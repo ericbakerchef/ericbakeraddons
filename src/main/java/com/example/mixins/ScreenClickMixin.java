@@ -1,6 +1,6 @@
 /*    */ package com.example.mixins;
 /*    */ 
-/*    */ import com.example.module.impl.ChatCommands;
+/*    */ import com.example.mixinmod.ChatCommandsBridge;
 /*    */ import java.lang.reflect.Field;
 /*    */ import net.minecraft.class_2558;
 /*    */ import net.minecraft.class_2583;
@@ -19,7 +19,7 @@
 /* 19 */     if (clickEvent == null)
 /*    */       return; 
 /* 21 */     if (containsToken(clickEvent, "__ssid_confirm_internal__") && 
-/* 22 */       ChatCommands.confirmPendingSsidFromClick()) {
+/* 22 */       ChatCommandsBridge.confirmPendingSsidFromClick()) {
 /* 23 */       cir.setReturnValue(Boolean.valueOf(true));
 /* 24 */       cir.cancel();
 /*    */     } 

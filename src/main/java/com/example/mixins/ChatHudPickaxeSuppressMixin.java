@@ -1,6 +1,6 @@
 package com.example.mixins;
 
-import com.example.module.impl.ChatCommands;
+import com.example.mixinmod.ChatCommandsBridge;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.IdentityHashMap;
@@ -31,32 +31,32 @@ public class ChatHudPickaxeSuppressMixin {
 
     @Inject(method = {"method_1812(Lnet/minecraft/class_2561;)V"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void suppressPickaxeMessageSimple(class_2561 message, CallbackInfo ci) {
-        if (ChatCommands.shouldSuppressPickaxeChat(message)) {
-            ChatCommands.handleSuppressedPickaxeMessage(message);
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
             ci.cancel();
         }
     }
 
     @Inject(method = {"method_44811(Lnet/minecraft/class_2561;Lnet/minecraft/class_7469;Lnet/minecraft/class_7591;)V"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void suppressPickaxeMessageSigned(class_2561 message, class_7469 signature, class_7591 indicator, CallbackInfo ci) {
-        if (ChatCommands.shouldSuppressPickaxeChat(message)) {
-            ChatCommands.handleSuppressedPickaxeMessage(message);
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
             ci.cancel();
         }
     }
 
     @Inject(method = {"method_1803(Ljava/lang/String;)V"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void suppressPickaxeMessageString(String message, CallbackInfo ci) {
-        if (ChatCommands.shouldSuppressPickaxeChat(message)) {
-            ChatCommands.handleSuppressedPickaxeMessage(message);
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
             ci.cancel();
         }
     }
 
     @Inject(method = {"method_73203(Ljava/lang/String;)V"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void suppressPickaxeMessageStringAlt(String message, CallbackInfo ci) {
-        if (ChatCommands.shouldSuppressPickaxeChat(message)) {
-            ChatCommands.handleSuppressedPickaxeMessage(message);
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
             ci.cancel();
         }
     }
@@ -64,8 +64,8 @@ public class ChatHudPickaxeSuppressMixin {
     @Inject(method = {"method_73201"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void suppressPickaxeMessageLine(class_338.class_11732 line, class_408.class_11738 style, CallbackInfoReturnable<class_408> cir) {
         String message = extractLineText(line);
-        if (ChatCommands.shouldSuppressPickaxeChat(message)) {
-            ChatCommands.handleSuppressedPickaxeMessage(message);
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
             cir.setReturnValue(null);
         }
     }
@@ -73,8 +73,8 @@ public class ChatHudPickaxeSuppressMixin {
     @Inject(method = {"method_73202"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void suppressPickaxeMessageLineVoid(class_338.class_11732 line, class_408.class_11738 style, CallbackInfo ci) {
         String message = extractLineText(line);
-        if (ChatCommands.shouldSuppressPickaxeChat(message)) {
-            ChatCommands.handleSuppressedPickaxeMessage(message);
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
             ci.cancel();
         }
     }
@@ -132,7 +132,7 @@ public class ChatHudPickaxeSuppressMixin {
         if (list == null || list.isEmpty()) {
             return;
         }
-        list.removeIf(entry -> ChatCommands.shouldSuppressPickaxeChat(extractText(entry)));
+        list.removeIf(entry -> ChatCommandsBridge.shouldSuppressPickaxeChat(extractText(entry)));
     }
 
     private String extractText(Object entry) {
