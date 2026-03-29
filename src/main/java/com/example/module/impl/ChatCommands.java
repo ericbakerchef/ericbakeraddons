@@ -517,6 +517,7 @@
 /*     */ 
 /*     */     
 /* 361 */     registerCommand(3, "!harryref", new String[] { "pc This content contains explicit content and can not be shown" });
+/* 361 */     this.category3Commands.add("green room message");
 /* 362 */     registerOtherCommand("thetps987");
 /* 363 */     registerOtherCommand("serversaved");
 /*     */     
@@ -1225,7 +1226,7 @@
 /* 512 */       this.mc.field_1724.field_3944.method_45730("gc server saved");
 /*     */     }
 /*     */     
-/* 515 */     if (message.equals("Starting in 4 seconds.")) {
+/* 515 */     if (((Boolean)this.miscEnabled.getValue()).booleanValue() && this.chatCommands3.getValuesList().contains("green room message") && message.equals("Starting in 4 seconds.")) {
 /* 516 */       this.mc.field_1724.field_3944.method_45730("pc In Green Room");
 /*     */     }
 /*     */     
