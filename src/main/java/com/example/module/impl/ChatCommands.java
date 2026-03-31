@@ -45,6 +45,7 @@
 /*     */ import java.util.Locale;
 /*     */ import java.util.Set;
 /*     */ import java.util.concurrent.CompletableFuture;
+/*     */ import java.util.concurrent.ThreadLocalRandom;
 /*     */ import java.util.concurrent.TimeUnit;
 /*     */ import java.util.regex.Matcher;
 /*     */ import java.util.regex.Pattern;
@@ -87,6 +88,8 @@
 /*     */   private static ChatCommands instance;
 /*  52 */   private static final List<String> WEBHOOK_IGNORE = List.of("You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "You are sending commands too fast! Please slow down.", "No one has a network booster active right now! Try again later.");
 /*  52 */   private static final List<String> USELESS_TIP_MESSAGES = List.of("Slow down! You can only use /tip every few seconds.", "You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "No one has a network booster active right now! Try again later.");
+/*  52 */   private static final String GROK_COMMAND = "!grok";
+/*  52 */   private static final String[] GROK_RESPONSES = new String[] { "It is certain", "It is decidedly so", "Without a doubt", "Yes definitely", "You may rely on it", "As I see it, yes", "Most likely", "Outlook good", "Yes", "Signs point to yes", "Reply hazy try again", "Ask again later", "Better not tell you now", "Cannot predict now", "Concentrate and ask again", "Don't count on it", "My reply is no", "My sources say no", "Outlook not so good", "Very doubtful" };
 /*     */ 
 /*     */ 
 /*     */ 
@@ -177,6 +180,7 @@
 /*  75 */    private final DefaultGroupSetting chatCommandSettingsGroup = new DefaultGroupSetting("Chat Commands", this); public DefaultGroupSetting getChatCommandSettingsGroup() { return this.chatCommandSettingsGroup; }
 /*  76 */    private final BooleanSetting partyChatCommandsEnabled = new BooleanSetting("Party chat", true); public BooleanSetting getPartyChatCommandsEnabled() { return this.partyChatCommandsEnabled; }
 /*  77 */    private final BooleanSetting guildChatCommandsEnabled = new BooleanSetting("Guild chat", false); public BooleanSetting getGuildChatCommandsEnabled() { return this.guildChatCommandsEnabled; }
+/*  78 */    private final BooleanSetting grokIntegration = new BooleanSetting("Grok Integration", true); public BooleanSetting getGrokIntegration() { return this.grokIntegration; }
 /*  78 */    private final DefaultGroupSetting levelPrefixGroup = new DefaultGroupSetting("Level prefix", this); public DefaultGroupSetting getLevelPrefixGroup() { return this.levelPrefixGroup; }
 /*  79 */    private final BooleanSetting levelPrefixEnable = new BooleanSetting("Enable (Level prefix)", true); public BooleanSetting getLevelPrefixEnable() { return this.levelPrefixEnable; }
 /*  80 */    private final BooleanSetting red480Plus = new BooleanSetting("Red 480+", true, () -> ((Boolean)this.levelPrefixEnable.getValue()).booleanValue()); public BooleanSetting getRed480Plus() { return this.red480Plus; }
@@ -537,7 +541,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.otherCommandsSetting, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
+/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.grokIntegration, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.otherCommandsSetting, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -1250,6 +1254,27 @@
 /*     */       }
 /*     */       String expression = contentRaw.substring(5).trim();
 /*     */       String response = evaluateMathCommand(expression);
+/*     */       scheduleResponses(List.of(new ScheduledLine(200L, response)), chatPrefix);
+/*     */       return;
+/*     */     }
+/*     */     String grokCommand = content;
+/*     */     int grokSpaceIndex = content.indexOf(' ');
+/*     */     if (grokSpaceIndex != -1) {
+/*     */       grokCommand = content.substring(0, grokSpaceIndex);
+/*     */     }
+/*     */     while (!grokCommand.isEmpty()) {
+/*     */       char tail = grokCommand.charAt(grokCommand.length() - 1);
+/*     */       if (tail == '?' || tail == '!' || tail == '.' || tail == ',' || tail == ':') {
+/*     */         grokCommand = grokCommand.substring(0, grokCommand.length() - 1);
+/*     */         continue;
+/*     */       }
+/*     */       break;
+/*     */     }
+/*     */     if (grokCommand.equals(GROK_COMMAND) || grokCommand.equals("grok")) {
+/*     */       if (!((Boolean)this.grokIntegration.getValue()).booleanValue()) {
+/*     */         return;
+/*     */       }
+/*     */       String response = GROK_RESPONSES[ThreadLocalRandom.current().nextInt(GROK_RESPONSES.length)];
 /*     */       scheduleResponses(List.of(new ScheduledLine(200L, response)), chatPrefix);
 /*     */       return;
 /*     */     }
