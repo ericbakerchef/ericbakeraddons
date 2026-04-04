@@ -90,13 +90,7 @@ tasks.register("mixinModJar", Jar) {
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
 	from(sourceSets.main.output) {
-		include "com/example/mixins/LevelPrefixChatHudMixin.class"
-		include "com/example/mixins/LevelPrefixDrawContextMixin.class"
-		include "com/example/mixins/ScrollableTooltipContainerMixin.class"
-		include "com/example/mixins/ScrollableTooltipDrawContextMixin.class"
-		include "com/example/mixins/ChatHudPickaxeSuppressMixin.class"
-		include "com/example/mixins/MessageHandlerPickaxeSuppressMixin.class"
-		include "com/example/mixins/PlayerSendMessageMixin.class"
+		include "com/example/mixins/**"
 		include "com/example/mixinmod/**"
 	}
 

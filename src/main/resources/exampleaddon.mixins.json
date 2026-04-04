@@ -9,8 +9,12 @@
   "client": [
     "ChatHudPickaxeSuppressMixin",
     "DragSettingLoadMixin",
+    "LevelPrefixChatHudMixin",
+    "LevelPrefixDrawContextMixin",
     "MessageHandlerPickaxeSuppressMixin",
     "PlayerSendMessageMixin",
+    "ScrollableTooltipContainerMixin",
+    "ScrollableTooltipDrawContextMixin",
     "TabListNameMixin",
     "PlayerInfoDisplayNameMixin",
     "ScreenClickMixin"

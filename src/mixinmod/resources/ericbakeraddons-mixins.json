@@ -6,12 +6,16 @@
     "defaultRequire": 1
   },
   "client": [
+    "ChatHudPickaxeSuppressMixin",
+    "DragSettingLoadMixin",
     "LevelPrefixChatHudMixin",
     "LevelPrefixDrawContextMixin",
+    "MessageHandlerPickaxeSuppressMixin",
+    "PlayerInfoDisplayNameMixin",
+    "PlayerSendMessageMixin",
+    "ScreenClickMixin",
     "ScrollableTooltipContainerMixin",
     "ScrollableTooltipDrawContextMixin",
-    "ChatHudPickaxeSuppressMixin",
-    "MessageHandlerPickaxeSuppressMixin",
-    "PlayerSendMessageMixin"
+    "TabListNameMixin"
   ]
 }
