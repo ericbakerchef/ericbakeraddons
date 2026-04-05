@@ -20,6 +20,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin({class_338.class})
 public class ChatHudPickaxeSuppressMixin {
+    private static final long PURGE_INTERVAL_MS = 1000L;
+    private static long nextPurgeAllowedMs;
+    private static boolean pendingPurge;
+
     @Shadow
     private List<?> field_2061;
 
@@ -33,6 +37,7 @@ public class ChatHudPickaxeSuppressMixin {
     private void suppressPickaxeMessageSimple(class_2561 message, CallbackInfo ci) {
         if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
             ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
+            markPurgeNeeded();
             ci.cancel();
         }
     }
@@ -41,6 +46,7 @@ public class ChatHudPickaxeSuppressMixin {
     private void suppressPickaxeMessageSigned(class_2561 message, class_7469 signature, class_7591 indicator, CallbackInfo ci) {
         if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
             ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
+            markPurgeNeeded();
             ci.cancel();
         }
     }
@@ -49,6 +55,7 @@ public class ChatHudPickaxeSuppressMixin {
     private void suppressPickaxeMessageString(String message, CallbackInfo ci) {
         if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
             ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
+            markPurgeNeeded();
             ci.cancel();
         }
     }
@@ -57,6 +64,7 @@ public class ChatHudPickaxeSuppressMixin {
     private void suppressPickaxeMessageStringAlt(String message, CallbackInfo ci) {
         if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
             ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
+            markPurgeNeeded();
             ci.cancel();
         }
     }
@@ -66,6 +74,7 @@ public class ChatHudPickaxeSuppressMixin {
         String message = extractLineText(line);
         if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
             ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
+            markPurgeNeeded();
             cir.setReturnValue(null);
         }
     }
@@ -75,6 +84,7 @@ public class ChatHudPickaxeSuppressMixin {
         String message = extractLineText(line);
         if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
             ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
+            markPurgeNeeded();
             ci.cancel();
         }
     }
@@ -90,11 +100,24 @@ public class ChatHudPickaxeSuppressMixin {
     }
 
     private void purgeAllChatLists() {
+        if (!ChatCommandsBridge.isPickaxeSuppressionEnabled()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (!pendingPurge && now < nextPurgeAllowedMs) {
+            return;
+        }
+        pendingPurge = false;
+        nextPurgeAllowedMs = now + PURGE_INTERVAL_MS;
         purgeList(this.field_2061);
         purgeList(this.field_2064);
         purgeList(this.field_40392);
         IdentityHashMap<Object, Boolean> visited = new IdentityHashMap<>();
         purgeListsDeep(this, 2, visited);
+    }
+
+    private void markPurgeNeeded() {
+        pendingPurge = true;
     }
 
     private void purgeListsDeep(Object root, int depth, IdentityHashMap<Object, Boolean> visited) {

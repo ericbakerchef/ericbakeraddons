@@ -118,6 +118,9 @@
 /*  68 */   private static final int TEMPLE_SKIP_SCAN_INTERVAL_TICKS = 10;
 /*  69 */   private static final int ESP_SCAN_INTERVAL_TICKS = 10;
 /*  70 */   private static final int ESP_SCAN_IDLE_INTERVAL_TICKS = 40;
+/*  70 */   private static final int ESP_SCAN_SLICE_HEIGHT = 4;
+/*  70 */   private static final int ESP_SCAN_MOVE_THRESHOLD_BLOCKS = 4;
+/*  70 */   private static final int CUSTOM_HIGHLIGHT_SCAN_INTERVAL_TICKS = 5;
 /*  70 */   private static final int GROTTO_IGNORE_X = 513;
 /*  70 */   private static final int GROTTO_IGNORE_Y = 116;
 /*  70 */   private static final int GROTTO_IGNORE_Z = 559;
@@ -142,7 +145,7 @@
 /*  75 */   private static final Pattern TIP_TIPPED_DIFFERENT_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+players\\s+in\\s+\\d+\\s+different\\s+games!?", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Set<String> PICKAXE_ABILITY_NAMES = Set.of("pickobulus", "mining speed boost", "maniac miner", "tunnel vision");
 /*  75 */   private static final long SKY_MALL_PICKAXE_GRACE_MS = TimeUnit.SECONDS.toMillis(10L);
-/*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 1;
+/*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 5;
 /*  76 */   private static final double COMMISSION_ANIMATION_SPEED = 11.0D;
 /*  76 */   private static final double COMMISSION_PERCENT_EPSILON = 0.05D;
 /*  77 */   private static final Colour COMMISSION_PANEL_FILL = new Colour(22, 18, 34, 185);
@@ -273,7 +276,9 @@
 /* 103 */    private final BooleanSetting loginNotifierWebhookEnabled = new BooleanSetting("Log in notifier Webhook", false); public BooleanSetting getLoginNotifierWebhookEnabled() { return this.loginNotifierWebhookEnabled; }
 /* 104 */    private final StringSetting loginNotifierWebhook = new StringSetting("Notifier Link", "", true, false, () -> ((Boolean)this.loginNotifierWebhookEnabled.getValue()).booleanValue()); public StringSetting getLoginNotifierWebhook() { return this.loginNotifierWebhook; }
 /* 105 */    private final BooleanSetting accountShareEnabled = new BooleanSetting("Enable (Account Share)", false); public BooleanSetting getAccountShareEnabled() { return this.accountShareEnabled; }
-/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<class_2338> chestBlocks = new ArrayList<>(); private final List<class_238> automatonBoxes = new ArrayList<>(); private final List<class_238> hideonleafEntityBoxes = new ArrayList<>(); private final List<class_238> customEntityBoxes = new ArrayList<>(); private final List<net.minecraft.class_1297> customMatchedEntities = new ArrayList<>(); private final IdentityHashMap<net.minecraft.class_1297, class_238> customSmoothedBoxes = new IdentityHashMap<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final List<Object> chestRenderTasks = new ArrayList<>(); private final List<Object> automatonRenderTasks = new ArrayList<>(); private final List<Object> hideonleafEntityRenderTasks = new ArrayList<>(); private final List<Object> customEntityRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int customHighlightTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private boolean espScanInitialized; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Constructor<?> lineConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method entityTypeMethod; private Method shulkerColorMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
+/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<class_2338> chestBlocks = new ArrayList<>(); private final List<class_238> automatonBoxes = new ArrayList<>(); private final List<class_238> hideonleafEntityBoxes = new ArrayList<>(); private final List<class_238> customEntityBoxes = new ArrayList<>(); private final List<net.minecraft.class_1297> customMatchedEntities = new ArrayList<>(); private final IdentityHashMap<net.minecraft.class_1297, class_238> customSmoothedBoxes = new IdentityHashMap<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final List<Object> chestRenderTasks = new ArrayList<>(); private final List<Object> automatonRenderTasks = new ArrayList<>(); private final List<Object> hideonleafEntityRenderTasks = new ArrayList<>(); private final List<Object> customEntityRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int customHighlightTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private boolean espScanInitialized; private boolean espScanInProgress; private boolean espRenderTasksDirty; private int espScanCursorY; private int espScanMinY; private int espScanMaxY; private int espScanCenterX; private int espScanCenterY; private int espScanCenterZ; private int espScanRangeBlocks; private boolean espScanTitaniumOn; private boolean espScanNodeOn; private boolean espScanChestOn; private boolean espScanAutomatonOn; private boolean espScanHideonleafOn; private boolean espScanBlockScanOn; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Constructor<?> lineConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method entityTypeMethod; private Method shulkerColorMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
+/* 106 */   private final List<class_243> tracerTargets = new ArrayList<>();
+/* 106 */   private final List<Colour> tracerTargetColours = new ArrayList<>();
 /* 107 */   public ChatCommands() { this.copyMinecraftSsidButton = new ButtonSetting("Copy Minecraft SSID", "", () -> {
 /*     */           if (this.mc.method_1548() == null) {
 /*     */             ChatUtils.chat(String.valueOf(class_124.field_1061) + "Unable to copy SSID: user not available.", new Object[0]);
@@ -575,6 +580,7 @@
 /*     */   public boolean isPendingSsidSend() { return this.pendingSsidSend; }
 /* 435 */   public static boolean isLevelPrefixEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.levelPrefixEnable.getValue()).booleanValue()); }
 /*     */   public static boolean isScrollableTooltipsEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.miscEnabled.getValue()).booleanValue() && ((Boolean)instance.scrollableTooltips.getValue()).booleanValue()); }
+/*     */   public static boolean isPickaxeSuppressionEnabled() { ChatCommands current = instance; if (current == null || !current.isEnabled()) return false; boolean misc = ((Boolean)current.miscEnabled.getValue()).booleanValue(); boolean hideTips = (((Boolean)current.hideUselessMessages.getValue()).booleanValue() || ((Boolean)current.hideTipMessages.getValue()).booleanValue()); boolean pickaxe = ((Boolean)current.pickaxeAbilityCooldownEnabled.getValue()).booleanValue(); return ((misc && hideTips) || pickaxe); }
 /*     */   
 /*     */   public static boolean shouldSuppressPickaxeChat(class_2561 message) {
 /*     */     if (message == null) {
@@ -1339,9 +1345,9 @@
 /* 570 */         int px = playerPos.method_10263();
 /* 571 */         int py = playerPos.method_10264();
 /* 572 */         int pz = playerPos.method_10260();
-/* 573 */         boolean moved = (px != this.lastEspScanX || py != this.lastEspScanY || pz != this.lastEspScanZ);
+/* 573 */         boolean moved = hasMovedForEspScan(px, py, pz);
 /* 574 */         int interval = moved ? ESP_SCAN_INTERVAL_TICKS : ESP_SCAN_IDLE_INTERVAL_TICKS;
-/* 575 */         if (!this.espScanInitialized || moved || this.titaniumTickCounter % interval == 0) {
+/* 575 */         if (this.espScanInProgress || !this.espScanInitialized || moved || this.titaniumTickCounter % interval == 0) {
 /* 576 */           updateEspBlocks();
 /*     */         }
 /*     */       } 
@@ -1350,7 +1356,9 @@
 /*     */     } 
 /* 582 */     if (((Boolean)this.customHighlightEnabled.getValue()).booleanValue()) {
 /* 583 */       this.customHighlightTickCounter++;
-/* 584 */       updateCustomHighlightData();
+/* 584 */       if (this.customMatchedEntities.isEmpty() || this.customHighlightTickCounter % CUSTOM_HIGHLIGHT_SCAN_INTERVAL_TICKS == 0) {
+/* 585 */         updateCustomHighlightData();
+/*     */       }
 /*     */     } else {
 /* 586 */       clearCustomHighlightData();
 /*     */     } 
@@ -1445,21 +1453,7 @@
 /*     */       }
 /*     */     }
 /* 572 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
-/* 573 */       if (((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue() && this.titaniumRenderTasks.isEmpty() && !this.titaniumBlocks.isEmpty()) {
-/* 574 */         rebuildRenderTasks(this.titaniumBlocks, this.titaniumRenderTasks, TITANIUM_FILL_COLOUR, TITANIUM_OUTLINE_COLOUR);
-/*     */       }
-/* 576 */       if (((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue() && this.nodeRenderTasks.isEmpty() && !this.nodeBlocks.isEmpty()) {
-/* 577 */         rebuildRenderTasks(this.nodeBlocks, this.nodeRenderTasks, NODE_FILL_COLOUR, NODE_OUTLINE_COLOUR);
-/*     */       }
-/* 578 */       if (((Boolean)this.chestHighlightEnabled.getValue()).booleanValue() && this.chestRenderTasks.isEmpty() && !this.chestBlocks.isEmpty()) {
-/* 579 */         rebuildRenderTasks(this.chestBlocks, this.chestRenderTasks, CHEST_FILL_COLOUR, CHEST_OUTLINE_COLOUR);
-/*     */       }
-/*     */       if (((Boolean)this.automatonHighlightEnabled.getValue()).booleanValue() && this.automatonRenderTasks.isEmpty() && !this.automatonBoxes.isEmpty()) {
-/*     */         rebuildEntityRenderTasks(this.automatonBoxes, this.automatonRenderTasks, AUTOMATON_FILL_COLOUR, AUTOMATON_OUTLINE_COLOUR);
-/*     */       }
-/*     */       if (((Boolean)this.hideonleafHighlightEnabled.getValue()).booleanValue() && this.hideonleafEntityRenderTasks.isEmpty() && !this.hideonleafEntityBoxes.isEmpty()) {
-/*     */         rebuildEntityRenderTasks(this.hideonleafEntityBoxes, this.hideonleafEntityRenderTasks, HIDEONLEAF_FILL_COLOUR, HIDEONLEAF_OUTLINE_COLOUR);
-/*     */       }
+/* 573 */       rebuildEspRenderTasksIfNeeded();
 /* 581 */       renderBlockTasks(this.titaniumRenderTasks, (Boolean)this.titaniumHighlightEnabled.getValue());
 /* 582 */       renderBlockTasks(this.nodeRenderTasks, (Boolean)this.nodeHighlightEnabled.getValue());
 /* 583 */       renderBlockTasks(this.chestRenderTasks, (Boolean)this.chestHighlightEnabled.getValue());
@@ -1496,7 +1490,9 @@
 /*     */       return;
 /*     */     }
 /* 602 */     if (this.commissionOverlayLines.isEmpty()) {
-/* 603 */       updateCommissionOverlayData();
+/* 603 */       if (this.commissionOverlayTickCounter % COMMISSION_SCAN_INTERVAL_TICKS == 0) {
+/* 604 */         updateCommissionOverlayData();
+/*     */       }
 /* 604 */       if (this.commissionOverlayLines.isEmpty()) {
 /*     */         return;
 /*     */       }
@@ -3164,6 +3160,28 @@
 /*     */     return null;
 /*     */   }
 /*     */   
+/*     */   private void rebuildEspRenderTasksIfNeeded() {
+/*     */     if (this.espScanInProgress || !this.espRenderTasksDirty) {
+/*     */       return;
+/*     */     }
+/*     */     this.espRenderTasksDirty = false;
+/*     */     if (((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue() && !this.titaniumBlocks.isEmpty()) {
+/*     */       rebuildRenderTasks(this.titaniumBlocks, this.titaniumRenderTasks, TITANIUM_FILL_COLOUR, TITANIUM_OUTLINE_COLOUR);
+/*     */     }
+/*     */     if (((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue() && !this.nodeBlocks.isEmpty()) {
+/*     */       rebuildRenderTasks(this.nodeBlocks, this.nodeRenderTasks, NODE_FILL_COLOUR, NODE_OUTLINE_COLOUR);
+/*     */     }
+/*     */     if (((Boolean)this.chestHighlightEnabled.getValue()).booleanValue() && !this.chestBlocks.isEmpty()) {
+/*     */       rebuildRenderTasks(this.chestBlocks, this.chestRenderTasks, CHEST_FILL_COLOUR, CHEST_OUTLINE_COLOUR);
+/*     */     }
+/*     */     if (((Boolean)this.automatonHighlightEnabled.getValue()).booleanValue() && !this.automatonBoxes.isEmpty()) {
+/*     */       rebuildEntityRenderTasks(this.automatonBoxes, this.automatonRenderTasks, AUTOMATON_FILL_COLOUR, AUTOMATON_OUTLINE_COLOUR);
+/*     */     }
+/*     */     if (((Boolean)this.hideonleafHighlightEnabled.getValue()).booleanValue() && !this.hideonleafEntityBoxes.isEmpty()) {
+/*     */       rebuildEntityRenderTasks(this.hideonleafEntityBoxes, this.hideonleafEntityRenderTasks, HIDEONLEAF_FILL_COLOUR, HIDEONLEAF_OUTLINE_COLOUR);
+/*     */     }
+/*     */   }
+/*     */   
 /*     */   private void renderBlockTasks(List<Object> tasks, Boolean enabled) {
 /* 586 */     if (enabled == null || !enabled.booleanValue() || tasks.isEmpty()) {
 /*     */       return;
@@ -3190,8 +3208,10 @@
 /* 616 */     if (thicknessPx <= 0.0D) {
 /*     */       return;
 /*     */     }
-/* 620 */     List<class_243> targets = new ArrayList<>();
-/* 621 */     List<Colour> targetColours = new ArrayList<>();
+/* 620 */     this.tracerTargets.clear();
+/* 621 */     this.tracerTargetColours.clear();
+/* 621 */     List<class_243> targets = this.tracerTargets;
+/* 621 */     List<Colour> targetColours = this.tracerTargetColours;
 /* 622 */     collectTracerTargets(this.titaniumBlocks, (Boolean)this.titaniumHighlightEnabled.getValue(), TITANIUM_OUTLINE_COLOUR, targets, targetColours);
 /* 623 */     collectTracerTargets(this.nodeBlocks, (Boolean)this.nodeHighlightEnabled.getValue(), NODE_OUTLINE_COLOUR, targets, targetColours);
 /* 624 */     collectTracerTargets(this.chestBlocks, (Boolean)this.chestHighlightEnabled.getValue(), CHEST_OUTLINE_COLOUR, targets, targetColours);
@@ -4117,13 +4137,7 @@
 /* 616 */     int py = playerPos.method_10264();
 /* 617 */     int pz = playerPos.method_10260();
 /*     */     int rangeBlocks = getEspRangeBlocks();
-/*     */     int rangeY = rangeBlocks;
 /*     */     
-/* 619 */     this.titaniumBlocks.clear();
-/* 620 */     this.nodeBlocks.clear();
-/* 620 */     this.chestBlocks.clear();
-/* 620 */     this.automatonBoxes.clear();
-/* 620 */     this.hideonleafEntityBoxes.clear();
 /* 621 */     boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
 /* 622 */     boolean nodeOn = ((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue();
 /* 622 */     boolean chestOn = ((Boolean)this.chestHighlightEnabled.getValue()).booleanValue();
@@ -4132,37 +4146,118 @@
 /* 623 */     boolean blockScanOn = (titaniumOn || nodeOn || chestOn);
 /* 623 */     if (!blockScanOn && !automatonOn && !hideonleafOn) {
 /* 624 */       this.espScanInitialized = true;
+/* 624 */       this.espScanInProgress = false;
 /*     */       return;
 /*     */     }
-/* 626 */     if (blockScanOn) {
-/* 626 */       for (int x = px - rangeBlocks; x <= px + rangeBlocks; x++) {
-/* 627 */         for (int y = py - rangeY; y <= py + rangeY; y++) {
-/* 628 */           for (int z = pz - rangeBlocks; z <= pz + rangeBlocks; z++) {
-/* 629 */             class_2338 pos = new class_2338(x, y, z);
-/* 630 */             class_2680 state = world.method_8320(pos);
-/* 631 */             byte highlightMatch = getHighlightMatch(state);
-/* 632 */             if (titaniumOn && (highlightMatch & MATCH_TITANIUM) != 0) this.titaniumBlocks.add(pos); 
-/* 633 */             if (nodeOn && (highlightMatch & MATCH_NODE) != 0) this.nodeBlocks.add(pos); 
-/* 634 */             if (chestOn && (highlightMatch & MATCH_CHEST) != 0) this.chestBlocks.add(pos); 
-/*     */           } 
+/* 626 */     if (this.espScanInProgress && shouldRestartEspScan(px, py, pz, rangeBlocks, titaniumOn, nodeOn, chestOn, automatonOn, hideonleafOn)) {
+/* 627 */       startEspScan(px, py, pz, rangeBlocks, titaniumOn, nodeOn, chestOn, automatonOn, hideonleafOn);
+/*     */     } else if (!this.espScanInProgress) {
+/* 629 */       startEspScan(px, py, pz, rangeBlocks, titaniumOn, nodeOn, chestOn, automatonOn, hideonleafOn);
+/*     */     }
+/* 631 */     continueEspScan(world);
+/*     */   }
+
+/*     */   private boolean hasMovedForEspScan(int px, int py, int pz) {
+/*     */     if (this.lastEspScanX == Integer.MIN_VALUE) {
+/*     */       return true;
+/*     */     }
+/*     */     return (Math.abs(px - this.lastEspScanX) > ESP_SCAN_MOVE_THRESHOLD_BLOCKS || Math.abs(py - this.lastEspScanY) > ESP_SCAN_MOVE_THRESHOLD_BLOCKS || Math.abs(pz - this.lastEspScanZ) > ESP_SCAN_MOVE_THRESHOLD_BLOCKS);
+/*     */   }
+
+/*     */   private boolean shouldRestartEspScan(int px, int py, int pz, int rangeBlocks, boolean titaniumOn, boolean nodeOn, boolean chestOn, boolean automatonOn, boolean hideonleafOn) {
+/*     */     if (!this.espScanInProgress) {
+/*     */       return false;
+/*     */     }
+/*     */     if (this.espScanRangeBlocks != rangeBlocks) {
+/*     */       return true;
+/*     */     }
+/*     */     if (this.espScanTitaniumOn != titaniumOn || this.espScanNodeOn != nodeOn || this.espScanChestOn != chestOn || this.espScanAutomatonOn != automatonOn || this.espScanHideonleafOn != hideonleafOn) {
+/*     */       return true;
+/*     */     }
+/*     */     return (Math.abs(px - this.espScanCenterX) > ESP_SCAN_MOVE_THRESHOLD_BLOCKS || Math.abs(py - this.espScanCenterY) > ESP_SCAN_MOVE_THRESHOLD_BLOCKS || Math.abs(pz - this.espScanCenterZ) > ESP_SCAN_MOVE_THRESHOLD_BLOCKS);
+/*     */   }
+
+/*     */   private void startEspScan(int px, int py, int pz, int rangeBlocks, boolean titaniumOn, boolean nodeOn, boolean chestOn, boolean automatonOn, boolean hideonleafOn) {
+/*     */     this.espScanCenterX = px;
+/*     */     this.espScanCenterY = py;
+/*     */     this.espScanCenterZ = pz;
+/*     */     this.espScanRangeBlocks = rangeBlocks;
+/*     */     this.espScanMinY = py - rangeBlocks;
+/*     */     this.espScanMaxY = py + rangeBlocks;
+/*     */     this.espScanCursorY = this.espScanMinY;
+/*     */     this.espScanTitaniumOn = titaniumOn;
+/*     */     this.espScanNodeOn = nodeOn;
+/*     */     this.espScanChestOn = chestOn;
+/*     */     this.espScanAutomatonOn = automatonOn;
+/*     */     this.espScanHideonleafOn = hideonleafOn;
+/*     */     this.espScanBlockScanOn = (titaniumOn || nodeOn || chestOn);
+/*     */     this.espScanInitialized = false;
+/*     */     this.espScanInProgress = true;
+/*     */     this.titaniumBlocks.clear();
+/*     */     this.nodeBlocks.clear();
+/*     */     this.chestBlocks.clear();
+/*     */     this.automatonBoxes.clear();
+/*     */     this.hideonleafEntityBoxes.clear();
+/*     */     this.titaniumRenderTasks.clear();
+/*     */     this.nodeRenderTasks.clear();
+/*     */     this.chestRenderTasks.clear();
+/*     */     this.automatonRenderTasks.clear();
+/*     */     this.hideonleafEntityRenderTasks.clear();
+/*     */     this.espRenderTasksDirty = true;
+/*     */   }
+
+/*     */   private void continueEspScan(class_1937 world) {
+/*     */     if (!this.espScanInProgress) {
+/*     */       return;
+/*     */     }
+/*     */     if (world == null) {
+/*     */       clearEspData();
+/*     */       return;
+/*     */     }
+/*     */     if (!this.espScanBlockScanOn) {
+/*     */       if (this.espScanAutomatonOn) {
+/*     */         updateAutomatonEntities(world);
+/*     */       }
+/*     */       if (this.espScanHideonleafOn) {
+/*     */         updateHideonleafEntities(world);
+/*     */       }
+/*     */       finishEspScan();
+/*     */       return;
+/*     */     }
+/*     */     int rangeBlocks = this.espScanRangeBlocks;
+/*     */     int startY = this.espScanCursorY;
+/*     */     int endY = Math.min(startY + ESP_SCAN_SLICE_HEIGHT - 1, this.espScanMaxY);
+/*     */     for (int x = this.espScanCenterX - rangeBlocks; x <= this.espScanCenterX + rangeBlocks; x++) {
+/*     */       for (int y = startY; y <= endY; y++) {
+/*     */         for (int z = this.espScanCenterZ - rangeBlocks; z <= this.espScanCenterZ + rangeBlocks; z++) {
+/*     */           class_2338 pos = new class_2338(x, y, z);
+/*     */           class_2680 state = world.method_8320(pos);
+/*     */           byte highlightMatch = getHighlightMatch(state);
+/*     */           if (this.espScanTitaniumOn && (highlightMatch & MATCH_TITANIUM) != 0) this.titaniumBlocks.add(pos); 
+/*     */           if (this.espScanNodeOn && (highlightMatch & MATCH_NODE) != 0) this.nodeBlocks.add(pos); 
+/*     */           if (this.espScanChestOn && (highlightMatch & MATCH_CHEST) != 0) this.chestBlocks.add(pos); 
 /*     */         } 
 /*     */       } 
 /*     */     } 
-/*     */     if (automatonOn) {
-/*     */       updateAutomatonEntities(world);
+/*     */     this.espScanCursorY = endY + 1;
+/*     */     if (this.espScanCursorY > this.espScanMaxY) {
+/*     */       if (this.espScanAutomatonOn) {
+/*     */         updateAutomatonEntities(world);
+/*     */       }
+/*     */       if (this.espScanHideonleafOn) {
+/*     */         updateHideonleafEntities(world);
+/*     */       }
+/*     */       finishEspScan();
 /*     */     }
-/*     */     if (hideonleafOn) {
-/*     */       updateHideonleafEntities(world);
-/*     */     }
-/* 637 */     this.lastEspScanX = px;
-/* 638 */     this.lastEspScanY = py;
-/* 639 */     this.lastEspScanZ = pz;
-/* 640 */     this.espScanInitialized = true;
-/* 641 */     rebuildRenderTasks(this.titaniumBlocks, this.titaniumRenderTasks, TITANIUM_FILL_COLOUR, TITANIUM_OUTLINE_COLOUR);
-/* 642 */     rebuildRenderTasks(this.nodeBlocks, this.nodeRenderTasks, NODE_FILL_COLOUR, NODE_OUTLINE_COLOUR);
-/* 643 */     rebuildRenderTasks(this.chestBlocks, this.chestRenderTasks, CHEST_FILL_COLOUR, CHEST_OUTLINE_COLOUR);
-/*     */     rebuildEntityRenderTasks(this.automatonBoxes, this.automatonRenderTasks, AUTOMATON_FILL_COLOUR, AUTOMATON_OUTLINE_COLOUR);
-/*     */     rebuildEntityRenderTasks(this.hideonleafEntityBoxes, this.hideonleafEntityRenderTasks, HIDEONLEAF_FILL_COLOUR, HIDEONLEAF_OUTLINE_COLOUR);
+/*     */   }
+
+/*     */   private void finishEspScan() {
+/*     */     this.lastEspScanX = this.espScanCenterX;
+/*     */     this.lastEspScanY = this.espScanCenterY;
+/*     */     this.lastEspScanZ = this.espScanCenterZ;
+/*     */     this.espScanInitialized = true;
+/*     */     this.espScanInProgress = false;
+/*     */     this.espRenderTasksDirty = true;
 /*     */   }
 /*     */   
 /*     */   private void updateAutomatonEntities(class_1937 world) {
@@ -4231,6 +4326,8 @@
 /*     */     this.automatonRenderTasks.clear();
 /*     */     this.hideonleafEntityRenderTasks.clear();
 /* 649 */     this.espScanInitialized = false;
+/* 649 */     this.espScanInProgress = false;
+/* 649 */     this.espRenderTasksDirty = false;
 /*     */   }
 /*     */   
 /*     */   private void clearCustomHighlightData() {

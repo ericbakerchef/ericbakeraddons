@@ -10,6 +10,7 @@ public final class ChatCommandsBridge {
     private static volatile Method shouldSuppressPickaxeChat;
     private static volatile Method handleSuppressedPickaxeMessage;
     private static volatile Method confirmPendingSsidFromClick;
+    private static volatile Method isPickaxeSuppressionEnabled;
 
     private ChatCommandsBridge() {
     }
@@ -62,6 +63,18 @@ public final class ChatCommandsBridge {
         }
     }
 
+    public static boolean isPickaxeSuppressionEnabled() {
+        if (!ensureResolved()) {
+            return false;
+        }
+        try {
+            Object result = isPickaxeSuppressionEnabled.invoke(null);
+            return Boolean.TRUE.equals(result);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     private static boolean ensureResolved() {
         if (resolved) {
             return available;
@@ -82,6 +95,7 @@ public final class ChatCommandsBridge {
             shouldSuppressPickaxeChat = clazz.getMethod("shouldSuppressPickaxeChat", String.class);
             handleSuppressedPickaxeMessage = clazz.getMethod("handleSuppressedPickaxeMessage", String.class);
             confirmPendingSsidFromClick = clazz.getMethod("confirmPendingSsidFromClick");
+            isPickaxeSuppressionEnabled = clazz.getMethod("isPickaxeSuppressionEnabled");
             return true;
         } catch (Throwable ignored) {
             return false;
