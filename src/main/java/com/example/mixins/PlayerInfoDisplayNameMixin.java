@@ -17,7 +17,11 @@
 /* 17 */     if (displayName == null) {
 /* 18 */       return null;
 /*    */     }
-/* 20 */     return ChatRewriter.rewriteAll(displayName);
+/* 20 */     try {
+/* 21 */       return ChatRewriter.rewriteAll(displayName);
+/* 22 */     } catch (NoClassDefFoundError err) {
+/* 23 */       return displayName;
+/*    */     }
 /*    */   }
 /*    */   
 /*    */   @Inject(method = {"method_2971()Lnet/minecraft/class_2561;"}, at = {@At("RETURN")}, cancellable = true, require = 0)
@@ -26,7 +30,11 @@
 /* 26 */     if (displayName == null) {
 /*    */       return;
 /*    */     }
-/* 29 */     cir.setReturnValue(ChatRewriter.rewriteAll(displayName));
+/* 29 */     try {
+/* 30 */       cir.setReturnValue(ChatRewriter.rewriteAll(displayName));
+/* 31 */     } catch (NoClassDefFoundError err) {
+/* 32 */       cir.setReturnValue(displayName);
+/*    */     }
 /*    */   }
 /*    */ }
 

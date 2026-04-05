@@ -19,7 +19,11 @@
 /* 19 */     if (text == null) {
 /*    */       return;
 /*    */     }
-/* 22 */     cir.setReturnValue(ChatRewriter.rewriteAll(text));
+/* 22 */     try {
+/* 23 */       cir.setReturnValue(ChatRewriter.rewriteAll(text));
+/* 24 */     } catch (NoClassDefFoundError err) {
+/* 25 */       cir.setReturnValue(text);
+/*    */     }
 /*    */   }
 /*    */   
 /*    */   @Inject(method = {"method_1918(Lnet/minecraft/class_640;)Lnet/minecraft/class_2561;"}, at = {@At("RETURN")}, cancellable = true, require = 0)
@@ -28,7 +32,11 @@
 /* 28 */     if (text == null) {
 /*    */       return;
 /*    */     }
-/* 31 */     cir.setReturnValue(ChatRewriter.rewriteAll(text));
+/* 31 */     try {
+/* 32 */       cir.setReturnValue(ChatRewriter.rewriteAll(text));
+/* 33 */     } catch (NoClassDefFoundError err) {
+/* 34 */       cir.setReturnValue(text);
+/*    */     }
 /*    */   }
 /*    */ }
 
