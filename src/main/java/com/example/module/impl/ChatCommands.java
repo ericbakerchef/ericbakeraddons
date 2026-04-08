@@ -1280,7 +1280,7 @@
 /*     */       if (!((Boolean)this.grokIntegration.getValue()).booleanValue()) {
 /*     */         return;
 /*     */       }
-/*     */       String response = GROK_RESPONSES[ThreadLocalRandom.current().nextInt(GROK_RESPONSES.length)];
+/*     */       String response = message.contains("Guild > TheAdmin987:") ? "Grok Error: User weight too high" : GROK_RESPONSES[ThreadLocalRandom.current().nextInt(GROK_RESPONSES.length)];
 /*     */       scheduleResponses(List.of(new ScheduledLine(200L, response)), chatPrefix);
 /*     */       return;
 /*     */     }
