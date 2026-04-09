@@ -521,7 +521,9 @@
 /*     */ 
 /*     */     
 /* 356 */     registerCommand(3, "!melonref", new String[] { "pc melon roles", "pc 15 second p3", "pc sub 4:20 cas" });
-/*     */ 
+/* 357 */     registerCommand(3, "!darkref", new String[] { "pc ☠ Lyquidz fell to their death with help from Storm and became a ghost.", "pc PUZZLE FAIL! Lyquidz killed a Blaze in the wrong order! Yikes! (3)", "pc Team Score: 286 (S) (NEW RECORD!) ☠ Defeated Maxor, Storm, Goldor, and Necron in 07m 14s (NEW RECORD!) (died 5 times)", "pc top 2 f7 comp btw" });
+/*     */
+
 /*     */ 
 /*     */ 
 /*     */     
