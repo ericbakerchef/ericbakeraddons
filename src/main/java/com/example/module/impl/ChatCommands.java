@@ -235,6 +235,7 @@
 /*     */ 
 /*     */   
 /*  91 */   private final BooleanSetting glorpWarp = new BooleanSetting("glorp warp", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getGlorpWarp() { return this.glorpWarp; }
+/*  91 */   private final BooleanSetting chatBypass = new BooleanSetting("Chat Bypass", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getChatBypass() { return this.chatBypass; }
 /*  91 */   private final BooleanSetting scrollableTooltips = new BooleanSetting("Scrollable Tooltips", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getScrollableTooltips() { return this.scrollableTooltips; }
 /*  91 */   private final BooleanSetting autoTipEnabled = new BooleanSetting("Auto Tip", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getAutoTipEnabled() { return this.autoTipEnabled; }
 /*  91 */   private final NumberSetting autoTipIntervalSeconds = new NumberSetting("Auto Tip Delay", 5.0D, 20.0D, 10.0D, 1.0D, "s", () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public NumberSetting getAutoTipIntervalSeconds() { return this.autoTipIntervalSeconds; }
@@ -425,7 +426,7 @@
 /*     */     
 /* 259 */     registerCommand(1, "!ref", new String[] { "pc gent ref" });
 /*     */     
-/* 261 */     registerCommand(1, "!bakerhelp", new String[] { "pc !bakerclient, !bakerhelp, !gentref, !gentbookref, !real, !crash, !limbo, !meta, !adminref, !redstoneref, !penguinref, !maddyref, !meow, !ref", "pc !clip, !diana, !oliref, !math, !hazelref, !devref, !roseref, !ericref, !hamiltonref, !leonref, !martinasref, !jqnxcref", "pc !67, !thearef, !stenoref, !hozoniref, !melonref, 67, !dt, 1s, !harryref, !dexref, !eggcurdref, !joshieref" });
+/* 261 */     registerCommand(1, "!bakerhelp", new String[] { "pc !bakerclient, !bakerhelp, !gentref, !gentbookref, !real, !crash, !limbo, !meta, !adminref, !redstoneref, !penguinref, !maddyref, !meow, !ref", "pc !clip, !diana, !oliref, !math, !hazelref, !devref, !roseref, !ericref, !hamiltonref, !leonref, !martinasref, !jqnxcref", "pc !67, !thearef, !stenoref, !hozoniref, !melonref, 67, !dt, 1s, !harryref, !dexref, !eggcurdref, !joshieref, !josenref" });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -514,7 +515,7 @@
 /* 347 */     registerCommand(3, "!stenoref", new String[] { "pc spring boots?", "pc i thought jerry gun was still meta for crystals", "pc is 35s maxor bad?" });
 /*     */ 
 /*     */ 
-/*     */ 
+/*     */
 /*     */     
 /* 352 */     registerCommand(3, "!hozoniref", new String[] { "pc how can hozoni have a ref", "pc he's too nonchalant for that shit" });
 /*     */ 
@@ -528,9 +529,10 @@
 /*     */ 
 /*     */     
 /* 361 */     registerCommand(3, "!harryref", new String[] { "pc This content contains explicit content and can not be shown" });
-/* 361 */     this.category3Commands.add("green room message");
-/* 362 */     registerOtherCommand("thetps987");
-/* 363 */     registerOtherCommand("serversaved");
+/* 362 */     registerCommand(3, "!josenref", new String[] { "pc Party > [MVP+] ThrowsenDT: fun fact: I never used spirit sceptre in clear till now cuz im like (if every top f7 player is using it I should too)", "pc AAAH awa GUTA", "pc is 2 star necron good for m7 bers?", "pc josen is short for josenid btw" });
+/* 363 */     this.category3Commands.add("green room message");
+/* 364 */     registerOtherCommand("thetps987");
+/* 365 */     registerOtherCommand("serversaved");
 /*     */     
 /* 365 */     this.chatCommands1 = new MultiBoolSetting("Chat commands 1", this.category1Commands, new ArrayList<>(this.category1Commands));
 /* 366 */     this.chatCommands2 = new MultiBoolSetting("Chat Commands 2", this.category2Commands, new ArrayList<>(this.category2Commands));
@@ -569,7 +571,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.scrollableTooltips, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.chatBypass, (Setting)this.scrollableTooltips, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espRangeChunks, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
 /* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
@@ -1227,6 +1229,12 @@
 /* 495 */       this.mc.field_1724.field_3944.method_45730("pc !pt glorpiline");
 /* 496 */       CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
 /*     */     } 
+/* 497 */     if (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.chatBypass.getValue()).booleanValue()) {
+/* 498 */       String bypassCommand = buildCoopChatBypassCommand(message);
+/* 499 */       if (bypassCommand != null) {
+/* 500 */         this.mc.field_1724.field_3944.method_45730(bypassCommand);
+/*     */       }
+/*     */     }
 /*     */     
 /* 505 */     if (!((Boolean)this.enableChatCommands.getValue()).booleanValue())
 /* 506 */       return;  sendWebhookMessage(message);
@@ -4912,6 +4920,23 @@
 /*     */       return; 
 /* 828 */     this.mc.field_1724.field_3944.method_45730("pc !pt");
 /* 829 */     CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
+/*     */   }
+/*     */   
+/*     */   private String buildCoopChatBypassCommand(String message) {
+/*     */     if (message == null || !message.startsWith("Co-op > ")) {
+/*     */       return null;
+/*     */     }
+/*     */     int contentStart = "Co-op > ".length();
+/*     */     int colonIndex = message.indexOf(": ", contentStart);
+/*     */     if (colonIndex <= contentStart) {
+/*     */       return null;
+/*     */     }
+/*     */     String name = message.substring(contentStart, colonIndex).trim();
+/*     */     String content = message.substring(colonIndex + 2).trim();
+/*     */     if (name.isEmpty() || content.isEmpty()) {
+/*     */       return null;
+/*     */     }
+/*     */     return "/gc " + name + " " + content;
 /*     */   }
 /*     */   
 /*     */   private String extractEventMessage(Object event) {
