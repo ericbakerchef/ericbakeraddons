@@ -186,6 +186,7 @@
 /*  75 */    private final DefaultGroupSetting chatCommandSettingsGroup = new DefaultGroupSetting("Chat Commands", this); public DefaultGroupSetting getChatCommandSettingsGroup() { return this.chatCommandSettingsGroup; }
 /*  76 */    private final BooleanSetting partyChatCommandsEnabled = new BooleanSetting("Party chat", true); public BooleanSetting getPartyChatCommandsEnabled() { return this.partyChatCommandsEnabled; }
 /*  77 */    private final BooleanSetting guildChatCommandsEnabled = new BooleanSetting("Guild chat", false); public BooleanSetting getGuildChatCommandsEnabled() { return this.guildChatCommandsEnabled; }
+/*  78 */    private final BooleanSetting privateMessageChatCommandsEnabled = new BooleanSetting("Private messages", false); public BooleanSetting getPrivateMessageChatCommandsEnabled() { return this.privateMessageChatCommandsEnabled; }
 /*  78 */    private final BooleanSetting grokIntegration = new BooleanSetting("Grok Integration", true); public BooleanSetting getGrokIntegration() { return this.grokIntegration; }
 /*  78 */    private final BooleanSetting autoMeow = new BooleanSetting("Auto meow", false); public BooleanSetting getAutoMeow() { return this.autoMeow; }
 /*  78 */    private final DefaultGroupSetting levelPrefixGroup = new DefaultGroupSetting("Level prefix", this); public DefaultGroupSetting getLevelPrefixGroup() { return this.levelPrefixGroup; }
@@ -554,7 +555,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.grokIntegration, (Setting)this.autoMeow, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.otherCommandsSetting, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
+/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.privateMessageChatCommandsEnabled, (Setting)this.grokIntegration, (Setting)this.autoMeow, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.otherCommandsSetting, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -1259,7 +1260,7 @@
 /* 521 */       chatPrefix = "pc";
 /* 522 */     } else if (isGuildChatMessage(raw, message) && ((Boolean)this.guildChatCommandsEnabled.getValue()).booleanValue()) {
 /* 523 */       chatPrefix = "gc";
-/* 524 */     } else if (isIncomingPrivateMessage(raw, message)) {
+/* 524 */     } else if (((Boolean)this.privateMessageChatCommandsEnabled.getValue()).booleanValue() && isIncomingPrivateMessage(raw, message)) {
 /* 525 */       String pmTarget = extractPrivateMessageTarget(message);
 /* 526 */       if (pmTarget != null && !pmTarget.isBlank()) {
 /* 527 */         chatPrefix = "msg " + pmTarget;
