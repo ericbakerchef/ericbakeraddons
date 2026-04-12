@@ -90,6 +90,8 @@
 /*  52 */   private static final List<String> USELESS_TIP_MESSAGES = List.of("Slow down! You can only use /tip every few seconds.", "You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "No one has a network booster active right now! Try again later.");
 /*  52 */   private static final String GROK_COMMAND = "!grok";
 /*  52 */   private static final String[] GROK_RESPONSES = new String[] { "It is certain", "It is decidedly so", "Without a doubt", "Yes definitely", "You may rely on it", "As I see it, yes", "Most likely", "Outlook good", "Yes", "Signs point to yes", "Reply hazy try again", "Ask again later", "Better not tell you now", "Cannot predict now", "Concentrate and ask again", "Don't count on it", "My reply is no", "My sources say no", "Outlook not so good", "Very doubtful" };
+/*  52 */   private static final List<String> AUTO_MEOW_TRIGGERS = List.of("meow", "mrow", "mrrow", "purr", "mrrp", "nya", "nyah");
+/*  52 */   private static final String[] AUTO_MEOW_RESPONSES = new String[] { "mroww", "purr", "meowwwwww", "meow :3", "mrow", "moew", "mrow :3", "purrr :3" };
 /*     */ 
 /*     */ 
 /*     */ 
@@ -143,6 +145,7 @@
 /*  75 */   private static final Pattern PICKAXE_AVAILABLE_GENERIC_CHAT_PATTERN = Pattern.compile("(?:Your\\s+)?(.+?)\\s+is\\s+now\\s+available!?", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern TIP_TIPPED_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+player\\(s\\)\\s+in\\s+\\d+\\s+game\\(s\\)!?", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern TIP_TIPPED_DIFFERENT_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+players\\s+in\\s+\\d+\\s+different\\s+games!?", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern CHAT_SENDER_PATTERN = Pattern.compile("^(?:\\w+(?:-\\w+)?\\s>\\s)?(?:\\[[^\\]]+\\]\\s)?(?:\\S+\\s)?(?:\\[[^\\]]+\\]\\s)?([A-Za-z0-9_.-]+)(?:\\s[^\\s\\[\\]:]+)?(?:\\s\\[[^\\]]+\\])?:");
 /*  75 */   private static final Set<String> PICKAXE_ABILITY_NAMES = Set.of("pickobulus", "mining speed boost", "maniac miner", "tunnel vision");
 /*  75 */   private static final long SKY_MALL_PICKAXE_GRACE_MS = TimeUnit.SECONDS.toMillis(10L);
 /*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 5;
@@ -184,6 +187,7 @@
 /*  76 */    private final BooleanSetting partyChatCommandsEnabled = new BooleanSetting("Party chat", true); public BooleanSetting getPartyChatCommandsEnabled() { return this.partyChatCommandsEnabled; }
 /*  77 */    private final BooleanSetting guildChatCommandsEnabled = new BooleanSetting("Guild chat", false); public BooleanSetting getGuildChatCommandsEnabled() { return this.guildChatCommandsEnabled; }
 /*  78 */    private final BooleanSetting grokIntegration = new BooleanSetting("Grok Integration", true); public BooleanSetting getGrokIntegration() { return this.grokIntegration; }
+/*  78 */    private final BooleanSetting autoMeow = new BooleanSetting("Auto meow", false); public BooleanSetting getAutoMeow() { return this.autoMeow; }
 /*  78 */    private final DefaultGroupSetting levelPrefixGroup = new DefaultGroupSetting("Level prefix", this); public DefaultGroupSetting getLevelPrefixGroup() { return this.levelPrefixGroup; }
 /*  79 */    private final BooleanSetting levelPrefixEnable = new BooleanSetting("Enable (Level prefix)", true); public BooleanSetting getLevelPrefixEnable() { return this.levelPrefixEnable; }
 /*  80 */    private final BooleanSetting red480Plus = new BooleanSetting("Red 480+", true, () -> ((Boolean)this.levelPrefixEnable.getValue()).booleanValue()); public BooleanSetting getRed480Plus() { return this.red480Plus; }
@@ -550,7 +554,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.grokIntegration, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.otherCommandsSetting, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
+/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.grokIntegration, (Setting)this.autoMeow, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.otherCommandsSetting, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -1255,6 +1259,11 @@
 /* 521 */       chatPrefix = "pc";
 /* 522 */     } else if (isGuildChatMessage(raw, message) && ((Boolean)this.guildChatCommandsEnabled.getValue()).booleanValue()) {
 /* 523 */       chatPrefix = "gc";
+/* 524 */     } else if (isIncomingPrivateMessage(raw, message)) {
+/* 525 */       String pmTarget = extractPrivateMessageTarget(message);
+/* 526 */       if (pmTarget != null && !pmTarget.isBlank()) {
+/* 527 */         chatPrefix = "msg " + pmTarget;
+/*     */       }
 /*     */     } 
 /* 525 */     if (chatPrefix == null)
 /*     */       return; 
@@ -1263,6 +1272,11 @@
 /*     */       return; 
 /* 524 */     String contentRaw = message.substring(colonIndex + 2);
 /* 525 */     String content = contentRaw.toLowerCase(Locale.ROOT);
+/* 526 */     if (((Boolean)this.autoMeow.getValue()).booleanValue() && shouldAutoMeow(message, content)) {
+/* 527 */       String response = AUTO_MEOW_RESPONSES[ThreadLocalRandom.current().nextInt(AUTO_MEOW_RESPONSES.length)];
+/* 528 */       scheduleResponses(List.of(new ScheduledLine(200L, response)), chatPrefix);
+/* 529 */       return;
+/*     */     }
 /*     */     
 /*     */     if (isMathCommand(content)) {
 /*     */       if (!isCommandEnabled("!math")) {
@@ -4547,6 +4561,41 @@
 /*     */     }
 /*     */   }
 /*     */   
+/*     */   private boolean shouldAutoMeow(String fullMessage, String content) {
+/* 676 */     if (content == null || content.isBlank()) {
+/* 677 */       return false;
+/*     */     }
+/* 679 */     if (isOwnChatMessage(fullMessage)) {
+/* 680 */       return false;
+/*     */     }
+/* 682 */     for (String trigger : AUTO_MEOW_TRIGGERS) {
+/* 683 */       if (content.contains(trigger)) {
+/* 684 */         return true;
+/*     */       }
+/*     */     }
+/* 687 */     return false;
+/*     */   }
+/*     */   
+/*     */   private boolean isOwnChatMessage(String message) {
+/* 691 */     String sender = extractChatSender(message);
+/* 692 */     if (sender == null || sender.isBlank() || this.mc == null || this.mc.method_1548() == null) {
+/* 693 */       return false;
+/*     */     }
+/* 695 */     String playerName = this.mc.method_1548().method_1676();
+/* 696 */     return (playerName != null && sender.equalsIgnoreCase(playerName));
+/*     */   }
+/*     */   
+/*     */   private String extractChatSender(String message) {
+/* 700 */     if (message == null || message.isBlank()) {
+/* 701 */       return null;
+/*     */     }
+/* 703 */     Matcher matcher = CHAT_SENDER_PATTERN.matcher(message);
+/* 704 */     if (!matcher.find()) {
+/* 705 */       return null;
+/*     */     }
+/* 707 */     return matcher.group(1);
+/*     */   }
+/*     */   
 /*     */   private String formatChatCommand(String raw, String chatPrefix) {
 /* 677 */     String out = raw;
 /* 678 */     if (out == null) return chatPrefix;
@@ -4769,6 +4818,23 @@
 /*     */ 
 /*     */ 
 /*     */ 
+/*     */   
+/*     */   private boolean isIncomingPrivateMessage(String raw, String stripped) {
+/* 700 */     if (stripped != null && stripped.startsWith("From ")) return true; 
+/* 701 */     if (raw == null) return false; 
+/* 702 */     return raw.startsWith("From ");
+/*     */   }
+/*     */   
+/*     */   private String extractPrivateMessageTarget(String message) {
+/* 706 */     if (message == null || !message.startsWith("From ")) {
+/* 707 */       return null;
+/*     */     }
+/* 709 */     int colonIndex = message.indexOf(": ");
+/* 710 */     if (colonIndex <= 5) {
+/* 711 */       return null;
+/*     */     }
+/* 713 */     return message.substring(5, colonIndex).trim();
+/*     */   }
 /*     */   
 /*     */   private void sendWebhookMessage(String message) {
 /* 684 */     if (!((Boolean)this.webhookEnabled.getValue()).booleanValue())
