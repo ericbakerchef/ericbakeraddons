@@ -4834,7 +4834,17 @@
 /* 710 */     if (colonIndex <= 5) {
 /* 711 */       return null;
 /*     */     }
-/* 713 */     return message.substring(5, colonIndex).trim();
+/* 713 */     String header = message.substring(5, colonIndex).trim();
+/* 714 */     if (header.isEmpty()) {
+/* 715 */       return null;
+/*     */     }
+/* 717 */     if (header.startsWith("[")) {
+/* 718 */       int rankEnd = header.indexOf(']');
+/* 719 */       if (rankEnd != -1 && rankEnd + 1 < header.length()) {
+/* 720 */         header = header.substring(rankEnd + 1).trim();
+/*     */       }
+/*     */     }
+/* 723 */     return header.isEmpty() ? null : header;
 /*     */   }
 /*     */   
 /*     */   private void sendWebhookMessage(String message) {
