@@ -276,7 +276,7 @@
 /*  98 */    private final ColourSetting commissionOverlayCustomProgressEnd = new ColourSetting("- Custom Progress End", COMMISSION_PROGRESS_END_RSM, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomProgressEnd() { return this.commissionOverlayCustomProgressEnd; }
 /*  98 */    private final StringSetting commissionOverlayCustomText = new StringSetting("- Custom Text", "CUSTOM", true, false, this::isCommissionOverlayCustomTheme); public StringSetting getCommissionOverlayCustomText() { return this.commissionOverlayCustomText; }
 /*  98 */    private final ColourSetting commissionOverlayCustomTextColour = new ColourSetting("- Custom Text Colour", COMMISSION_TEXT_DEFAULT, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomTextColour() { return this.commissionOverlayCustomTextColour; }
-/*  99 */    private final DragSetting commissionOverlayPosition = new DragSetting("Commission Overlay", new Vector2d(8.0D, 8.0D), new Vector2d(180.0D, 80.0D), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public DragSetting getCommissionOverlayPosition() { return this.commissionOverlayPosition; }
+/*  99 */    private final DragSetting commissionOverlayPosition = new DragSetting("- Commission Overlay", new Vector2d(8.0D, 8.0D), new Vector2d(180.0D, 80.0D), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public DragSetting getCommissionOverlayPosition() { return this.commissionOverlayPosition; }
 /* 100 */    private final BooleanSetting commissionPeekEnabled = new BooleanSetting("- Peek", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionPeekEnabled() { return this.commissionPeekEnabled; }
 /* 100 */    private final BooleanSetting templeSkipEnabled = new BooleanSetting("Temple Skip", false); public BooleanSetting getTempleSkipEnabled() { return this.templeSkipEnabled; }
 /* 100 */    private final ColourSetting templeSkipColor = new ColourSetting("- Temple Skip Color", TEMPLE_SKIP_DEFAULT_COLOUR, () -> ((Boolean)this.templeSkipEnabled.getValue()).booleanValue()); public ColourSetting getTempleSkipColor() { return this.templeSkipColor; }
@@ -724,21 +724,21 @@
 /* 471 */       Class<?> keybindSettingClass = Class.forName("com.ricedotwho.rsm.ui.clickgui.settings.impl.KeybindSetting");
 /*     */       try {
 /* 473 */         Constructor<?> constructor = keybindSettingClass.getConstructor(new Class[] { String.class, keybindClass, Runnable.class, java.util.function.BooleanSupplier.class });
-/* 474 */         Object setting = constructor.newInstance(new Object[] { "Peek Keybind", keybind, (Runnable)(() -> {}), (java.util.function.BooleanSupplier)(() -> (((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue() && ((Boolean)this.commissionPeekEnabled.getValue()).booleanValue())) });
+/* 474 */         Object setting = constructor.newInstance(new Object[] { "- Peek Keybind", keybind, (Runnable)(() -> {}), (java.util.function.BooleanSupplier)(() -> (((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue() && ((Boolean)this.commissionPeekEnabled.getValue()).booleanValue())) });
 /* 475 */         if (setting instanceof Setting) {
 /* 476 */           return (Setting)setting;
 /*     */         }
 /* 478 */       } catch (ReflectiveOperationException reflectiveOperationException) {}
 /*     */ 
 /* 480 */       Constructor<?> keybindSettingConstructor = keybindSettingClass.getConstructor(new Class[] { String.class, keybindClass });
-/* 481 */       Object fallbackSetting = keybindSettingConstructor.newInstance(new Object[] { "Peek Keybind", keybind });
+/* 481 */       Object fallbackSetting = keybindSettingConstructor.newInstance(new Object[] { "- Peek Keybind", keybind });
 /* 482 */       if (fallbackSetting instanceof Setting) {
 /* 483 */         return (Setting)fallbackSetting;
 /*     */       }
 /* 485 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
 /*     */ 
 /* 487 */     this.commissionPeekKeybind = null;
-/* 488 */     return (Setting<?>)new ButtonSetting("Peek Keybind", "", () -> ChatUtils.chat(String.valueOf(class_124.field_1061) + "Peek keybind unavailable in this runtime.", new Object[0]));
+/* 488 */     return (Setting<?>)new ButtonSetting("- Peek Keybind", "", () -> ChatUtils.chat(String.valueOf(class_124.field_1061) + "Peek keybind unavailable in this runtime.", new Object[0]));
 /*     */   }
 /*     */   
 /*     */   private boolean isCommissionPeekKeyActive() {
@@ -753,344 +753,6 @@
 /*     */     } 
 /*     */   }
 /*     */   
-/*     */   private void runGrottoSearch() {
-/*     */     if (!isEnabled()) {
-/*     */       return;
-/*     */     }
-/*     */     if (!((Boolean)this.grottoLocatorEnabled.getValue()).booleanValue()) {
-/*     */       ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto locator is disabled.", new Object[0]);
-/*     */       return;
-/*     */     }
-/*     */     if (this.mc.field_1755 != null) {
-/*     */       return;
-/*     */     }
-/*     */     if (this.mc.field_1687 == null || this.mc.field_1724 == null) {
-/*     */       return;
-/*     */     }
-/*     */     ChatUtils.chat(String.valueOf(class_124.field_1054) + "Searching...", new Object[0]);
-/*     */     class_1937 world = this.mc.field_1687;
-/*     */     class_2338 playerPos = this.mc.field_1724.method_24515();
-/*     */     int px = playerPos.method_10263();
-/*     */     int py = playerPos.method_10264();
-/*     */     int pz = playerPos.method_10260();
-/*     */     int renderChunks = getRenderDistanceChunks();
-/*     */     int minY = resolveWorldMinY(world, -64);
-/*     */     int maxY = resolveWorldMaxYExclusive(world, 320);
-/*     */     int mergeDistanceSq = GROTTO_MERGE_DISTANCE * GROTTO_MERGE_DISTANCE;
-/*     */     int ignoreDistanceSq = GROTTO_IGNORE_RADIUS * GROTTO_IGNORE_RADIUS;
-/*     */     int playerChunkX = px >> 4;
-/*     */     int playerChunkZ = pz >> 4;
-/*     */     Object chunkManager = resolveChunkManager(world);
-/*     */     Method chunkLoadedMethod = (chunkManager == null) ? null : resolveChunkLoadedMethod(chunkManager);
-/*     */     List<class_2338> reported = new ArrayList<>();
-/*     */     if (chunkLoadedMethod != null) {
-/*     */       for (int chunkX = playerChunkX - renderChunks; chunkX <= playerChunkX + renderChunks; chunkX++) {
-/*     */         for (int chunkZ = playerChunkZ - renderChunks; chunkZ <= playerChunkZ + renderChunks; chunkZ++) {
-/*     */           if (!isChunkLoaded(chunkManager, chunkLoadedMethod, chunkX, chunkZ)) {
-/*     */             continue;
-/*     */           }
-/*     */           scanGrottoChunk(world, chunkX, chunkZ, minY, maxY, ignoreDistanceSq, mergeDistanceSq, reported);
-/*     */         } 
-/*     */       } 
-/*     */     } else {
-/*     */       List<Long> loadedChunks = getLoadedChunkPositions(world);
-/*     */       if (loadedChunks == null) {
-/*     */         ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto search unavailable in this runtime.", new Object[0]);
-/*     */         return;
-/*     */       }
-/*     */       for (Long chunkLong : loadedChunks) {
-/*     */         if (chunkLong == null) {
-/*     */           continue;
-/*     */         }
-/*     */         int chunkX = (int)(long)chunkLong;
-/*     */         int chunkZ = (int)(chunkLong.longValue() >> 32);
-/*     */         if (Math.abs(chunkX - playerChunkX) > renderChunks || Math.abs(chunkZ - playerChunkZ) > renderChunks) {
-/*     */           continue;
-/*     */         }
-/*     */         scanGrottoChunk(world, chunkX, chunkZ, minY, maxY, ignoreDistanceSq, mergeDistanceSq, reported);
-/*     */       } 
-/*     */     } 
-/*     */     if (reported.isEmpty()) {
-/*     */       ChatUtils.chat(String.valueOf(class_124.field_1054) + "No grotto detected", new Object[0]);
-/*     */     }
-/*     */   }
-/*     */   
-/*     */   private Object resolveChunkManager(class_1937 world) {
-/*     */     if (world == null) {
-/*     */       return null;
-/*     */     }
-/*     */     try {
-/*     */       return invokeNoArg(world, new String[] { "getChunkManager", "method_2935" });
-/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
-/*     */       return null;
-/*     */     } 
-/*     */   }
-/*     */   
-/*     */   private Method resolveChunkLoadedMethod(Object chunkManager) {
-/*     */     if (chunkManager == null) {
-/*     */       return null;
-/*     */     }
-/*     */     String[] names = { "isChunkLoaded", "method_16034" };
-/*     */     for (String name : names) {
-/*     */       try {
-/*     */         Method method = chunkManager.getClass().getMethod(name, new Class[] { int.class, int.class });
-/*     */         if (Boolean.TYPE.equals(method.getReturnType()) || Boolean.class.equals(method.getReturnType())) {
-/*     */           return method;
-/*     */         }
-/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {}
-/*     */     } 
-/*     */     for (Method method : chunkManager.getClass().getMethods()) {
-/*     */       if (method.getParameterCount() != 2 || (!Boolean.TYPE.equals(method.getReturnType()) && !Boolean.class.equals(method.getReturnType()))) {
-/*     */         continue;
-/*     */       }
-/*     */       Class<?>[] params = method.getParameterTypes();
-/*     */       if (params.length == 2 && Integer.TYPE.equals(params[0]) && Integer.TYPE.equals(params[1])) {
-/*     */         return method;
-/*     */       }
-/*     */     } 
-/*     */     return null;
-/*     */   }
-/*     */   
-/*     */   private boolean isChunkLoaded(Object chunkManager, Method method, int chunkX, int chunkZ) {
-/*     */     if (chunkManager == null || method == null) {
-/*     */       return false;
-/*     */     }
-/*     */     try {
-/*     */       Object result = method.invoke(chunkManager, new Object[] { Integer.valueOf(chunkX), Integer.valueOf(chunkZ) });
-/*     */       return (result instanceof Boolean && ((Boolean)result).booleanValue());
-/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
-/*     */       return false;
-/*     */     } 
-/*     */   }
-/*     */   
-/*     */   private void scanGrottoChunk(class_1937 world, int chunkX, int chunkZ, int minY, int maxY, int ignoreDistanceSq, int mergeDistanceSq, List<class_2338> reported) {
-/*     */     int baseX = chunkX << 4;
-/*     */     int baseZ = chunkZ << 4;
-/*     */     for (int x = baseX; x < baseX + 16; x++) {
-/*     */       for (int y = minY; y < maxY; y++) {
-/*     */         for (int z = baseZ; z < baseZ + 16; z++) {
-/*     */           class_2338 pos = new class_2338(x, y, z);
-/*     */           class_2680 state;
-/*     */           try {
-/*     */             state = world.method_8320(pos);
-/*     */           } catch (Throwable throwable) {
-/*     */             ChatUtils.chat(String.valueOf(class_124.field_1061) + "Grotto search failed while scanning chunks.", new Object[0]);
-/*     */             return;
-/*     */           } 
-/*     */           if (!isGrottoGlassPane(state)) {
-/*     */             continue;
-/*     */           }
-/*     */           if (isWithinDistanceSq(pos, GROTTO_IGNORE_X, GROTTO_IGNORE_Y, GROTTO_IGNORE_Z, ignoreDistanceSq)) {
-/*     */             continue;
-/*     */           }
-/*     */           if (isNearReported(pos, reported, mergeDistanceSq)) {
-/*     */             continue;
-/*     */           }
-/*     */           reported.add(pos);
-/*     */           ChatUtils.chat("Grotto located at (" + x + ", " + y + ", " + z + ")", new Object[0]);
-/*     */         } 
-/*     */       } 
-/*     */     } 
-/*     */   }
-/*     */   
-/*     */   private List<Long> getLoadedChunkPositions(class_1937 world) {
-/*     */     Object chunkManager;
-/*     */     try {
-/*     */       chunkManager = invokeNoArg(world, new String[] { "getChunkManager", "method_2935" });
-/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
-/*     */       return null;
-/*     */     } 
-/*     */     if (chunkManager == null) {
-/*     */       return null;
-/*     */     }
-/*     */     Object loadedChunks;
-/*     */     try {
-/*     */       loadedChunks = invokeNoArg(chunkManager, new String[] { "getLoadedChunkPositions", "method_62890" });
-/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
-/*     */       return null;
-/*     */     } 
-/*     */     if (loadedChunks == null) {
-/*     */       return null;
-/*     */     }
-/*     */     List<Long> results = new ArrayList<>();
-/*     */     if (loadedChunks instanceof Iterable) {
-/*     */       try {
-/*     */         for (Object entry : (Iterable)loadedChunks) {
-/*     */           Long value = asLong(entry);
-/*     */           if (value != null) {
-/*     */             results.add(value);
-/*     */           }
-/*     */         } 
-/*     */       } catch (Throwable throwable) {
-/*     */         return null;
-/*     */       } 
-/*     */       return results;
-/*     */     }
-/*     */     try {
-/*     */       Method iteratorMethod = loadedChunks.getClass().getMethod("iterator", new Class[0]);
-/*     */       Object iterator = iteratorMethod.invoke(loadedChunks, new Object[0]);
-/*     */       if (iterator == null) {
-/*     */         return results;
-/*     */       }
-/*     */       Method hasNext = iterator.getClass().getMethod("hasNext", new Class[0]);
-/*     */       Method nextLong = null;
-/*     */       Method next = null;
-/*     */       try {
-/*     */         nextLong = iterator.getClass().getMethod("nextLong", new Class[0]);
-/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {
-/*     */         next = iterator.getClass().getMethod("next", new Class[0]);
-/*     */       } 
-/*     */       while (((Boolean)hasNext.invoke(iterator, new Object[0])).booleanValue()) {
-/*     */         Object value = (nextLong != null) ? nextLong.invoke(iterator, new Object[0]) : next.invoke(iterator, new Object[0]);
-/*     */         Long packed = asLong(value);
-/*     */         if (packed != null) {
-/*     */           results.add(packed);
-/*     */         }
-/*     */       } 
-/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {
-/*     */       return null;
-/*     */     } 
-/*     */     return results;
-/*     */   }
-/*     */   
-/*     */   private Long asLong(Object value) {
-/*     */     if (value instanceof Long) {
-/*     */       return (Long)value;
-/*     */     }
-/*     */     if (value instanceof Number) {
-/*     */       return Long.valueOf(((Number)value).longValue());
-/*     */     }
-/*     */     return null;
-/*     */   }
-/*     */   
-/*     */   private int getRenderDistanceChunks() {
-/*     */     int fallbackChunks = 8;
-/*     */     Integer chunks = resolveRenderDistanceChunks();
-/*     */     if (chunks == null || chunks.intValue() <= 1) {
-/*     */       chunks = Integer.valueOf(fallbackChunks);
-/*     */     }
-/*     */     return chunks.intValue();
-/*     */   }
-/*     */   
-/*     */   private Integer resolveRenderDistanceChunks() {
-/*     */     Object options = resolveGameOptions();
-/*     */     if (options == null) {
-/*     */       return null;
-/*     */     }
-/*     */     Integer candidate = null;
-/*     */     for (Method method : options.getClass().getMethods()) {
-/*     */       if (method.getParameterCount() != 0 || Void.TYPE.equals(method.getReturnType())) {
-/*     */         continue;
-/*     */       }
-/*     */       try {
-/*     */         Object result = method.invoke(options, new Object[0]);
-/*     */         Integer value = extractOptionInt(result);
-/*     */         if (value == null || value.intValue() < 2 || value.intValue() > 32) {
-/*     */           continue;
-/*     */         }
-/*     */         if (candidate == null || value.intValue() > candidate.intValue()) {
-/*     */           candidate = value;
-/*     */         }
-/*     */       } catch (ReflectiveOperationException ignored) {}
-/*     */     } 
-/*     */     return candidate;
-/*     */   }
-/*     */   
-/*     */   private Object resolveGameOptions() {
-/*     */     for (Field field : this.mc.getClass().getDeclaredFields()) {
-/*     */       if (!field.getType().getName().equals("net.minecraft.class_315")) {
-/*     */         continue;
-/*     */       }
-/*     */       try {
-/*     */         field.setAccessible(true);
-/*     */         return field.get(this.mc);
-/*     */       } catch (IllegalAccessException ignored) {}
-/*     */     } 
-/*     */     return null;
-/*     */   }
-/*     */   
-/*     */   private Integer extractOptionInt(Object option) {
-/*     */     if (option instanceof Integer) {
-/*     */       return (Integer)option;
-/*     */     }
-/*     */     if (option == null) {
-/*     */       return null;
-/*     */     }
-/*     */     try {
-/*     */       Object value = option.getClass().getMethod("getValue", new Class[0]).invoke(option, new Object[0]);
-/*     */       if (value instanceof Integer) {
-/*     */         return (Integer)value;
-/*     */       }
-/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
-/*     */     
-/*     */     for (Method method : option.getClass().getMethods()) {
-/*     */       if (method.getParameterCount() != 0 || !Integer.TYPE.equals(method.getReturnType())) {
-/*     */         continue;
-/*     */       }
-/*     */       try {
-/*     */         return Integer.valueOf(((Integer)method.invoke(option, new Object[0])).intValue());
-/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {}
-/*     */     } 
-/*     */     return null;
-/*     */   }
-/*     */   
-/*     */   private int resolveWorldMinY(class_1937 world, int fallback) {
-/*     */     if (world == null) {
-/*     */       return -64;
-/*     */     }
-/*     */     try {
-/*     */       Object value = invokeNoArg(world, new String[] { "getBottomY", "method_31607" });
-/*     */       if (value instanceof Integer) {
-/*     */         return ((Integer)value).intValue();
-/*     */       }
-/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
-/*     */     return -64;
-/*     */   }
-/*     */   
-/*     */   private int resolveWorldMaxYExclusive(class_1937 world, int fallback) {
-/*     */     if (world == null) {
-/*     */       return 320;
-/*     */     }
-/*     */     try {
-/*     */       Object value = invokeNoArg(world, new String[] { "getTopY", "method_31608" });
-/*     */       if (value instanceof Integer) {
-/*     */         return ((Integer)value).intValue();
-/*     */       }
-/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
-/*     */     return 320;
-/*     */   }
-/*     */   
-/*     */   private boolean isGrottoGlassPane(class_2680 state) {
-/*     */     if (state == null) {
-/*     */       return false;
-/*     */     }
-/*     */     Object block = state.method_26204();
-/*     */     if (block == null) {
-/*     */       return false;
-/*     */     }
-/*     */     String blockText = String.valueOf(block).toLowerCase(Locale.ROOT);
-/*     */     return (blockText.contains("magenta_stained_glass_pane") || blockText.contains("magenta_stained_glass"));
-/*     */   }
-/*     */   
-/*     */   private boolean isWithinDistanceSq(class_2338 pos, int x, int y, int z, int maxDistanceSq) {
-/*     */     int dx = pos.method_10263() - x;
-/*     */     int dy = pos.method_10264() - y;
-/*     */     int dz = pos.method_10260() - z;
-/*     */     return (dx * dx + dy * dy + dz * dz <= maxDistanceSq);
-/*     */   }
-/*     */   
-/*     */   private boolean isNearReported(class_2338 pos, List<class_2338> reported, int mergeDistanceSq) {
-/*     */     for (class_2338 existing : reported) {
-/*     */       int dx = pos.method_10263() - existing.method_10263();
-/*     */       int dy = pos.method_10264() - existing.method_10264();
-/*     */       int dz = pos.method_10260() - existing.method_10260();
-/*     */       if (dx * dx + dy * dy + dz * dz < mergeDistanceSq) {
-/*     */         return true;
-/*     */       }
-/*     */     } 
-/*     */     return false;
-/*     */   }
-/*     */   
 /*     */   
 /*     */   @SubscribeEvent
 /*     */   public void onChat(ChatEvent event) {
@@ -1098,25 +760,16 @@
 /* 491 */     String message = class_124.method_539(raw);
 /*     */     
 /* 493 */     if (this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null)
-/* 494 */       return;  if (((Boolean)this.glorpWarp.getValue()).booleanValue() && message.contains("Party > [MVP+] glorpiline: Entered a ")) {
-/* 495 */       this.mc.field_1724.field_3944.method_45730("pc !pt glorpiline");
-/* 496 */       CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
-/*     */     } 
-/* 497 */     handleOdinEggChat(message);
-/* 497 */     if (((Boolean)this.chatBypass.getValue()).booleanValue()) {
-/* 498 */       String bypassCommand = buildCoopChatBypassCommand(message);
-/* 499 */       if (bypassCommand != null) {
-/* 500 */         this.mc.field_1724.field_3944.method_45730(bypassCommand);
-/*     */       }
-/*     */     }
+/* 494 */       return;  handleOdinEggChat(message);
+/* 495 */     sendWebhookMessage(message);
 /*     */     
 /* 505 */     if (!((Boolean)this.enableChatCommands.getValue()).booleanValue())
-/* 506 */       return;  sendWebhookMessage(message);
+/* 506 */       return; 
 /*     */     
-/* 508 */     if (message.equals("Guild > TheAdmin987 joined.") && this.otherCommandsSetting.getValuesList().contains("thetps987")) {
+/* 508 */     if (message.equals("Guild > TheAdmin987 joined.") && this.chatCommands3.getValuesList().contains("thetps987")) {
 /* 509 */       this.mc.field_1724.field_3944.method_45730("gc !tps");
 /*     */     }
-/* 511 */     if (message.equals("Guild > TheAdmin987 left.") && this.otherCommandsSetting.getValuesList().contains("serversaved")) {
+/* 511 */     if (message.equals("Guild > TheAdmin987 left.") && this.chatCommands3.getValuesList().contains("serversaved")) {
 /* 512 */       this.mc.field_1724.field_3944.method_45730("gc server saved");
 /*     */     }
 /*     */     
@@ -4608,10 +4261,6 @@
 /*     */     } 
 /*     */   }
 /*     */   
-/*     */   private void registerOtherCommand(String name) {
-/* 649 */     this.otherCommands.add(name);
-/*     */   }
-/*     */   
 /*     */   private boolean isCommandEnabled(String command) {
 /* 653 */     Integer category = this.commandCategories.get(command);
 /* 654 */     if (category == null) {
@@ -5064,31 +4713,6 @@
 /* 819 */       .replace("\n", "\\n")
 /* 820 */       .replace("\r", "\\r")
 /* 821 */       .replace("\t", "\\t");
-/*     */   }
-/*     */   
-/*     */   private void sendPtThenW() {
-/* 825 */     if (!isEnabled())
-/* 826 */       return;  if (this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null)
-/*     */       return; 
-/* 828 */     this.mc.field_1724.field_3944.method_45730("pc !pt");
-/* 829 */     CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
-/*     */   }
-/*     */   
-/*     */   private String buildCoopChatBypassCommand(String message) {
-/*     */     if (message == null || !message.startsWith("Co-op > ")) {
-/*     */       return null;
-/*     */     }
-/*     */     int contentStart = "Co-op > ".length();
-/*     */     int colonIndex = message.indexOf(": ", contentStart);
-/*     */     if (colonIndex <= contentStart) {
-/*     */       return null;
-/*     */     }
-/*     */     String name = message.substring(contentStart, colonIndex).trim();
-/*     */     String content = message.substring(colonIndex + 2).trim();
-/*     */     if (name.isEmpty() || content.isEmpty()) {
-/*     */       return null;
-/*     */     }
-/*     */     return "/gc " + name + " " + content;
 /*     */   }
 /*     */   
 /*     */   private String extractEventMessage(Object event) {
