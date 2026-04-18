@@ -32,17 +32,22 @@
 /*     */ import java.net.http.HttpClient;
 /*     */ import java.net.http.HttpRequest;
 /*     */ import java.net.http.HttpResponse;
+/*     */ import java.nio.charset.StandardCharsets;
 /*     */ import java.lang.reflect.Constructor;
 /*     */ import java.lang.reflect.Field;
 /*     */ import java.lang.reflect.Method;
 /*     */ import java.util.ArrayDeque;
 /*     */ import java.util.ArrayList;
+/*     */ import java.util.Base64;
 /*     */ import java.util.Collections;
+/*     */ import java.util.HashMap;
 /*     */ import java.util.HashSet;
 /*     */ import java.util.IdentityHashMap;
+/*     */ import java.util.Iterator;
 /*     */ import java.util.LinkedHashMap;
 /*     */ import java.util.List;
 /*     */ import java.util.Locale;
+/*     */ import java.util.Map;
 /*     */ import java.util.Set;
 /*     */ import java.util.concurrent.CompletableFuture;
 /*     */ import java.util.concurrent.ThreadLocalRandom;
@@ -52,6 +57,8 @@
 /*     */ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 /*     */ import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 /*     */ import net.minecraft.class_124;
+/*     */ import net.minecraft.class_1304;
+/*     */ import net.minecraft.class_1531;
 /*     */ import net.minecraft.class_1657;
 /*     */ import net.minecraft.class_1661;
 /*     */ import net.minecraft.class_1937;
@@ -170,8 +177,60 @@
 /*  86 */   private static final Colour COMMISSION_PANEL_OUTLINE_RSM = new Colour(46, 131, 67, 255);
 /*  86 */   private static final Colour COMMISSION_PROGRESS_START_RSM = new Colour(46, 131, 67, 255);
 /*  86 */   private static final Colour COMMISSION_PROGRESS_END_RSM = new Colour(37, 205, 92, 255);
+/*  86 */   private static final int ODIN_EGG_SCAN_INTERVAL_TICKS = 60;
+/*  86 */   private static final double ODIN_EGG_BOX_HALF_WIDTH = 0.35D;
+/*  86 */   private static final double ODIN_EGG_BOX_MIN_Y = 1.05D;
+/*  86 */   private static final double ODIN_EGG_BOX_MAX_Y = 1.75D;
+/*  86 */   private static final double ODIN_EGG_BEAM_HEIGHT = 25.0D;
+/*  86 */   private static final Pattern ODIN_EGG_MESSAGE_PATTERN = Pattern.compile(".*(?:found|collected).+Chocolate\\s+(?:Breakfast|Lunch|Dinner|Brunch|D\\u00E9jeuner|Supper).*", Pattern.CASE_INSENSITIVE);
+/*  86 */   private static final Pattern ODIN_TEXTURE_URL_PATTERN = Pattern.compile("\"url\"\\s*:\\s*\"([^\"]+)\"", Pattern.CASE_INSENSITIVE);
 /*     */   private record ScheduledLine(long delayMs, String command) {}
 /*     */   private record CommissionOverlayMetrics(float boxWidth, float boxHeight, float padding, float titleSize, float lineSize, float rsaSize, float lineGap, float barTopGap, float barHeight, float barRadius, float titleY, float bodyStartY, float rsaY, float radius, float outlineThickness) {}
+/*     */   private static final class OdinEggData {
+/*     */     private final int entityId;
+/*     */     private final class_1531 entity;
+/*     */     private final OdinEggKind kind;
+/*     */     private boolean found;
+/*     */ 
+/*     */     private OdinEggData(int entityId, class_1531 entity, OdinEggKind kind) {
+/*     */       this.entityId = entityId;
+/*     */       this.entity = entity;
+/*     */       this.kind = kind;
+/*     */     }
+/*     */   }
+/*     */ 
+/*     */   private enum OdinEggKind {
+/*     */     BREAKFAST("Breakfast / Brunch", "ewogICJ0aW1lc3RhbXAiIDogMTcxMTQ2MjY3MzE0OSwKICAicHJvZmlsZUlkIiA6ICJiN2I4ZTlhZjEwZGE0NjFmOTY2YTQxM2RmOWJiM2U4OCIsCiAgInByb2ZpbGVOYW1lIiA6ICJBbmFiYW5hbmFZZzciLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTQ5MzMzZDg1YjhhMzE1ZDAzMzZlYjJkZjM3ZDhhNzE0Y2EyNGM1MWI4YzYwNzRmMWI1YjkyN2RlYjUxNmMyNCIKICAgIH0KICB9Cn0", new Colour(255, 170, 0, 45), new Colour(255, 170, 0, 220)),
+/*     */     LUNCH("Lunch / D\u00E9jeuner", "ewogICJ0aW1lc3RhbXAiIDogMTcxMTQ2MjU2ODExMiwKICAicHJvZmlsZUlkIiA6ICI3NzUwYzFhNTM5M2Q0ZWQ0Yjc2NmQ4ZGUwOWY4MjU0NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJSZWVkcmVsIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzdhZTZkMmQzMWQ4MTY3YmNhZjk1MjkzYjY4YTRhY2Q4NzJkNjZlNzUxZGI1YTM0ZjJjYmM2NzY2YTAzNTZkMGEiCiAgICB9CiAgfQp9", new Colour(85, 85, 255, 45), new Colour(85, 85, 255, 220)),
+/*     */     DINNER("Dinner / Supper", "ewogICJ0aW1lc3RhbXAiIDogMTcxMTQ2MjY0OTcwMSwKICAicHJvZmlsZUlkIiA6ICI3NGEwMzQxNWY1OTI0ZTA4YjMyMGM2MmU1NGE3ZjJhYiIsCiAgInByb2ZpbGVOYW1lIiA6ICJNZXp6aXIiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTVlMzYxNjU4MTlmZDI4NTBmOTg1NTJlZGNkNzYzZmY5ODYzMTMxMTkyODNjMTI2YWNlMGM0Y2M0OTVlNzZhOCIKICAgIH0KICB9Cn0", new Colour(85, 255, 85, 45), new Colour(85, 255, 85, 220));
+/*     */ 
+/*     */     private final String label;
+/*     */     private final String textureValueLower;
+/*     */     private final String textureUrlLower;
+/*     */     private final Colour fillColour;
+/*     */     private final Colour outlineColour;
+/*     */ 
+/*     */     OdinEggKind(String label, String textureValue, Colour fillColour, Colour outlineColour) {
+/*     */       this.label = label;
+/*     */       this.textureValueLower = textureValue.toLowerCase(Locale.ROOT);
+/*     */       this.textureUrlLower = decodeTextureUrl(textureValue).toLowerCase(Locale.ROOT);
+/*     */       this.fillColour = fillColour;
+/*     */       this.outlineColour = outlineColour;
+/*     */     }
+/*     */ 
+/*     */     private static OdinEggKind fromStack(class_1799 stack) {
+/*     */       if (stack == null || stack.method_7960()) {
+/*     */         return null;
+/*     */       }
+/*     */       String search = (String.valueOf(stack) + ' ' + String.valueOf(stack.method_57353()) + ' ' + String.valueOf(stack.method_58658())).toLowerCase(Locale.ROOT);
+/*     */       for (OdinEggKind kind : values()) {
+/*     */         if (search.contains(kind.textureValueLower) || (!kind.textureUrlLower.isBlank() && search.contains(kind.textureUrlLower))) {
+/*     */           return kind;
+/*     */         }
+/*     */       }
+/*     */       return null;
+/*     */     }
+/*     */   }
 /*     */   
 /*  65 */   private final class_310 mc = class_310.method_1551(); public class_310 getMc() { return this.mc; }
 /*  66 */    private final LinkedHashMap<String, Integer> commandCategories = new LinkedHashMap<>(); public LinkedHashMap<String, Integer> getCommandCategories() { return this.commandCategories; }
@@ -246,6 +305,7 @@
 /*  91 */   private final NumberSetting autoTipIntervalSeconds = new NumberSetting("Auto Tip Delay", 5.0D, 20.0D, 10.0D, 1.0D, "s", () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public NumberSetting getAutoTipIntervalSeconds() { return this.autoTipIntervalSeconds; }
 /*  91 */   private final BooleanSetting hideUselessMessages = new BooleanSetting("Hide useless messages", false, () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public BooleanSetting getHideUselessMessages() { return this.hideUselessMessages; }
 /*  91 */   private final BooleanSetting hideTipMessages = new BooleanSetting("Hide Tip Messages", false, () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public BooleanSetting getHideTipMessages() { return this.hideTipMessages; }
+/*  91 */   private final BooleanSetting odinEggEspEnabled = new BooleanSetting("Odin Egg ESP", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getOdinEggEspEnabled() { return this.odinEggEspEnabled; }
 /*  91 */   private Object commissionPeekKeybind;
 /*  91 */   private Object grottoSearchKeybind;
 /*  91 */   private final List<String> commissionOverlayLines = new ArrayList<>();
@@ -269,6 +329,8 @@
 /*  91 */   private Method tooltipDrawTooltipMethod;
 /*  91 */   private int templeSkipTickCounter;
 /*  91 */   private class_2338 templeSkipSpot;
+/*  91 */   private final Map<Integer, OdinEggData> odinEggsByEntityId = new HashMap<>();
+/*  91 */   private int odinEggScanTickCounter;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Chat Webhook", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
 /*  96 */    private final StringSetting webhookLink = new StringSetting("Chat Link", "", true, false, () -> ((Boolean)this.webhookEnabled.getValue()).booleanValue()); public StringSetting getWebhookLink() { return this.webhookLink; }
 /*  97 */    private final BooleanSetting guildChatWebhookEnabled = new BooleanSetting("Guild chat Webhook", false); public BooleanSetting getGuildChatWebhookEnabled() { return this.guildChatWebhookEnabled; }
@@ -361,178 +423,40 @@
 /* 188 */     registerCommand(1, "!admin", new String[] { "pc admin is fat" });
 /* 189 */     registerCommand(1, "!hello", new String[] { "pc Hello!" });
 /* 190 */     registerCommand(1, "!test", new String[] { "pc test" });
-/*     */     
 /* 192 */     registerCommand(2, "!gentref", new String[] { "pc Gentlemen Reference", "pc they call him 007", "pc 0 times ee2 done", "pc 0 dps", "pc 7/7 right lever" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 199 */     registerCommand(2, "!gentbookref", new String[] { "pc So what happened was i went to the mall with somebody", "pc we went to this bookstore (alr its store for books)", "pc we went to manga section we were lookin at wrong", "pc i grabbed the book, like skin through the pages", "pc and then i see 1 page the page was just literly pantys", "pc so my smart (in that mumble) as decided to sniff here, i went", "pc SNIFF", "pc like i was snoring c*ke", "pc then i turn the page, and who do i see?", "pc a little girl holding the pantys", "pc so i ran out", "pc -gentlemen1210" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 213 */     registerCommand(1, "!real", new String[] { "pc so real" });
 /* 214 */     registerCommand(1, "!crash", new String[] { "pc you are fat" });
 /* 215 */     registerCommand(1, "!limbo", new String[] { "pc you are gent" });
 /* 216 */     registerCommand(1, "!meta", new String[] { "pc so meta" });
-/*     */     
 /* 218 */     registerCommand(1, "!math");
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 226 */     registerCommand(2, "!redstoneref", new String[] { "pc use wither cloak it works every time", "pc badlion is the superior 1.8.9 its not my pc", "pc 1.21 is the future of skyblock", "pc surely i profit from this update", "pc hey stop twisting my words", "pc You have 37 pending Bestiary Milestones to be claimed!" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 234 */     registerCommand(2, "!adminref", new String[] { "pc thefat987", "pc stop eating", "pc there is not enough spot for TheAdmin987! pls check for weight cap" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 239 */     registerCommand(2, "!ericref", new String[] { "pc Party > [MVP+] FurryPawsUwU: he really wanted runs?", "pc Party > [MVP+] FurryPawsUwU: weird" });
-/*     */ 
-/*     */ 
-/*     */     
 /* 243 */     registerCommand(2, "!penguinref", new String[] { "pc how could penguin have ref?????", "pc bros peak meta player" });
-/*     */ 
-/*     */ 
-/*     */     
 /* 247 */     registerCommand(2, "!maddyref", new String[] { "pc meow meow meow", "pc im a good mage if you want 1 run per month", "pc fine i wont dps" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 252 */     registerCommand(2, "!meow", new String[] { "pc meow", "pc mraow", "pc mrrp nyah", "pc mrrow", "pc :3" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 259 */     registerCommand(1, "!ref", new String[] { "pc gent ref" });
-/*     */     
-/* 261 */     registerCommand(1, "!bakerhelp", new String[] { "pc !bakerclient, !bakerhelp, !gentref, !gentbookref, !real, !crash, !limbo, !meta, !adminref, !redstoneref, !penguinref, !maddyref, !meow, !ref", "pc !clip, !diana, !oliref, !math, !hazelref, !devref, !roseref, !ericref, !hamiltonref, !leonref, !martinasref, !jqnxcref", "pc !67, !thearef, !stenoref, !hozoniref, !melonref, 67, !dt, 1s, !harryref, !dexref, !eggcurdref, !joshieref, !josenref" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 266 */     registerCommand(2, "!eggcurdref", new String[] { "pc im gooning to your mining bro", "pc eric you suck at everything and i hate you for existing", "pc ill host the server after i get level 524", "pc hamilton is my will to live", "pc 90 chimera 8 dyes 60 wools 40 phoenix 650 fragments 1.5b/hr" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 273 */     registerCommand(2, "!hamiltonref", new String[] { "pc john jay got sick after writing 5", "pc james madison wrote 29", "pc HAMILTON WROTE", "pc THE OTHER 51" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 279 */     registerCommand(2, "!joshieref", new String[] { "pc erics a femboy i just cant prove it" });
-/*     */     
-/* 281 */     registerCommand(1, "!bakerclient", new String[] { "pc Add ericbakerchef on Discord", "pc Note that this mod isn't very polished and not really mean't for anyone else to use." });
-/*     */ 
-/*     */ 
-/*     */     
 /* 285 */     registerCommand(1, "!clip", new String[] { "pc Failed to load clip: Weight limit exceeded by 500%!" });
 /* 286 */     registerCommand(1, "!diana", new String[] { "p inq menacingcondom38 shegaveconsent indianstreetfood n_word" });
-/*     */     
 /* 288 */     registerCommand(2, "!oliref", new String[] { "pc 08Master Reference", "pc They call him 007", "pc 0 bank", "pc 0 chims", "pc 7k spent on gems" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 295 */     registerCommand(3, "!roseref", new String[] { "pc Im a DEMON", "pc IM SO SAD", "pc EVERYONE HATES ME", "pc STOP TALKING TO ME IM SO SAD", "pc IM SO DEPRESSED AND WANT TO DIE" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 302 */     registerCommand(3, "!hazelref", new String[] { "pc PLEASE IM BEGGING YOU", "pc PLEASE SAVE ME", "pc AYMA PLEASE ANYTHING YOU WANT PLEASE", "pc GET HIM OUT OF MY LIFE PLEASE", "pc @ARROW ik its bad to beg you to ban someone i dont like but please" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 309 */     registerCommand(3, "!devref", new String[] { "pc I am NOT an egg!" });
 /* 310 */     registerCommand(3, "!leonref", new String[] { "pc whos my little discord kitten" });
 /* 311 */     registerCommand(3, "!martref", new String[] { "pc IT'S S PLUS OMG IT'S S PLUS GUYS IT'S ACTUALLY S PLUS" });
-/*     */     
 /* 313 */     registerCommand(3, "!jqnxcref", new String[] { "pc why are you calling my friend a pdf without proof?", "pc no i dont wanna read the proof", "pc can we kick this guy?", "pc asking for proof != defending btw" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 319 */     registerCommand(3, "!dexref", new String[] { "pc my cute little ekitten", "pc maxdragonis i4 ee2 core", "pc isnt 49s storm wr", "pc diivaks is no longer ready!", "pc diivaks was killed by Withermancer and became a ghost. (4)" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 326 */     registerCommandWithDelays(3, "!67", new long[] { 200L, 600L, 1000L, 1400L }, new String[] { "pc 6767676767676767676767676767676767", "pc 6767676767676767676767676767676767", "pc 6767676767676767676767676767676767", "pc 6767676767676767676767676767676767" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 335 */     registerCommand(3, "!cataholicref", new String[] { "pc best player", "pc no debate", "pc impossible for him to have a ref", "pc 67" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 341 */     registerCommand(3, "!thearef", new String[] { "pc look tic tac toe is hard", "pc you cant blame me", "pc sorry i ratted you it was an accident i swear", "pc my pb is 4 days withou a ban" });
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */ 
-/*     */     
 /* 347 */     registerCommand(3, "!stenoref", new String[] { "pc spring boots?", "pc i thought jerry gun was still meta for crystals", "pc is 35s maxor bad?" });
-/*     */ 
-/*     */ 
-/*     */
-/*     */     
 /* 352 */     registerCommand(3, "!hozoniref", new String[] { "pc how can hozoni have a ref", "pc he's too nonchalant for that shit" });
-/*     */ 
-/*     */ 
-/*     */     
 /* 356 */     registerCommand(3, "!melonref", new String[] { "pc melon roles", "pc 15 second p3", "pc sub 4:20 cas" });
 /* 357 */     registerCommand(3, "!darkref", new String[] { "pc ☠ Lyquidz fell to their death with help from Storm and became a ghost.", "pc PUZZLE FAIL! Lyquidz killed a Blaze in the wrong order! Yikes! (3)", "pc Team Score: 286 (S) (NEW RECORD!) ☠ Defeated Maxor, Storm, Goldor, and Necron in 07m 14s (NEW RECORD!) (died 5 times)", "pc top 2 f7 comp btw" });
-/*     */
-
-/*     */ 
-/*     */ 
-/*     */     
 /* 361 */     registerCommand(3, "!harryref", new String[] { "pc This content contains explicit content and can not be shown" });
 /* 362 */     registerCommand(3, "!josenref", new String[] { "pc Party > [MVP+] ThrowsenDT: fun fact: I never used spirit sceptre in clear till now cuz im like (if every top f7 player is using it I should too)", "pc AAAH awa GUTA", "pc is 2 star necron good for m7 bers?", "pc josen is short for josenid btw" });
 /* 363 */     this.category3Commands.add("green room message");
@@ -576,7 +500,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.chatBypass, (Setting)this.scrollableTooltips, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.chatBypass, (Setting)this.scrollableTooltips, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espRangeChunks, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
 /* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
@@ -1234,6 +1158,7 @@
 /* 495 */       this.mc.field_1724.field_3944.method_45730("pc !pt glorpiline");
 /* 496 */       CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
 /*     */     } 
+/* 497 */     handleOdinEggChat(message);
 /* 497 */     if (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.chatBypass.getValue()).booleanValue()) {
 /* 498 */       String bypassCommand = buildCoopChatBypassCommand(message);
 /* 499 */       if (bypassCommand != null) {
@@ -1343,6 +1268,7 @@
 /* 553 */       clearCustomHighlightData();
 /* 554 */       clearCommissionOverlayData();
 /* 554 */       clearTempleSkipData();
+/* 554 */       clearOdinEggData();
 /* 554 */       resetAutoTipState();
 /*     */       return;
 /*     */     }
@@ -1351,11 +1277,13 @@
 /* 558 */       clearCustomHighlightData();
 /* 559 */       clearCommissionOverlayData();
 /* 559 */       clearTempleSkipData();
+/* 559 */       clearOdinEggData();
 /* 559 */       resetAutoTipState();
 /*     */       return;
 /*     */     }
 /* 560 */     tickAutoTip();
-/* 561 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
+/* 561 */     tickOdinEggEsp();
+/* 562 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
 /* 562 */       boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
 /* 563 */       boolean nodeOn = ((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue();
 /* 563 */       boolean chestOn = ((Boolean)this.chestHighlightEnabled.getValue()).booleanValue();
@@ -1465,6 +1393,200 @@
 /*     */     } catch (Exception exception) {}
 /*     */     return 10000L;
 /*     */   }
+/*     */ 
+/*     */   private void tickOdinEggEsp() {
+/*     */     if (!shouldTrackOdinEggs()) {
+/*     */       clearOdinEggData();
+/*     */       return;
+/*     */     }
+/*     */     pruneOdinEggs();
+/*     */     this.odinEggScanTickCounter++;
+/*     */     if (this.odinEggsByEntityId.isEmpty() || this.odinEggScanTickCounter % ODIN_EGG_SCAN_INTERVAL_TICKS == 0) {
+/*     */       scanForOdinEggs();
+/*     */     }
+/*     */   }
+/*     */ 
+/*     */   private void handleOdinEggChat(String message) {
+/*     */     if (!shouldTrackOdinEggs() || message == null || message.isBlank()) {
+/*     */       return;
+/*     */     }
+/*     */     if (!ODIN_EGG_MESSAGE_PATTERN.matcher(message).matches()) {
+/*     */       return;
+/*     */     }
+/*     */     class_243 playerPos = this.mc.field_1724.method_33571();
+/*     */     if (playerPos == null) {
+/*     */       return;
+/*     */     }
+/*     */     OdinEggData closestEgg = null;
+/*     */     double closestDistance = Double.MAX_VALUE;
+/*     */     for (OdinEggData egg : this.odinEggsByEntityId.values()) {
+/*     */       if (egg.found) {
+/*     */         continue;
+/*     */       }
+/*     */       class_238 box = getOdinEggHeadBox(egg.entity);
+/*     */       if (box == null) {
+/*     */         continue;
+/*     */       }
+/*     */       double centerX = (box.field_1323 + box.field_1320) * 0.5D;
+/*     */       double centerY = (box.field_1322 + box.field_1325) * 0.5D;
+/*     */       double centerZ = (box.field_1321 + box.field_1324) * 0.5D;
+/*     */       double dx = centerX - playerPos.method_10216();
+/*     */       double dy = centerY - playerPos.method_10214();
+/*     */       double dz = centerZ - playerPos.method_10215();
+/*     */       double distanceSq = dx * dx + dy * dy + dz * dz;
+/*     */       if (distanceSq < closestDistance) {
+/*     */         closestDistance = distanceSq;
+/*     */         closestEgg = egg;
+/*     */       }
+/*     */     }
+/*     */     if (closestEgg != null) {
+/*     */       closestEgg.found = true;
+/*     */     }
+/*     */   }
+/*     */ 
+/*     */   private void renderOdinEggEsp() {
+/*     */     if (!shouldTrackOdinEggs() || this.odinEggsByEntityId.isEmpty()) {
+/*     */       return;
+/*     */     }
+/*     */     if (this.filledBoxConstructor == null || this.outlineBoxConstructor == null || this.addRenderTaskMethod == null) {
+/*     */       return;
+/*     */     }
+/*     */     if (this.lineConstructor == null) {
+/*     */       this.lineConstructor = resolveLineConstructor();
+/*     */     }
+/*     */     for (OdinEggData egg : this.odinEggsByEntityId.values()) {
+/*     */       if (egg.found) {
+/*     */         continue;
+/*     */       }
+/*     */       class_238 headBox = getOdinEggHeadBox(egg.entity);
+/*     */       if (headBox == null) {
+/*     */         continue;
+/*     */       }
+/*     */       try {
+/*     */         Object filledTask = this.filledBoxConstructor.newInstance(new Object[] { headBox, egg.kind.fillColour, Boolean.valueOf(false) });
+/*     */         Object outlineTask = this.outlineBoxConstructor.newInstance(new Object[] { headBox, egg.kind.outlineColour, Boolean.valueOf(false) });
+/*     */         this.addRenderTaskMethod.invoke(null, new Object[] { filledTask });
+/*     */         this.addRenderTaskMethod.invoke(null, new Object[] { outlineTask });
+/*     */         if (this.lineConstructor != null) {
+/*     */           double centerX = (headBox.field_1323 + headBox.field_1320) * 0.5D;
+/*     */           double centerZ = (headBox.field_1321 + headBox.field_1324) * 0.5D;
+/*     */           submitLine(new class_243(centerX, headBox.field_1322, centerZ), new class_243(centerX, headBox.field_1322 + ODIN_EGG_BEAM_HEIGHT, centerZ), egg.kind.outlineColour);
+/*     */         }
+/*     */       } catch (ReflectiveOperationException ignored) {
+/*     */         this.titaniumRenderBridgeReady = false;
+/*     */         return;
+/*     */       }
+/*     */     }
+/*     */   }
+/*     */ 
+/*     */   private void scanForOdinEggs() {
+/*     */     Iterable<?> entities = getEntityIterable(this.mc.field_1687);
+/*     */     if (entities == null) {
+/*     */       clearOdinEggData();
+/*     */       return;
+/*     */     }
+/*     */     Set<Integer> activeEggs = new HashSet<>();
+/*     */     for (Object obj : entities) {
+/*     */       if (!(obj instanceof class_1531 armorStand)) {
+/*     */         continue;
+/*     */       }
+/*     */       OdinEggKind eggKind = OdinEggKind.fromStack(getArmorStandHeadStack(armorStand));
+/*     */       if (eggKind == null) {
+/*     */         continue;
+/*     */       }
+/*     */       int entityId = armorStand.method_5628();
+/*     */       activeEggs.add(Integer.valueOf(entityId));
+/*     */       if (!this.odinEggsByEntityId.containsKey(Integer.valueOf(entityId))) {
+/*     */         this.odinEggsByEntityId.put(Integer.valueOf(entityId), new OdinEggData(entityId, armorStand, eggKind));
+/*     */       }
+/*     */     }
+/*     */     Iterator<Map.Entry<Integer, OdinEggData>> iterator = this.odinEggsByEntityId.entrySet().iterator();
+/*     */     while (iterator.hasNext()) {
+/*     */       Map.Entry<Integer, OdinEggData> entry = iterator.next();
+/*     */       if (!activeEggs.contains(entry.getKey())) {
+/*     */         iterator.remove();
+/*     */       }
+/*     */     }
+/*     */   }
+/*     */ 
+/*     */   private void pruneOdinEggs() {
+/*     */     Iterator<Map.Entry<Integer, OdinEggData>> iterator = this.odinEggsByEntityId.entrySet().iterator();
+/*     */     while (iterator.hasNext()) {
+/*     */       OdinEggData egg = ((Map.Entry<Integer, OdinEggData>)iterator.next()).getValue();
+/*     */       if (egg == null || egg.entity == null || getOdinEggHeadBox(egg.entity) == null) {
+/*     */         iterator.remove();
+/*     */       }
+/*     */     }
+/*     */   }
+/*     */ 
+/*     */   private void clearOdinEggData() {
+/*     */     this.odinEggsByEntityId.clear();
+/*     */     this.odinEggScanTickCounter = 0;
+/*     */   }
+/*     */ 
+/*     */   private boolean shouldTrackOdinEggs() {
+/*     */     return (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.odinEggEspEnabled.getValue()).booleanValue() && this.mc != null && this.mc.field_1687 != null && this.mc.field_1724 != null && isInSkyBlockSidebar());
+/*     */   }
+/*     */ 
+/*     */   private boolean isInSkyBlockSidebar() {
+/*     */     if (this.mc == null || this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null) {
+/*     */       return false;
+/*     */     }
+/*     */     class_269 scoreboard = this.mc.field_1724.field_3944.method_55823();
+/*     */     if (scoreboard != null) {
+/*     */       class_8646 displaySlot = (class_8646)class_8646.field_45176.apply(1);
+/*     */       class_266 objective = scoreboard.method_1189(displaySlot);
+/*     */       if (objective != null && (containsSkyblockText(objective.method_1120()) || containsSkyblockText(objective.method_1114()))) {
+/*     */         return true;
+/*     */       }
+/*     */     }
+/*     */     return !getSkyblockArea().isBlank();
+/*     */   }
+/*     */ 
+/*     */   private boolean containsSkyblockText(class_2561 text) {
+/*     */     if (text == null) {
+/*     */       return false;
+/*     */     }
+/*     */     String stripped = class_124.method_539(text.getString());
+/*     */     return (stripped != null && stripped.toUpperCase(Locale.ROOT).contains("SKYBLOCK"));
+/*     */   }
+/*     */ 
+/*     */   private class_1799 getArmorStandHeadStack(class_1531 armorStand) {
+/*     */     if (armorStand == null) {
+/*     */       return class_1799.field_8037;
+/*     */     }
+/*     */     for (class_1304 slot : class_1304.values()) {
+/*     */       String slotName = slot.method_5923();
+/*     */       if (slotName != null && slotName.toLowerCase(Locale.ROOT).contains("head")) {
+/*     */         return armorStand.method_6118(slot);
+/*     */       }
+/*     */     }
+/*     */     return class_1799.field_8037;
+/*     */   }
+/*     */ 
+/*     */   private class_238 getOdinEggHeadBox(class_1531 armorStand) {
+/*     */     class_238 entityBox = getEntityBox(armorStand);
+/*     */     if (entityBox == null) {
+/*     */       return null;
+/*     */     }
+/*     */     double centerX = (entityBox.field_1323 + entityBox.field_1320) * 0.5D;
+/*     */     double centerZ = (entityBox.field_1321 + entityBox.field_1324) * 0.5D;
+/*     */     double baseY = entityBox.field_1322;
+/*     */     return new class_238(centerX - ODIN_EGG_BOX_HALF_WIDTH, baseY + ODIN_EGG_BOX_MIN_Y, centerZ - ODIN_EGG_BOX_HALF_WIDTH, centerX + ODIN_EGG_BOX_HALF_WIDTH, baseY + ODIN_EGG_BOX_MAX_Y, centerZ + ODIN_EGG_BOX_HALF_WIDTH);
+/*     */   }
+/*     */ 
+/*     */   private static String decodeTextureUrl(String textureValue) {
+/*     */     if (textureValue == null || textureValue.isBlank()) {
+/*     */       return "";
+/*     */     }
+/*     */     try {
+/*     */       String decoded = new String(Base64.getDecoder().decode(textureValue), StandardCharsets.UTF_8);
+/*     */       Matcher matcher = ODIN_TEXTURE_URL_PATTERN.matcher(decoded);
+/*     */       return matcher.find() ? matcher.group(1) : "";
+/*     */     } catch (IllegalArgumentException exception) {
+/*     */       return "";
+/*     */     }
+/*     */   }
 /*     */   
 /*     */   @SubscribeEvent
 /*     */   public void onRender3D(Render3DEvent.Last event) {
@@ -1490,6 +1612,7 @@
 /* 583 */     } catch (Throwable throwable) {
 /* 584 */       clearCustomHighlightData();
 /*     */     } 
+/*     */     renderOdinEggEsp();
 /*     */     renderTempleSkip(event);
 /*     */   }
 /*     */   
