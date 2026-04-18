@@ -131,11 +131,6 @@
 /*  70 */   private static final int ESP_SCAN_SLICE_HEIGHT = 4;
 /*  70 */   private static final int ESP_SCAN_MOVE_THRESHOLD_BLOCKS = 4;
 /*  70 */   private static final int CUSTOM_HIGHLIGHT_SCAN_INTERVAL_TICKS = 5;
-/*  70 */   private static final int GROTTO_IGNORE_X = 513;
-/*  70 */   private static final int GROTTO_IGNORE_Y = 116;
-/*  70 */   private static final int GROTTO_IGNORE_Z = 559;
-/*  70 */   private static final int GROTTO_IGNORE_RADIUS = 20;
-/*  70 */   private static final int GROTTO_MERGE_DISTANCE = 100;
 /*  70 */   private static final int TOOLTIP_SCROLL_LIMIT = 240;
 /*  71 */   private static final byte MATCH_NONE = 0;
 /*  72 */   private static final byte MATCH_TITANIUM = 1;
@@ -240,20 +235,19 @@
 /*  69 */   private final List<String> category1Commands = new ArrayList<>(); public List<String> getCategory1Commands() { return this.category1Commands; }
 /*  70 */    private final List<String> category2Commands = new ArrayList<>(); public List<String> getCategory2Commands() { return this.category2Commands; }
 /*  71 */    private final List<String> category3Commands = new ArrayList<>(); public List<String> getCategory3Commands() { return this.category3Commands; }
-/*  72 */    private final List<String> otherCommands = new ArrayList<>(); public List<String> getOtherCommands() { return this.otherCommands; }
 /*     */   
 /*  74 */   private final BooleanSetting enableChatCommands = new BooleanSetting("Enable Chat Commands", true); public BooleanSetting getEnableChatCommands() { return this.enableChatCommands; }
-/*  75 */    private final DefaultGroupSetting chatCommandSettingsGroup = new DefaultGroupSetting("Chat Commands", this); public DefaultGroupSetting getChatCommandSettingsGroup() { return this.chatCommandSettingsGroup; }
-/*  76 */    private final BooleanSetting partyChatCommandsEnabled = new BooleanSetting("Party chat", true); public BooleanSetting getPartyChatCommandsEnabled() { return this.partyChatCommandsEnabled; }
-/*  77 */    private final BooleanSetting guildChatCommandsEnabled = new BooleanSetting("Guild chat", false); public BooleanSetting getGuildChatCommandsEnabled() { return this.guildChatCommandsEnabled; }
-/*  78 */    private final BooleanSetting privateMessageChatCommandsEnabled = new BooleanSetting("Private messages", false); public BooleanSetting getPrivateMessageChatCommandsEnabled() { return this.privateMessageChatCommandsEnabled; }
-/*  78 */    private final BooleanSetting grokIntegration = new BooleanSetting("Grok Integration", true); public BooleanSetting getGrokIntegration() { return this.grokIntegration; }
-/*  78 */    private final BooleanSetting autoMeow = new BooleanSetting("Auto meow", false); public BooleanSetting getAutoMeow() { return this.autoMeow; }
+/*  75 */    private final DefaultGroupSetting chatCommandSettingsGroup = new DefaultGroupSetting("Chat", this); public DefaultGroupSetting getChatCommandSettingsGroup() { return this.chatCommandSettingsGroup; }
+/*  76 */    private final BooleanSetting partyChatCommandsEnabled = new BooleanSetting("- Party chat", true, this::isChatCommandSettingsVisible); public BooleanSetting getPartyChatCommandsEnabled() { return this.partyChatCommandsEnabled; }
+/*  77 */    private final BooleanSetting guildChatCommandsEnabled = new BooleanSetting("- Guild chat", false, this::isChatCommandSettingsVisible); public BooleanSetting getGuildChatCommandsEnabled() { return this.guildChatCommandsEnabled; }
+/*  78 */    private final BooleanSetting privateMessageChatCommandsEnabled = new BooleanSetting("- Private messages", false, this::isChatCommandSettingsVisible); public BooleanSetting getPrivateMessageChatCommandsEnabled() { return this.privateMessageChatCommandsEnabled; }
+/*  78 */    private final BooleanSetting grokIntegration = new BooleanSetting("- Grok Integration", true, this::isChatCommandSettingsVisible); public BooleanSetting getGrokIntegration() { return this.grokIntegration; }
+/*  78 */    private final BooleanSetting autoMeow = new BooleanSetting("- Auto meow", false, this::isChatCommandSettingsVisible); public BooleanSetting getAutoMeow() { return this.autoMeow; }
 /*  78 */    private final DefaultGroupSetting levelPrefixGroup = new DefaultGroupSetting("Level prefix", this); public DefaultGroupSetting getLevelPrefixGroup() { return this.levelPrefixGroup; }
-/*  79 */    private final BooleanSetting levelPrefixEnable = new BooleanSetting("Enable (Level prefix)", true); public BooleanSetting getLevelPrefixEnable() { return this.levelPrefixEnable; }
-/*  80 */    private final BooleanSetting red480Plus = new BooleanSetting("Red 480+", true, () -> ((Boolean)this.levelPrefixEnable.getValue()).booleanValue()); public BooleanSetting getRed480Plus() { return this.red480Plus; }
-/*  81 */    private final BooleanSetting goldBrackets = new BooleanSetting("Gold brackets", true, () -> ((Boolean)this.levelPrefixEnable.getValue()).booleanValue()); public BooleanSetting getGoldBrackets() { return this.goldBrackets; }
-/*  82 */    private final BooleanSetting diamondBrackets = new BooleanSetting("Diamond brackets", true, () -> ((Boolean)this.levelPrefixEnable.getValue()).booleanValue()); public BooleanSetting getDiamondBrackets() { return this.diamondBrackets; }
+/*  79 */    private final BooleanSetting levelPrefixEnable = new BooleanSetting("Level prefix", true); public BooleanSetting getLevelPrefixEnable() { return this.levelPrefixEnable; }
+/*  80 */    private final BooleanSetting red480Plus = new BooleanSetting("- Red 480+", true, () -> ((Boolean)this.levelPrefixEnable.getValue()).booleanValue()); public BooleanSetting getRed480Plus() { return this.red480Plus; }
+/*  81 */    private final BooleanSetting goldBrackets = new BooleanSetting("- Gold brackets", true, () -> ((Boolean)this.levelPrefixEnable.getValue()).booleanValue()); public BooleanSetting getGoldBrackets() { return this.goldBrackets; }
+/*  82 */    private final BooleanSetting diamondBrackets = new BooleanSetting("- Diamond brackets", true, () -> ((Boolean)this.levelPrefixEnable.getValue()).booleanValue()); public BooleanSetting getDiamondBrackets() { return this.diamondBrackets; }
 /*  83 */    private final DefaultGroupSetting webhookGroup = new DefaultGroupSetting("Webhooks", this); public DefaultGroupSetting getWebhookGroup() { return this.webhookGroup; }
 /*  84 */    private final DefaultGroupSetting accountShareGroup = new DefaultGroupSetting("Account Share", this); public DefaultGroupSetting getAccountShareGroup() { return this.accountShareGroup; }
 /*  85 */    private final DefaultGroupSetting miscGroup = new DefaultGroupSetting("Misc", this); public DefaultGroupSetting getMiscGroup() { return this.miscGroup; }
@@ -261,55 +255,47 @@
 /*  86 */    private final DefaultGroupSetting customHighlightGroup = new DefaultGroupSetting("Custom Highlight", this); public DefaultGroupSetting getCustomHighlightGroup() { return this.customHighlightGroup; }
 /*  86 */    private final DefaultGroupSetting commissionOverlayGroup = new DefaultGroupSetting("Mining", this); public DefaultGroupSetting getCommissionOverlayGroup() { return this.commissionOverlayGroup; }
 /*  86 */    private final DefaultGroupSetting pickaxeAbilityCooldownGroup = new DefaultGroupSetting("Pickaxe Ability CD", this); public DefaultGroupSetting getPickaxeAbilityCooldownGroup() { return this.pickaxeAbilityCooldownGroup; }
-/*  86 */    private final DefaultGroupSetting grottoLocatorGroup = new DefaultGroupSetting("Grotto locator", this); public DefaultGroupSetting getGrottoLocatorGroup() { return this.grottoLocatorGroup; }
-/*  86 */    private final BooleanSetting miscEnabled = new BooleanSetting("Enable (Misc)", true); public BooleanSetting getMiscEnabled() { return this.miscEnabled; }
-/*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("Enable (ESP)", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
-/*  87 */    private final NumberSetting espRangeChunks = new NumberSetting("ESP Range", 1.0D, 8.0D, 2.0D, 1.0D, "chunks", () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public NumberSetting getEspRangeChunks() { return this.espRangeChunks; }
-/*  88 */    private final BooleanSetting titaniumHighlightEnabled = new BooleanSetting("Titanium", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getTitaniumHighlightEnabled() { return this.titaniumHighlightEnabled; }
-/*  89 */    private final BooleanSetting nodeHighlightEnabled = new BooleanSetting("End Nodes", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getNodeHighlightEnabled() { return this.nodeHighlightEnabled; }
-/*  89 */    private final BooleanSetting chestHighlightEnabled = new BooleanSetting("Chests", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getChestHighlightEnabled() { return this.chestHighlightEnabled; }
-/*  90 */    private final BooleanSetting hideonleafHighlightEnabled = new BooleanSetting("Hideonleaf", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getHideonleafHighlightEnabled() { return this.hideonleafHighlightEnabled; }
-/*  90 */    private final BooleanSetting automatonHighlightEnabled = new BooleanSetting("Automaton", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getAutomatonHighlightEnabled() { return this.automatonHighlightEnabled; }
-/*  90 */    private final BooleanSetting tracerEnabled = new BooleanSetting("Tracer", true, () -> (((Boolean)this.espEnabled.getValue()).booleanValue() || ((Boolean)this.customHighlightEnabled.getValue()).booleanValue())); public BooleanSetting getTracerEnabled() { return this.tracerEnabled; }
-/*  91 */    private final BooleanSetting tracerClosestOnly = new BooleanSetting("Closest only", false, () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public BooleanSetting getTracerClosestOnly() { return this.tracerClosestOnly; }
-/*  92 */    private final NumberSetting tracerThicknessPx = new NumberSetting("Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public NumberSetting getTracerThicknessPx() { return this.tracerThicknessPx; }
-/*  93 */    private final BooleanSetting customHighlightEnabled = new BooleanSetting("Enable (Custom Highlight)", true); public BooleanSetting getCustomHighlightEnabled() { return this.customHighlightEnabled; }
-/*  94 */    private final StringSetting customHighlightNames = new StringSetting("Names", "", true, false, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public StringSetting getCustomHighlightNames() { return this.customHighlightNames; }
-/*  95 */    private final BooleanSetting customIgnoreZeroHealth = new BooleanSetting("Ignore 0 Health", true, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public BooleanSetting getCustomIgnoreZeroHealth() { return this.customIgnoreZeroHealth; }
-/*  98 */    private final BooleanSetting commissionOverlayEnabled = new BooleanSetting("Enable (Commission Overlay)", true); public BooleanSetting getCommissionOverlayEnabled() { return this.commissionOverlayEnabled; }
-/*  98 */    private final BooleanSetting pickaxeAbilityCooldownEnabled = new BooleanSetting("Enable (Pickaxe Ability CD)", true); public BooleanSetting getPickaxeAbilityCooldownEnabled() { return this.pickaxeAbilityCooldownEnabled; }
-/*  98 */    private final ModeSetting commissionOverlayTheme = new ModeSetting("Theme", "RSA", List.of("RSA", "RSM", "Custom"), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public ModeSetting getCommissionOverlayTheme() { return this.commissionOverlayTheme; }
-/*  98 */    private final ColourSetting commissionOverlayCustomBorder = new ColourSetting("Custom Border", COMMISSION_PANEL_OUTLINE_RSM, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomBorder() { return this.commissionOverlayCustomBorder; }
-/*  98 */    private final ColourSetting commissionOverlayCustomProgressStart = new ColourSetting("Custom Progress Start", COMMISSION_PROGRESS_START_RSM, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomProgressStart() { return this.commissionOverlayCustomProgressStart; }
-/*  98 */    private final ColourSetting commissionOverlayCustomProgressEnd = new ColourSetting("Custom Progress End", COMMISSION_PROGRESS_END_RSM, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomProgressEnd() { return this.commissionOverlayCustomProgressEnd; }
-/*  98 */    private final StringSetting commissionOverlayCustomText = new StringSetting("Custom Text", "CUSTOM", true, false, this::isCommissionOverlayCustomTheme); public StringSetting getCommissionOverlayCustomText() { return this.commissionOverlayCustomText; }
-/*  98 */    private final ColourSetting commissionOverlayCustomTextColour = new ColourSetting("Custom Text Colour", COMMISSION_TEXT_DEFAULT, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomTextColour() { return this.commissionOverlayCustomTextColour; }
+/*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("ESP", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
+/*  87 */    private final NumberSetting espRangeChunks = new NumberSetting("- ESP Range", 1.0D, 8.0D, 2.0D, 1.0D, "chunks", () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public NumberSetting getEspRangeChunks() { return this.espRangeChunks; }
+/*  88 */    private final BooleanSetting titaniumHighlightEnabled = new BooleanSetting("- Titanium", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getTitaniumHighlightEnabled() { return this.titaniumHighlightEnabled; }
+/*  89 */    private final BooleanSetting nodeHighlightEnabled = new BooleanSetting("- End Nodes", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getNodeHighlightEnabled() { return this.nodeHighlightEnabled; }
+/*  89 */    private final BooleanSetting chestHighlightEnabled = new BooleanSetting("- Chests", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getChestHighlightEnabled() { return this.chestHighlightEnabled; }
+/*  90 */    private final BooleanSetting hideonleafHighlightEnabled = new BooleanSetting("- Hideonleaf", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getHideonleafHighlightEnabled() { return this.hideonleafHighlightEnabled; }
+/*  90 */    private final BooleanSetting automatonHighlightEnabled = new BooleanSetting("- Automaton", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getAutomatonHighlightEnabled() { return this.automatonHighlightEnabled; }
+/*  90 */    private final BooleanSetting tracerEnabled = new BooleanSetting("- Tracer", true, () -> (((Boolean)this.espEnabled.getValue()).booleanValue() || ((Boolean)this.customHighlightEnabled.getValue()).booleanValue())); public BooleanSetting getTracerEnabled() { return this.tracerEnabled; }
+/*  91 */    private final BooleanSetting tracerClosestOnly = new BooleanSetting("- Closest only", false, () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public BooleanSetting getTracerClosestOnly() { return this.tracerClosestOnly; }
+/*  92 */    private final NumberSetting tracerThicknessPx = new NumberSetting("- Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public NumberSetting getTracerThicknessPx() { return this.tracerThicknessPx; }
+/*  93 */    private final BooleanSetting customHighlightEnabled = new BooleanSetting("Custom Highlight", true); public BooleanSetting getCustomHighlightEnabled() { return this.customHighlightEnabled; }
+/*  94 */    private final StringSetting customHighlightNames = new StringSetting("- Names", "", true, false, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public StringSetting getCustomHighlightNames() { return this.customHighlightNames; }
+/*  95 */    private final BooleanSetting customIgnoreZeroHealth = new BooleanSetting("- Ignore 0 Health", true, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public BooleanSetting getCustomIgnoreZeroHealth() { return this.customIgnoreZeroHealth; }
+/*  98 */    private final BooleanSetting commissionOverlayEnabled = new BooleanSetting("Commission Overlay", true); public BooleanSetting getCommissionOverlayEnabled() { return this.commissionOverlayEnabled; }
+/*  98 */    private final BooleanSetting pickaxeAbilityCooldownEnabled = new BooleanSetting("Pickaxe Ability CD", true); public BooleanSetting getPickaxeAbilityCooldownEnabled() { return this.pickaxeAbilityCooldownEnabled; }
+/*  98 */    private final ModeSetting commissionOverlayTheme = new ModeSetting("- Theme", "RSA", List.of("RSA", "RSM", "Custom"), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public ModeSetting getCommissionOverlayTheme() { return this.commissionOverlayTheme; }
+/*  98 */    private final ColourSetting commissionOverlayCustomBorder = new ColourSetting("- Custom Border", COMMISSION_PANEL_OUTLINE_RSM, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomBorder() { return this.commissionOverlayCustomBorder; }
+/*  98 */    private final ColourSetting commissionOverlayCustomProgressStart = new ColourSetting("- Custom Progress Start", COMMISSION_PROGRESS_START_RSM, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomProgressStart() { return this.commissionOverlayCustomProgressStart; }
+/*  98 */    private final ColourSetting commissionOverlayCustomProgressEnd = new ColourSetting("- Custom Progress End", COMMISSION_PROGRESS_END_RSM, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomProgressEnd() { return this.commissionOverlayCustomProgressEnd; }
+/*  98 */    private final StringSetting commissionOverlayCustomText = new StringSetting("- Custom Text", "CUSTOM", true, false, this::isCommissionOverlayCustomTheme); public StringSetting getCommissionOverlayCustomText() { return this.commissionOverlayCustomText; }
+/*  98 */    private final ColourSetting commissionOverlayCustomTextColour = new ColourSetting("- Custom Text Colour", COMMISSION_TEXT_DEFAULT, this::isCommissionOverlayCustomTheme); public ColourSetting getCommissionOverlayCustomTextColour() { return this.commissionOverlayCustomTextColour; }
 /*  99 */    private final DragSetting commissionOverlayPosition = new DragSetting("Commission Overlay", new Vector2d(8.0D, 8.0D), new Vector2d(180.0D, 80.0D), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public DragSetting getCommissionOverlayPosition() { return this.commissionOverlayPosition; }
-/* 100 */    private final BooleanSetting commissionPeekEnabled = new BooleanSetting("Peek", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionPeekEnabled() { return this.commissionPeekEnabled; }
-/* 100 */    private final BooleanSetting grottoLocatorEnabled = new BooleanSetting("Enable (Grotto locator)", true); public BooleanSetting getGrottoLocatorEnabled() { return this.grottoLocatorEnabled; }
+/* 100 */    private final BooleanSetting commissionPeekEnabled = new BooleanSetting("- Peek", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionPeekEnabled() { return this.commissionPeekEnabled; }
 /* 100 */    private final BooleanSetting templeSkipEnabled = new BooleanSetting("Temple Skip", false); public BooleanSetting getTempleSkipEnabled() { return this.templeSkipEnabled; }
-/* 100 */    private final ColourSetting templeSkipColor = new ColourSetting("Temple Skip Color", TEMPLE_SKIP_DEFAULT_COLOUR, () -> ((Boolean)this.templeSkipEnabled.getValue()).booleanValue()); public ColourSetting getTempleSkipColor() { return this.templeSkipColor; }
+/* 100 */    private final ColourSetting templeSkipColor = new ColourSetting("- Temple Skip Color", TEMPLE_SKIP_DEFAULT_COLOUR, () -> ((Boolean)this.templeSkipEnabled.getValue()).booleanValue()); public ColourSetting getTempleSkipColor() { return this.templeSkipColor; }
 /* 101 */    private final Setting<?> commissionPeekKeybindSetting = createCommissionPeekKeybindSetting(); public Setting<?> getCommissionPeekKeybindSetting() { return this.commissionPeekKeybindSetting; }
-/* 101 */    private final Setting<?> grottoSearchKeybindSetting = createGrottoSearchKeybindSetting(); public Setting<?> getGrottoSearchKeybindSetting() { return this.grottoSearchKeybindSetting; }
-/* 102 */    private final BooleanSetting commissionOnlyRoyalPigeonInventory = new BooleanSetting("Only display if Royal Pigeon is in inventory", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonInventory() { return this.commissionOnlyRoyalPigeonInventory; }
-/* 103 */    private final BooleanSetting commissionOnlyRoyalPigeonHotbar = new BooleanSetting("Only display if Royal Pigeon is in hotbar", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonHotbar() { return this.commissionOnlyRoyalPigeonHotbar; }
-/* 104 */    private final BooleanSetting commissionRoundProgressNumbers = new BooleanSetting("Round Progress Numbers", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionRoundProgressNumbers() { return this.commissionRoundProgressNumbers; }
+/* 102 */    private final BooleanSetting commissionOnlyRoyalPigeonInventory = new BooleanSetting("- Only display if Royal Pigeon is in inventory", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonInventory() { return this.commissionOnlyRoyalPigeonInventory; }
+/* 103 */    private final BooleanSetting commissionOnlyRoyalPigeonHotbar = new BooleanSetting("- Only display if Royal Pigeon is in hotbar", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonHotbar() { return this.commissionOnlyRoyalPigeonHotbar; }
+/* 104 */    private final BooleanSetting commissionRoundProgressNumbers = new BooleanSetting("- Round Progress Numbers", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionRoundProgressNumbers() { return this.commissionRoundProgressNumbers; }
 /*  95 */    private final ButtonSetting debugNametagScanButton = new ButtonSetting("Debug Nametags", "", this::debugCustomHighlightScan); public ButtonSetting getDebugNametagScanButton() { return this.debugNametagScanButton; }
-/*  87 */   private final Setting<?> ptwKeybind = createPtwKeybindSetting(); public Setting<?> getPtwKeybind() { return this.ptwKeybind; }
 /*     */ 
 /*     */ 
 /*     */   
-/*  91 */   private final BooleanSetting glorpWarp = new BooleanSetting("glorp warp", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getGlorpWarp() { return this.glorpWarp; }
-/*  91 */   private final BooleanSetting chatBypass = new BooleanSetting("Chat Bypass", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getChatBypass() { return this.chatBypass; }
-/*  91 */   private final BooleanSetting scrollableTooltips = new BooleanSetting("Scrollable Tooltips", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getScrollableTooltips() { return this.scrollableTooltips; }
-/*  91 */   private final BooleanSetting removeTextShadow = new BooleanSetting("Remove Text Shadow", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getRemoveTextShadow() { return this.removeTextShadow; }
-/*  91 */   private final BooleanSetting autoTipEnabled = new BooleanSetting("Auto Tip", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getAutoTipEnabled() { return this.autoTipEnabled; }
-/*  91 */   private final NumberSetting autoTipIntervalSeconds = new NumberSetting("Auto Tip Delay", 5.0D, 20.0D, 10.0D, 1.0D, "s", () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public NumberSetting getAutoTipIntervalSeconds() { return this.autoTipIntervalSeconds; }
-/*  91 */   private final BooleanSetting hideUselessMessages = new BooleanSetting("Hide useless messages", false, () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public BooleanSetting getHideUselessMessages() { return this.hideUselessMessages; }
-/*  91 */   private final BooleanSetting hideTipMessages = new BooleanSetting("Hide Tip Messages", false, () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public BooleanSetting getHideTipMessages() { return this.hideTipMessages; }
-/*  91 */   private final BooleanSetting odinEggEspEnabled = new BooleanSetting("Odin Egg ESP", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getOdinEggEspEnabled() { return this.odinEggEspEnabled; }
+/*  91 */   private final BooleanSetting scrollableTooltips = new BooleanSetting("Scrollable Tooltips", false); public BooleanSetting getScrollableTooltips() { return this.scrollableTooltips; }
+/*  91 */   private final BooleanSetting removeTextShadow = new BooleanSetting("Remove Text Shadow", false); public BooleanSetting getRemoveTextShadow() { return this.removeTextShadow; }
+/*  91 */   private final BooleanSetting autoTipEnabled = new BooleanSetting("Auto Tip", false); public BooleanSetting getAutoTipEnabled() { return this.autoTipEnabled; }
+/*  91 */   private final NumberSetting autoTipIntervalSeconds = new NumberSetting("- Auto Tip Delay", 5.0D, 20.0D, 10.0D, 1.0D, "s", () -> ((Boolean)this.autoTipEnabled.getValue()).booleanValue()); public NumberSetting getAutoTipIntervalSeconds() { return this.autoTipIntervalSeconds; }
+/*  91 */   private final BooleanSetting hideUselessMessages = new BooleanSetting("- Hide useless messages", false, () -> ((Boolean)this.autoTipEnabled.getValue()).booleanValue()); public BooleanSetting getHideUselessMessages() { return this.hideUselessMessages; }
+/*  91 */   private final BooleanSetting hideTipMessages = new BooleanSetting("- Hide Tip Messages", false, () -> ((Boolean)this.autoTipEnabled.getValue()).booleanValue()); public BooleanSetting getHideTipMessages() { return this.hideTipMessages; }
+/*  91 */   private final BooleanSetting odinEggEspEnabled = new BooleanSetting("Odin Egg ESP", false); public BooleanSetting getOdinEggEspEnabled() { return this.odinEggEspEnabled; }
 /*  91 */   private Object commissionPeekKeybind;
-/*  91 */   private Object grottoSearchKeybind;
 /*  91 */   private final List<String> commissionOverlayLines = new ArrayList<>();
 /*  91 */   private final LinkedHashMap<String, Double> commissionProgressTargets = new LinkedHashMap<>();
 /*  91 */   private final LinkedHashMap<String, Double> commissionProgressDisplayed = new LinkedHashMap<>();
@@ -334,19 +320,19 @@
 /*  91 */   private final Map<Integer, OdinEggData> odinEggsByEntityId = new HashMap<>();
 /*  91 */   private int odinEggScanTickCounter;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Chat Webhook", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
-/*  96 */    private final StringSetting webhookLink = new StringSetting("Chat Link", "", true, false, () -> ((Boolean)this.webhookEnabled.getValue()).booleanValue()); public StringSetting getWebhookLink() { return this.webhookLink; }
+/*  96 */    private final StringSetting webhookLink = new StringSetting("- Chat Link", "", true, false, () -> ((Boolean)this.webhookEnabled.getValue()).booleanValue()); public StringSetting getWebhookLink() { return this.webhookLink; }
 /*  97 */    private final BooleanSetting guildChatWebhookEnabled = new BooleanSetting("Guild chat Webhook", false); public BooleanSetting getGuildChatWebhookEnabled() { return this.guildChatWebhookEnabled; }
-/*  98 */    private final StringSetting guildChatWebhook = new StringSetting("Guild Link", "", true, false, () -> ((Boolean)this.guildChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getGuildChatWebhook() { return this.guildChatWebhook; }
+/*  98 */    private final StringSetting guildChatWebhook = new StringSetting("- Guild Link", "", true, false, () -> ((Boolean)this.guildChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getGuildChatWebhook() { return this.guildChatWebhook; }
 /*  99 */    private final BooleanSetting partyChatWebhookEnabled = new BooleanSetting("Party Chat Webhook", false); public BooleanSetting getPartyChatWebhookEnabled() { return this.partyChatWebhookEnabled; }
-/* 100 */    private final StringSetting partyChatWebhook = new StringSetting("Party Link", "", true, false, () -> ((Boolean)this.partyChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getPartyChatWebhook() { return this.partyChatWebhook; }
+/* 100 */    private final StringSetting partyChatWebhook = new StringSetting("- Party Link", "", true, false, () -> ((Boolean)this.partyChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getPartyChatWebhook() { return this.partyChatWebhook; }
 /* 101 */    private final BooleanSetting coopChatWebhookEnabled = new BooleanSetting("Co-op Chat Webhook", false); public BooleanSetting getCoopChatWebhookEnabled() { return this.coopChatWebhookEnabled; }
-/* 102 */    private final StringSetting coopChatWebhook = new StringSetting("Co-op Link", "", true, false, () -> ((Boolean)this.coopChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getCoopChatWebhook() { return this.coopChatWebhook; }
+/* 102 */    private final StringSetting coopChatWebhook = new StringSetting("- Co-op Link", "", true, false, () -> ((Boolean)this.coopChatWebhookEnabled.getValue()).booleanValue()); public StringSetting getCoopChatWebhook() { return this.coopChatWebhook; }
 /* 103 */    private final BooleanSetting privateMessagesWebhookEnabled = new BooleanSetting("Private Messages Webhook", false); public BooleanSetting getPrivateMessagesWebhookEnabled() { return this.privateMessagesWebhookEnabled; }
-/* 104 */    private final StringSetting privateMessagesWebhook = new StringSetting("PM Link", "", true, false, () -> ((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue()); public StringSetting getPrivateMessagesWebhook() { return this.privateMessagesWebhook; }
+/* 104 */    private final StringSetting privateMessagesWebhook = new StringSetting("- PM Link", "", true, false, () -> ((Boolean)this.privateMessagesWebhookEnabled.getValue()).booleanValue()); public StringSetting getPrivateMessagesWebhook() { return this.privateMessagesWebhook; }
 /* 103 */    private final BooleanSetting loginNotifierWebhookEnabled = new BooleanSetting("Log in notifier Webhook", false); public BooleanSetting getLoginNotifierWebhookEnabled() { return this.loginNotifierWebhookEnabled; }
-/* 104 */    private final StringSetting loginNotifierWebhook = new StringSetting("Notifier Link", "", true, false, () -> ((Boolean)this.loginNotifierWebhookEnabled.getValue()).booleanValue()); public StringSetting getLoginNotifierWebhook() { return this.loginNotifierWebhook; }
-/* 105 */    private final BooleanSetting accountShareEnabled = new BooleanSetting("Enable (Account Share)", false); public BooleanSetting getAccountShareEnabled() { return this.accountShareEnabled; }
-/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private MultiBoolSetting otherCommandsSetting; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<class_2338> chestBlocks = new ArrayList<>(); private final List<class_238> automatonBoxes = new ArrayList<>(); private final List<class_238> hideonleafEntityBoxes = new ArrayList<>(); private final List<class_238> customEntityBoxes = new ArrayList<>(); private final List<net.minecraft.class_1297> customMatchedEntities = new ArrayList<>(); private final IdentityHashMap<net.minecraft.class_1297, class_238> customSmoothedBoxes = new IdentityHashMap<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final List<Object> chestRenderTasks = new ArrayList<>(); private final List<Object> automatonRenderTasks = new ArrayList<>(); private final List<Object> hideonleafEntityRenderTasks = new ArrayList<>(); private final List<Object> customEntityRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int customHighlightTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private boolean espScanInitialized; private boolean espScanInProgress; private boolean espRenderTasksDirty; private int espScanCursorY; private int espScanMinY; private int espScanMaxY; private int espScanCenterX; private int espScanCenterY; private int espScanCenterZ; private int espScanRangeBlocks; private boolean espScanTitaniumOn; private boolean espScanNodeOn; private boolean espScanChestOn; private boolean espScanAutomatonOn; private boolean espScanHideonleafOn; private boolean espScanBlockScanOn; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Constructor<?> lineConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method entityTypeMethod; private Method shulkerColorMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
+/* 104 */    private final StringSetting loginNotifierWebhook = new StringSetting("- Notifier Link", "", true, false, () -> ((Boolean)this.loginNotifierWebhookEnabled.getValue()).booleanValue()); public StringSetting getLoginNotifierWebhook() { return this.loginNotifierWebhook; }
+/* 105 */    private final BooleanSetting accountShareEnabled = new BooleanSetting("Account Share", false); public BooleanSetting getAccountShareEnabled() { return this.accountShareEnabled; }
+/* 106 */    private final StringSetting ssidWebhook = new StringSetting("SSID webhook", ""); private final ButtonSetting copyMinecraftSsidButton; private final ButtonSetting sendMinecraftSsidButton; private String cachedWebhookInput; private String cachedWebhookResolved; private String lastKnownServerAddress; private String lastLoginNotifierEvent; private boolean pendingSsidSend; private String pendingSsidPayload; private MultiBoolSetting chatCommands1; private MultiBoolSetting chatCommands2; private MultiBoolSetting chatCommands3; private final ButtonSetting enableAllButton; private final ButtonSetting disableAllButton; private final List<class_2338> titaniumBlocks = new ArrayList<>(); private final List<class_2338> nodeBlocks = new ArrayList<>(); private final List<class_2338> chestBlocks = new ArrayList<>(); private final List<class_238> automatonBoxes = new ArrayList<>(); private final List<class_238> hideonleafEntityBoxes = new ArrayList<>(); private final List<class_238> customEntityBoxes = new ArrayList<>(); private final List<net.minecraft.class_1297> customMatchedEntities = new ArrayList<>(); private final IdentityHashMap<net.minecraft.class_1297, class_238> customSmoothedBoxes = new IdentityHashMap<>(); private final List<Object> titaniumRenderTasks = new ArrayList<>(); private final List<Object> nodeRenderTasks = new ArrayList<>(); private final List<Object> chestRenderTasks = new ArrayList<>(); private final List<Object> automatonRenderTasks = new ArrayList<>(); private final List<Object> hideonleafEntityRenderTasks = new ArrayList<>(); private final List<Object> customEntityRenderTasks = new ArrayList<>(); private final IdentityHashMap<Object, Byte> blockHighlightTypeCache = new IdentityHashMap<>(); private int titaniumTickCounter; private int customHighlightTickCounter; private int lastEspScanX = Integer.MIN_VALUE; private int lastEspScanY = Integer.MIN_VALUE; private int lastEspScanZ = Integer.MIN_VALUE; private boolean espScanInitialized; private boolean espScanInProgress; private boolean espRenderTasksDirty; private int espScanCursorY; private int espScanMinY; private int espScanMaxY; private int espScanCenterX; private int espScanCenterY; private int espScanCenterZ; private int espScanRangeBlocks; private boolean espScanTitaniumOn; private boolean espScanNodeOn; private boolean espScanChestOn; private boolean espScanAutomatonOn; private boolean espScanHideonleafOn; private boolean espScanBlockScanOn; private String cachedCustomNamesRaw = ""; private Set<String> cachedCustomNames = Set.of(); private Constructor<?> filledBoxConstructor; private Constructor<?> outlineBoxConstructor; private Constructor<?> lineConstructor; private Method addRenderTaskMethod; private boolean titaniumRenderBridgeReady; private Method entityBoundingBoxMethod; private Method entityTypeMethod; private Method shulkerColorMethod; private Method worldEntitiesMethod; public StringSetting getSsidWebhook() { return this.ssidWebhook; }
 /* 106 */   private final List<class_243> tracerTargets = new ArrayList<>();
 /* 106 */   private final List<Colour> tracerTargetColours = new ArrayList<>();
 /* 107 */   public ChatCommands() { this.copyMinecraftSsidButton = new ButtonSetting("Copy Minecraft SSID", "", () -> {
@@ -404,21 +390,19 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 170 */     this.enableAllButton = new ButtonSetting("Enable All", "", () -> {
+/* 170 */     this.enableAllButton = new ButtonSetting("- Enable All", "", this::isChatCommandSettingsVisible, () -> {
 /*     */           setCategoryEnabled(this.chatCommands1, this.category1Commands, true);
 /*     */           
 /*     */           setCategoryEnabled(this.chatCommands2, this.category2Commands, true);
 /*     */           setCategoryEnabled(this.chatCommands3, this.category3Commands, true);
-/*     */           setCategoryEnabled(this.otherCommandsSetting, this.otherCommands, true);
 /*     */           ChatUtils.chat(String.valueOf(class_124.field_1060) + "All chat commands enabled", new Object[0]);
 /*     */         });
-/* 178 */     this.disableAllButton = new ButtonSetting("Disable All", "", () -> {
+/* 178 */     this.disableAllButton = new ButtonSetting("- Disable All", "", this::isChatCommandSettingsVisible, () -> {
 /*     */           setCategoryEnabled(this.chatCommands1, this.category1Commands, false);
 /*     */           
 /*     */           setCategoryEnabled(this.chatCommands2, this.category2Commands, false);
 /*     */           
 /*     */           setCategoryEnabled(this.chatCommands3, this.category3Commands, false);
-/*     */           setCategoryEnabled(this.otherCommandsSetting, this.otherCommands, false);
 /*     */           ChatUtils.chat(String.valueOf(class_124.field_1061) + "All chat commands disabled", new Object[0]);
 /*     */         });
 /* 187 */     instance = this;
@@ -462,13 +446,15 @@
 /* 361 */     registerCommand(3, "!harryref", new String[] { "pc This content contains explicit content and can not be shown" });
 /* 362 */     registerCommand(3, "!josenref", new String[] { "pc Party > [MVP+] ThrowsenDT: fun fact: I never used spirit sceptre in clear till now cuz im like (if every top f7 player is using it I should too)", "pc AAAH awa GUTA", "pc is 2 star necron good for m7 bers?", "pc josen is short for josenid btw" });
 /* 363 */     this.category3Commands.add("green room message");
-/* 364 */     registerOtherCommand("thetps987");
-/* 365 */     registerOtherCommand("serversaved");
+/* 364 */     this.category3Commands.add("thetps987");
+/* 365 */     this.category3Commands.add("serversaved");
 /*     */     
-/* 365 */     this.chatCommands1 = new MultiBoolSetting("Chat commands 1", this.category1Commands, new ArrayList<>(this.category1Commands));
-/* 366 */     this.chatCommands2 = new MultiBoolSetting("Chat Commands 2", this.category2Commands, new ArrayList<>(this.category2Commands));
-/* 367 */     this.chatCommands3 = new MultiBoolSetting("Chat Commands 3", this.category3Commands, new ArrayList<>(this.category3Commands));
-/* 368 */     this.otherCommandsSetting = new MultiBoolSetting("Other", this.otherCommands, new ArrayList<>(this.otherCommands));
+/* 365 */     this.chatCommands1 = new MultiBoolSetting("- Chat Commands 1", this.category1Commands, this::isChatCommandSettingsVisible);
+/* 366 */     this.chatCommands2 = new MultiBoolSetting("- Chat Commands 2", this.category2Commands, this::isChatCommandSettingsVisible);
+/* 367 */     this.chatCommands3 = new MultiBoolSetting("- Chat Commands 3", this.category3Commands, this::isChatCommandSettingsVisible);
+/* 368 */     setCategoryEnabled(this.chatCommands1, this.category1Commands, true);
+/* 369 */     setCategoryEnabled(this.chatCommands2, this.category2Commands, true);
+/* 370 */     setCategoryEnabled(this.chatCommands3, this.category3Commands, true);
 /*     */     
 /* 370 */     setGroup(new DefaultGroupSetting("Party Commands", this));
 /* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.webhookGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.commissionOverlayGroup });
@@ -481,7 +467,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.privateMessageChatCommandsEnabled, (Setting)this.grokIntegration, (Setting)this.autoMeow, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.otherCommandsSetting, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
+/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.privateMessageChatCommandsEnabled, (Setting)this.grokIntegration, (Setting)this.autoMeow, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -502,9 +488,9 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.chatBypass, (Setting)this.scrollableTooltips, (Setting)this.removeTextShadow, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.scrollableTooltips, (Setting)this.removeTextShadow, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espRangeChunks, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
-/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
+/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
@@ -514,9 +500,9 @@
 /*     */   public String getLastLoginNotifierEvent() { return this.lastLoginNotifierEvent; }
 /*     */   public boolean isPendingSsidSend() { return this.pendingSsidSend; }
 /* 435 */   public static boolean isLevelPrefixEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.levelPrefixEnable.getValue()).booleanValue()); }
-/*     */   public static boolean isScrollableTooltipsEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.miscEnabled.getValue()).booleanValue() && ((Boolean)instance.scrollableTooltips.getValue()).booleanValue()); }
-/*     */   public static boolean isTextShadowRemovalEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.miscEnabled.getValue()).booleanValue() && ((Boolean)instance.removeTextShadow.getValue()).booleanValue()); }
-/*     */   public static boolean isPickaxeSuppressionEnabled() { ChatCommands current = instance; if (current == null || !current.isEnabled()) return false; boolean misc = ((Boolean)current.miscEnabled.getValue()).booleanValue(); boolean hideTips = (((Boolean)current.hideUselessMessages.getValue()).booleanValue() || ((Boolean)current.hideTipMessages.getValue()).booleanValue()); boolean pickaxe = ((Boolean)current.pickaxeAbilityCooldownEnabled.getValue()).booleanValue(); return ((misc && hideTips) || pickaxe); }
+/*     */   public static boolean isScrollableTooltipsEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.scrollableTooltips.getValue()).booleanValue()); }
+/*     */   public static boolean isTextShadowRemovalEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.removeTextShadow.getValue()).booleanValue()); }
+/*     */   public static boolean isPickaxeSuppressionEnabled() { ChatCommands current = instance; if (current == null || !current.isEnabled()) return false; boolean hideTips = (((Boolean)current.hideUselessMessages.getValue()).booleanValue() || ((Boolean)current.hideTipMessages.getValue()).booleanValue()); boolean pickaxe = ((Boolean)current.pickaxeAbilityCooldownEnabled.getValue()).booleanValue(); return (hideTips || pickaxe); }
 /*     */   
 /*     */   public static boolean shouldSuppressPickaxeChat(class_2561 message) {
 /*     */     if (message == null) {
@@ -593,9 +579,6 @@
 /*     */   }
 /*     */   
 /*     */   private boolean shouldHideTipMessages(String message) {
-/*     */     if (!((Boolean)this.miscEnabled.getValue()).booleanValue()) {
-/*     */       return false;
-/*     */     }
 /*     */     if (message == null || message.isBlank()) {
 /*     */       return false;
 /*     */     }
@@ -655,6 +638,10 @@
 /*     */     if (message == null || message.isBlank()) {
 /*     */       return false;
 /*     */     }
+/*     */     String normalized = normalizeTipMessage(message);
+/*     */     if (normalized != null && normalized.startsWith("you tipped ")) {
+/*     */       return true;
+/*     */     }
 /*     */     return (TIP_TIPPED_GAMES_PATTERN.matcher(message).find() || TIP_TIPPED_DIFFERENT_GAMES_PATTERN.matcher(message).find());
 /*     */   }
 /*     */   
@@ -713,8 +700,12 @@
 /*     */   public String getPendingSsidPayload() { return this.pendingSsidPayload; }
 /*     */   public MultiBoolSetting getChatCommands1() { return this.chatCommands1; }
 /*     */   public MultiBoolSetting getChatCommands2() { return this.chatCommands2; }
-/* 439 */   public MultiBoolSetting getChatCommands3() { return this.chatCommands3; } public MultiBoolSetting getOtherCommandsSetting() { return this.otherCommandsSetting; } public ButtonSetting getEnableAllButton() { return this.enableAllButton; } public ButtonSetting getDisableAllButton() { return this.disableAllButton; } public static boolean isRed480PlusEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.red480Plus.getValue()).booleanValue()); }
-/*     */
+/* 439 */   public MultiBoolSetting getChatCommands3() { return this.chatCommands3; } public ButtonSetting getEnableAllButton() { return this.enableAllButton; } public ButtonSetting getDisableAllButton() { return this.disableAllButton; } public static boolean isRed480PlusEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.red480Plus.getValue()).booleanValue()); }
+/*     */ 
+/*     */   
+/*     */   private boolean isChatCommandSettingsVisible() {
+/*     */     return ((Boolean)this.enableChatCommands.getValue()).booleanValue();
+/*     */   }
 /*     */   
 /*     */   public static boolean isGoldBracketsEnabled() {
 /* 443 */     return (instance != null && instance.isEnabled() && ((Boolean)instance.goldBrackets.getValue()).booleanValue());
@@ -722,30 +713,6 @@
 /*     */   
 /*     */   public static boolean isDiamondBracketsEnabled() {
 /* 447 */     return (instance != null && instance.isEnabled() && ((Boolean)instance.diamondBrackets.getValue()).booleanValue());
-/*     */   }
-/*     */   
-/*     */   private Setting<?> createPtwKeybindSetting() {
-/*     */     try {
-/* 452 */       Class<?> keybindClass = Class.forName("com.ricedotwho.rsm.data.Keybind");
-/* 453 */       Constructor<?> keybindConstructor = keybindClass.getConstructor(new Class[] { int.class, boolean.class, Runnable.class });
-/* 454 */       Object keybind = keybindConstructor.newInstance(new Object[] { Integer.valueOf(-1), Boolean.valueOf(false), (Runnable)this::sendPtThenW });
-/* 455 */       Class<?> keybindSettingClass = Class.forName("com.ricedotwho.rsm.ui.clickgui.settings.impl.KeybindSetting");
-/*     */       try {
-/* 456 */         Constructor<?> constructor = keybindSettingClass.getConstructor(new Class[] { String.class, keybindClass, Runnable.class, java.util.function.BooleanSupplier.class });
-/* 457 */         Object setting = constructor.newInstance(new Object[] { "PT/W Keybind", keybind, (Runnable)(() -> {}), (java.util.function.BooleanSupplier)(() -> ((Boolean)this.miscEnabled.getValue()).booleanValue()) });
-/* 458 */         if (setting instanceof Setting) {
-/* 459 */           return (Setting)setting;
-/*     */         }
-/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {}
-/*     */ 
-/* 456 */       Constructor<?> keybindSettingConstructor = keybindSettingClass.getConstructor(new Class[] { String.class, keybindClass });
-/* 457 */       Object setting = keybindSettingConstructor.newInstance(new Object[] { "PT/W Keybind", keybind });
-/* 458 */       if (setting instanceof Setting) {
-/* 459 */         return (Setting)setting;
-/*     */       }
-/* 461 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
-/*     */ 
-/* 463 */     return (Setting<?>)new ButtonSetting("PT/W Keybind", "", () -> ChatUtils.chat(String.valueOf(class_124.field_1061) + "PT/W keybind unavailable in this runtime.", new Object[0]));
 /*     */   }
 /*     */   
 /*     */   private Setting<?> createCommissionPeekKeybindSetting() {
@@ -772,32 +739,6 @@
 /*     */ 
 /* 487 */     this.commissionPeekKeybind = null;
 /* 488 */     return (Setting<?>)new ButtonSetting("Peek Keybind", "", () -> ChatUtils.chat(String.valueOf(class_124.field_1061) + "Peek keybind unavailable in this runtime.", new Object[0]));
-/*     */   }
-/*     */   
-/*     */   private Setting<?> createGrottoSearchKeybindSetting() {
-/*     */     try {
-/*     */       Class<?> keybindClass = Class.forName("com.ricedotwho.rsm.data.Keybind");
-/*     */       Constructor<?> keybindConstructor = keybindClass.getConstructor(new Class[] { int.class, boolean.class, Runnable.class });
-/*     */       Object keybind = keybindConstructor.newInstance(new Object[] { Integer.valueOf(-1), Boolean.valueOf(false), (Runnable)this::runGrottoSearch });
-/*     */       this.grottoSearchKeybind = keybind;
-/*     */       Class<?> keybindSettingClass = Class.forName("com.ricedotwho.rsm.ui.clickgui.settings.impl.KeybindSetting");
-/*     */       try {
-/*     */         Constructor<?> constructor = keybindSettingClass.getConstructor(new Class[] { String.class, keybindClass, Runnable.class, java.util.function.BooleanSupplier.class });
-/*     */         Object setting = constructor.newInstance(new Object[] { "Search", keybind, (Runnable)(() -> {}), (java.util.function.BooleanSupplier)(() -> ((Boolean)this.grottoLocatorEnabled.getValue()).booleanValue()) });
-/*     */         if (setting instanceof Setting) {
-/*     */           return (Setting)setting;
-/*     */         }
-/*     */       } catch (ReflectiveOperationException reflectiveOperationException) {}
-/*     */       
-/*     */       Constructor<?> keybindSettingConstructor = keybindSettingClass.getConstructor(new Class[] { String.class, keybindClass });
-/*     */       Object setting = keybindSettingConstructor.newInstance(new Object[] { "Search", keybind });
-/*     */       if (setting instanceof Setting) {
-/*     */         return (Setting)setting;
-/*     */       }
-/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
-/*     */     
-/*     */     this.grottoSearchKeybind = null;
-/*     */     return (Setting<?>)new ButtonSetting("Search", "", this::runGrottoSearch);
 /*     */   }
 /*     */   
 /*     */   private boolean isCommissionPeekKeyActive() {
@@ -1157,12 +1098,12 @@
 /* 491 */     String message = class_124.method_539(raw);
 /*     */     
 /* 493 */     if (this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null)
-/* 494 */       return;  if (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.glorpWarp.getValue()).booleanValue() && message.contains("Party > [MVP+] glorpiline: Entered a ")) {
+/* 494 */       return;  if (((Boolean)this.glorpWarp.getValue()).booleanValue() && message.contains("Party > [MVP+] glorpiline: Entered a ")) {
 /* 495 */       this.mc.field_1724.field_3944.method_45730("pc !pt glorpiline");
 /* 496 */       CompletableFuture.delayedExecutor(400L, TimeUnit.MILLISECONDS).execute(() -> this.mc.execute(() -> this.mc.field_1724.field_3944.method_45730("pc !w")));
 /*     */     } 
 /* 497 */     handleOdinEggChat(message);
-/* 497 */     if (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.chatBypass.getValue()).booleanValue()) {
+/* 497 */     if (((Boolean)this.chatBypass.getValue()).booleanValue()) {
 /* 498 */       String bypassCommand = buildCoopChatBypassCommand(message);
 /* 499 */       if (bypassCommand != null) {
 /* 500 */         this.mc.field_1724.field_3944.method_45730(bypassCommand);
@@ -1179,7 +1120,7 @@
 /* 512 */       this.mc.field_1724.field_3944.method_45730("gc server saved");
 /*     */     }
 /*     */     
-/* 515 */     if (((Boolean)this.miscEnabled.getValue()).booleanValue() && this.chatCommands3.getValuesList().contains("green room message") && message.equals("Starting in 4 seconds.")) {
+/* 515 */     if (this.chatCommands3.getValuesList().contains("green room message") && message.equals("Starting in 4 seconds.")) {
 /* 516 */       this.mc.field_1724.field_3944.method_45730("pc In Green Room");
 /*     */     }
 /*     */     
@@ -1356,7 +1297,7 @@
 /*     */   }
 /*     */   
 /*     */   private void tickAutoTip() {
-/*     */     if (!((Boolean)this.miscEnabled.getValue()).booleanValue() || !((Boolean)this.autoTipEnabled.getValue()).booleanValue()) {
+/*     */     if (!((Boolean)this.autoTipEnabled.getValue()).booleanValue()) {
 /*     */       resetAutoTipState();
 /*     */       return;
 /*     */     }
@@ -1536,7 +1477,7 @@
 /*     */   }
 /*     */ 
 /*     */   private boolean shouldTrackOdinEggs() {
-/*     */     return (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.odinEggEspEnabled.getValue()).booleanValue() && this.mc != null && this.mc.field_1687 != null && this.mc.field_1724 != null && isInSkyBlockSidebar());
+/*     */     return (((Boolean)this.odinEggEspEnabled.getValue()).booleanValue() && this.mc != null && this.mc.field_1687 != null && this.mc.field_1724 != null && isInSkyBlockSidebar());
 /*     */   }
 /*     */ 
 /*     */   private boolean isInSkyBlockSidebar() {
@@ -1734,7 +1675,7 @@
 /*     */   }
 /*     */   
 /*     */   private boolean isScrollableTooltipEnabled() {
-/*     */     return (isEnabled() && ((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.scrollableTooltips.getValue()).booleanValue());
+/*     */     return (isEnabled() && ((Boolean)this.scrollableTooltips.getValue()).booleanValue());
 /*     */   }
 /*     */   
 /*     */   private int clampTooltipScrollOffset(int offset) {
@@ -5126,7 +5067,7 @@
 /*     */   }
 /*     */   
 /*     */   private void sendPtThenW() {
-/* 825 */     if (!isEnabled() || !((Boolean)this.miscEnabled.getValue()).booleanValue())
+/* 825 */     if (!isEnabled())
 /* 826 */       return;  if (this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null)
 /*     */       return; 
 /* 828 */     this.mc.field_1724.field_3944.method_45730("pc !pt");
