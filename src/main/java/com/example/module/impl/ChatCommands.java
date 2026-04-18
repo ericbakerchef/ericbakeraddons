@@ -27,6 +27,7 @@
 /*     */ import com.ricedotwho.rsm.utils.render.render2d.NVGUtils;
 /*     */ import com.example.mixinmod.LevelPrefixState;
 /*     */ import com.example.mixinmod.ScrollableTooltipState;
+/*     */ import com.example.mixinmod.TextShadowState;
 /*     */ import java.math.BigDecimal;
 /*     */ import java.net.URI;
 /*     */ import java.net.http.HttpClient;
@@ -301,6 +302,7 @@
 /*  91 */   private final BooleanSetting glorpWarp = new BooleanSetting("glorp warp", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getGlorpWarp() { return this.glorpWarp; }
 /*  91 */   private final BooleanSetting chatBypass = new BooleanSetting("Chat Bypass", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getChatBypass() { return this.chatBypass; }
 /*  91 */   private final BooleanSetting scrollableTooltips = new BooleanSetting("Scrollable Tooltips", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getScrollableTooltips() { return this.scrollableTooltips; }
+/*  91 */   private final BooleanSetting removeTextShadow = new BooleanSetting("Remove Text Shadow", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getRemoveTextShadow() { return this.removeTextShadow; }
 /*  91 */   private final BooleanSetting autoTipEnabled = new BooleanSetting("Auto Tip", false, () -> ((Boolean)this.miscEnabled.getValue()).booleanValue()); public BooleanSetting getAutoTipEnabled() { return this.autoTipEnabled; }
 /*  91 */   private final NumberSetting autoTipIntervalSeconds = new NumberSetting("Auto Tip Delay", 5.0D, 20.0D, 10.0D, 1.0D, "s", () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public NumberSetting getAutoTipIntervalSeconds() { return this.autoTipIntervalSeconds; }
 /*  91 */   private final BooleanSetting hideUselessMessages = new BooleanSetting("Hide useless messages", false, () -> (((Boolean)this.miscEnabled.getValue()).booleanValue() && ((Boolean)this.autoTipEnabled.getValue()).booleanValue())); public BooleanSetting getHideUselessMessages() { return this.hideUselessMessages; }
@@ -500,7 +502,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.chatBypass, (Setting)this.scrollableTooltips, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.miscEnabled, (Setting)this.ptwKeybind, (Setting)this.glorpWarp, (Setting)this.chatBypass, (Setting)this.scrollableTooltips, (Setting)this.removeTextShadow, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espRangeChunks, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
 /* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.grottoLocatorEnabled, (Setting)this.grottoSearchKeybindSetting, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
@@ -513,6 +515,7 @@
 /*     */   public boolean isPendingSsidSend() { return this.pendingSsidSend; }
 /* 435 */   public static boolean isLevelPrefixEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.levelPrefixEnable.getValue()).booleanValue()); }
 /*     */   public static boolean isScrollableTooltipsEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.miscEnabled.getValue()).booleanValue() && ((Boolean)instance.scrollableTooltips.getValue()).booleanValue()); }
+/*     */   public static boolean isTextShadowRemovalEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.miscEnabled.getValue()).booleanValue() && ((Boolean)instance.removeTextShadow.getValue()).booleanValue()); }
 /*     */   public static boolean isPickaxeSuppressionEnabled() { ChatCommands current = instance; if (current == null || !current.isEnabled()) return false; boolean misc = ((Boolean)current.miscEnabled.getValue()).booleanValue(); boolean hideTips = (((Boolean)current.hideUselessMessages.getValue()).booleanValue() || ((Boolean)current.hideTipMessages.getValue()).booleanValue()); boolean pickaxe = ((Boolean)current.pickaxeAbilityCooldownEnabled.getValue()).booleanValue(); return ((misc && hideTips) || pickaxe); }
 /*     */   
 /*     */   public static boolean shouldSuppressPickaxeChat(class_2561 message) {
@@ -1262,6 +1265,7 @@
 /*     */   @SubscribeEvent
 /*     */   public void onClientTick(ClientTickEvent.End event) {
 /* 551 */     syncScrollableTooltipState();
+/* 551 */     syncTextShadowState();
 /* 551 */     syncLevelPrefixState();
 /* 551 */     if (!isEnabled()) {
 /* 552 */       clearEspData();
@@ -1331,6 +1335,13 @@
 /*     */     boolean enabled = isScrollableTooltipsEnabled();
 /*     */     try {
 /*     */       ScrollableTooltipState.setEnabled(enabled);
+/*     */     } catch (Throwable throwable) {}
+/*     */   }
+/*     */   
+/*     */   private void syncTextShadowState() {
+/*     */     boolean enabled = isTextShadowRemovalEnabled();
+/*     */     try {
+/*     */       TextShadowState.setEnabled(enabled);
 /*     */     } catch (Throwable throwable) {}
 /*     */   }
 /*     */   

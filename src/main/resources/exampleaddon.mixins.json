@@ -17,6 +17,7 @@
     "ScrollableTooltipDrawContextMixin",
     "TabListNameMixin",
     "PlayerInfoDisplayNameMixin",
-    "ScreenClickMixin"
+    "ScreenClickMixin",
+    "TextRendererShadowMixin"
   ]
 }
