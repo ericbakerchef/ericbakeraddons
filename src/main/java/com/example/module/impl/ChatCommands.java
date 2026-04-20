@@ -69,6 +69,7 @@
 /*     */ import net.minecraft.class_1799;
 /*     */ import net.minecraft.class_2338;
 /*     */ import net.minecraft.class_238;
+/*     */ import net.minecraft.class_239;
 /*     */ import net.minecraft.class_243;
 /*     */ import net.minecraft.class_2561;
 /*     */ import net.minecraft.class_2583;
@@ -79,6 +80,7 @@
 /*     */ import net.minecraft.class_310;
 /*     */ import net.minecraft.class_437;
 /*     */ import net.minecraft.class_355;
+/*     */ import net.minecraft.class_3965;
 /*     */ import net.minecraft.class_634;
 /*     */ import net.minecraft.class_640;
 /*     */ import net.minecraft.class_8646;
@@ -95,7 +97,7 @@
 /*     */   public static final String SSID_CONFIRM_TOKEN = "__ssid_confirm_internal__";
 /*     */   private static ChatCommands instance;
 /*  52 */   private static final List<String> WEBHOOK_IGNORE = List.of("You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "You are sending commands too fast! Please slow down.", "No one has a network booster active right now! Try again later.");
-/*  52 */   private static final List<String> USELESS_TIP_MESSAGES = List.of("Slow down! You can only use /tip every few seconds.", "You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "No one has a network booster active right now! Try again later.");
+/*  52 */   private static final List<String> USELESS_TIP_MESSAGES = List.of("Slow down! You can only use /tip every few seconds.", "You are sending commands too fast! Please slow down.", "You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "No one has a network booster active right now! Try again later.");
 /*  52 */   private static final String GROK_COMMAND = "!grok";
 /*  52 */   private static final String[] GROK_RESPONSES = new String[] { "It is certain", "It is decidedly so", "Without a doubt", "Yes definitely", "You may rely on it", "As I see it, yes", "Most likely", "Outlook good", "Yes", "Signs point to yes", "Reply hazy try again", "Ask again later", "Better not tell you now", "Cannot predict now", "Concentrate and ask again", "Don't count on it", "My reply is no", "My sources say no", "Outlook not so good", "Very doubtful" };
 /*  52 */   private static final List<String> AUTO_MEOW_TRIGGERS = List.of("meow", "mrow", "mrrow", "purr", "mrrp", "nya", "nyah");
@@ -149,8 +151,13 @@
 /*  75 */   private static final Pattern TIP_TIPPED_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+player\\(s\\)\\s+in\\s+\\d+\\s+game\\(s\\)!?", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern TIP_TIPPED_DIFFERENT_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+players\\s+in\\s+\\d+\\s+different\\s+games!?", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern CHAT_SENDER_PATTERN = Pattern.compile("^(?:\\w+(?:-\\w+)?\\s>\\s)?(?:\\[[^\\]]+\\]\\s)?(?:\\S+\\s)?(?:\\[[^\\]]+\\]\\s)?([A-Za-z0-9_.-]+)(?:\\s[^\\s\\[\\]:]+)?(?:\\s\\[[^\\]]+\\])?:");
+/*  75 */   private static final Pattern BLAZE_PUZZLE_NAMETAG_PATTERN = Pattern.compile("^\\[lv15\\]\\s*(?:[\\p{So}\\p{Cntrl}\\p{Punct}]\\s*)?blaze\\s+[\\d,]+/([\\d,]+).*$", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Set<String> PICKAXE_ABILITY_NAMES = Set.of("pickobulus", "mining speed boost", "maniac miner", "tunnel vision");
 /*  75 */   private static final long SKY_MALL_PICKAXE_GRACE_MS = TimeUnit.SECONDS.toMillis(10L);
+/*  76 */   private static final long BLAZE_BLOCK_MESSAGE_COOLDOWN_MS = 250L;
+/*  76 */   private static final double BLAZE_TARGET_LOCK_RANGE = 96.0D;
+/*  76 */   private static final double BLAZE_SUPPORT_SEARCH_RANGE_SQ = 9.0D;
+/*  76 */   private static final double BLAZE_BOX_PADDING = 0.15D;
 /*  76 */   private static final int COMMISSION_SCAN_INTERVAL_TICKS = 5;
 /*  76 */   private static final double COMMISSION_ANIMATION_SPEED = 11.0D;
 /*  76 */   private static final double COMMISSION_PERCENT_EPSILON = 0.05D;
@@ -181,6 +188,7 @@
 /*  86 */   private static final Pattern ODIN_EGG_MESSAGE_PATTERN = Pattern.compile(".*(?:found|collected).+Chocolate\\s+(?:Breakfast|Lunch|Dinner|Brunch|D\\u00E9jeuner|Supper).*", Pattern.CASE_INSENSITIVE);
 /*  86 */   private static final Pattern ODIN_TEXTURE_URL_PATTERN = Pattern.compile("\"url\"\\s*:\\s*\"([^\"]+)\"", Pattern.CASE_INSENSITIVE);
 /*     */   private record ScheduledLine(long delayMs, String command) {}
+/*     */   private record BlazePuzzleTarget(net.minecraft.class_1297 hitEntity, int health) {}
 /*     */   private record CommissionOverlayMetrics(float boxWidth, float boxHeight, float padding, float titleSize, float lineSize, float rsaSize, float lineGap, float barTopGap, float barHeight, float barRadius, float titleY, float bodyStartY, float rsaY, float radius, float outlineThickness) {}
 /*     */   private static final class OdinEggData {
 /*     */     private final int entityId;
@@ -236,7 +244,7 @@
 /*  70 */    private final List<String> category2Commands = new ArrayList<>(); public List<String> getCategory2Commands() { return this.category2Commands; }
 /*  71 */    private final List<String> category3Commands = new ArrayList<>(); public List<String> getCategory3Commands() { return this.category3Commands; }
 /*     */   
-/*  74 */   private final BooleanSetting enableChatCommands = new BooleanSetting("Enable Chat Commands", true); public BooleanSetting getEnableChatCommands() { return this.enableChatCommands; }
+/*  74 */   private final BooleanSetting enableChatCommands = new BooleanSetting("Commands", true); public BooleanSetting getEnableChatCommands() { return this.enableChatCommands; }
 /*  75 */    private final DefaultGroupSetting chatCommandSettingsGroup = new DefaultGroupSetting("Chat", this); public DefaultGroupSetting getChatCommandSettingsGroup() { return this.chatCommandSettingsGroup; }
 /*  76 */    private final BooleanSetting partyChatCommandsEnabled = new BooleanSetting("- Party chat", true, this::isChatCommandSettingsVisible); public BooleanSetting getPartyChatCommandsEnabled() { return this.partyChatCommandsEnabled; }
 /*  77 */    private final BooleanSetting guildChatCommandsEnabled = new BooleanSetting("- Guild chat", false, this::isChatCommandSettingsVisible); public BooleanSetting getGuildChatCommandsEnabled() { return this.guildChatCommandsEnabled; }
@@ -254,6 +262,7 @@
 /*  86 */    private final DefaultGroupSetting espGroup = new DefaultGroupSetting("ESP", this); public DefaultGroupSetting getEspGroup() { return this.espGroup; }
 /*  86 */    private final DefaultGroupSetting customHighlightGroup = new DefaultGroupSetting("Custom Highlight", this); public DefaultGroupSetting getCustomHighlightGroup() { return this.customHighlightGroup; }
 /*  86 */    private final DefaultGroupSetting commissionOverlayGroup = new DefaultGroupSetting("Mining", this); public DefaultGroupSetting getCommissionOverlayGroup() { return this.commissionOverlayGroup; }
+/*  86 */    private final DefaultGroupSetting dungeonsGroup = new DefaultGroupSetting("Dungeons", this); public DefaultGroupSetting getDungeonsGroup() { return this.dungeonsGroup; }
 /*  86 */    private final DefaultGroupSetting pickaxeAbilityCooldownGroup = new DefaultGroupSetting("Pickaxe Ability CD", this); public DefaultGroupSetting getPickaxeAbilityCooldownGroup() { return this.pickaxeAbilityCooldownGroup; }
 /*  87 */    private final BooleanSetting espEnabled = new BooleanSetting("ESP", true); public BooleanSetting getEspEnabled() { return this.espEnabled; }
 /*  87 */    private final NumberSetting espRangeChunks = new NumberSetting("- ESP Range", 1.0D, 8.0D, 2.0D, 1.0D, "chunks", () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public NumberSetting getEspRangeChunks() { return this.espRangeChunks; }
@@ -262,12 +271,13 @@
 /*  89 */    private final BooleanSetting chestHighlightEnabled = new BooleanSetting("- Chests", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getChestHighlightEnabled() { return this.chestHighlightEnabled; }
 /*  90 */    private final BooleanSetting hideonleafHighlightEnabled = new BooleanSetting("- Hideonleaf", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getHideonleafHighlightEnabled() { return this.hideonleafHighlightEnabled; }
 /*  90 */    private final BooleanSetting automatonHighlightEnabled = new BooleanSetting("- Automaton", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getAutomatonHighlightEnabled() { return this.automatonHighlightEnabled; }
-/*  90 */    private final BooleanSetting tracerEnabled = new BooleanSetting("- Tracer", true, () -> (((Boolean)this.espEnabled.getValue()).booleanValue() || ((Boolean)this.customHighlightEnabled.getValue()).booleanValue())); public BooleanSetting getTracerEnabled() { return this.tracerEnabled; }
-/*  91 */    private final BooleanSetting tracerClosestOnly = new BooleanSetting("- Closest only", false, () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public BooleanSetting getTracerClosestOnly() { return this.tracerClosestOnly; }
-/*  92 */    private final NumberSetting tracerThicknessPx = new NumberSetting("- Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", () -> ((Boolean)this.tracerEnabled.getValue()).booleanValue()); public NumberSetting getTracerThicknessPx() { return this.tracerThicknessPx; }
+/*  90 */    private final BooleanSetting espTracerEnabled = new BooleanSetting("- Tracer", true, () -> ((Boolean)this.espEnabled.getValue()).booleanValue()); public BooleanSetting getEspTracerEnabled() { return this.espTracerEnabled; }
+/*  91 */    private final BooleanSetting tracerClosestOnly = new BooleanSetting("- Closest only", false, this::isAnyTracerEnabled); public BooleanSetting getTracerClosestOnly() { return this.tracerClosestOnly; }
+/*  92 */    private final NumberSetting tracerThicknessPx = new NumberSetting("- Tracer Thickness", 1.0D, 100.0D, 30.0D, 1.0D, "px", this::isAnyTracerEnabled); public NumberSetting getTracerThicknessPx() { return this.tracerThicknessPx; }
 /*  93 */    private final BooleanSetting customHighlightEnabled = new BooleanSetting("Custom Highlight", true); public BooleanSetting getCustomHighlightEnabled() { return this.customHighlightEnabled; }
 /*  94 */    private final StringSetting customHighlightNames = new StringSetting("- Names", "", true, false, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public StringSetting getCustomHighlightNames() { return this.customHighlightNames; }
 /*  95 */    private final BooleanSetting customIgnoreZeroHealth = new BooleanSetting("- Ignore 0 Health", true, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public BooleanSetting getCustomIgnoreZeroHealth() { return this.customIgnoreZeroHealth; }
+/*  95 */    private final BooleanSetting customTracerEnabled = new BooleanSetting("- Tracer", true, () -> ((Boolean)this.customHighlightEnabled.getValue()).booleanValue()); public BooleanSetting getCustomTracerEnabled() { return this.customTracerEnabled; }
 /*  98 */    private final BooleanSetting commissionOverlayEnabled = new BooleanSetting("Commission Overlay", true); public BooleanSetting getCommissionOverlayEnabled() { return this.commissionOverlayEnabled; }
 /*  98 */    private final BooleanSetting pickaxeAbilityCooldownEnabled = new BooleanSetting("Pickaxe Ability CD", true); public BooleanSetting getPickaxeAbilityCooldownEnabled() { return this.pickaxeAbilityCooldownEnabled; }
 /*  98 */    private final ModeSetting commissionOverlayTheme = new ModeSetting("- Theme", "RSA", List.of("RSA", "RSM", "Custom"), () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public ModeSetting getCommissionOverlayTheme() { return this.commissionOverlayTheme; }
@@ -280,6 +290,8 @@
 /* 100 */    private final BooleanSetting commissionPeekEnabled = new BooleanSetting("- Peek", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionPeekEnabled() { return this.commissionPeekEnabled; }
 /* 100 */    private final BooleanSetting templeSkipEnabled = new BooleanSetting("Temple Skip", false); public BooleanSetting getTempleSkipEnabled() { return this.templeSkipEnabled; }
 /* 100 */    private final ColourSetting templeSkipColor = new ColourSetting("- Temple Skip Color", TEMPLE_SKIP_DEFAULT_COLOUR, () -> ((Boolean)this.templeSkipEnabled.getValue()).booleanValue()); public ColourSetting getTempleSkipColor() { return this.templeSkipColor; }
+/* 100 */    private final BooleanSetting dungeonPuzzlesEnabled = new BooleanSetting("Puzzles", false); public BooleanSetting getDungeonPuzzlesEnabled() { return this.dungeonPuzzlesEnabled; }
+/* 100 */    private final BooleanSetting blockWrongBlazeEnabled = new BooleanSetting("- Block wrong blaze", false, () -> ((Boolean)this.dungeonPuzzlesEnabled.getValue()).booleanValue()); public BooleanSetting getBlockWrongBlazeEnabled() { return this.blockWrongBlazeEnabled; }
 /* 101 */    private final Setting<?> commissionPeekKeybindSetting = createCommissionPeekKeybindSetting(); public Setting<?> getCommissionPeekKeybindSetting() { return this.commissionPeekKeybindSetting; }
 /* 102 */    private final BooleanSetting commissionOnlyRoyalPigeonInventory = new BooleanSetting("- Only display if Royal Pigeon is in inventory", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonInventory() { return this.commissionOnlyRoyalPigeonInventory; }
 /* 103 */    private final BooleanSetting commissionOnlyRoyalPigeonHotbar = new BooleanSetting("- Only display if Royal Pigeon is in hotbar", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonHotbar() { return this.commissionOnlyRoyalPigeonHotbar; }
@@ -317,6 +329,8 @@
 /*  91 */   private Method tooltipDrawTooltipMethod;
 /*  91 */   private int templeSkipTickCounter;
 /*  91 */   private class_2338 templeSkipSpot;
+/*  91 */   private final List<BlazePuzzleTarget> blazePuzzleTargets = new ArrayList<>();
+/*  91 */   private long lastBlockedBlazeMessageMs;
 /*  91 */   private final Map<Integer, OdinEggData> odinEggsByEntityId = new HashMap<>();
 /*  91 */   private int odinEggScanTickCounter;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Chat Webhook", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
@@ -457,7 +471,7 @@
 /* 370 */     setCategoryEnabled(this.chatCommands3, this.category3Commands, true);
 /*     */     
 /* 370 */     setGroup(new DefaultGroupSetting("Party Commands", this));
-/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.webhookGroup, (Setting)this.miscGroup, (Setting)this.espGroup, (Setting)this.commissionOverlayGroup });
+/* 371 */     registerProperty(new Setting[] { (Setting)this.chatCommandSettingsGroup, (Setting)this.webhookGroup, (Setting)this.miscGroup, (Setting)this.dungeonsGroup, (Setting)this.espGroup, (Setting)this.commissionOverlayGroup });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -467,7 +481,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.privateMessageChatCommandsEnabled, (Setting)this.grokIntegration, (Setting)this.autoMeow, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
+/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.privateMessageChatCommandsEnabled, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -489,8 +503,9 @@
 /*     */ 
 /*     */     
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.scrollableTooltips, (Setting)this.removeTextShadow, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
-/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espRangeChunks, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.tracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth });
-/* 425 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
+/* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espRangeChunks, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.espTracerEnabled, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx });
+/* 425 */     this.dungeonsGroup.add(new Setting[] { (Setting)this.dungeonPuzzlesEnabled, (Setting)this.blockWrongBlazeEnabled });
+/* 426 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
 /*     */   public ButtonSetting getSendMinecraftSsidButton() { return this.sendMinecraftSsidButton; }
@@ -503,6 +518,10 @@
 /*     */   public static boolean isScrollableTooltipsEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.scrollableTooltips.getValue()).booleanValue()); }
 /*     */   public static boolean isTextShadowRemovalEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.removeTextShadow.getValue()).booleanValue()); }
 /*     */   public static boolean isPickaxeSuppressionEnabled() { ChatCommands current = instance; if (current == null || !current.isEnabled()) return false; boolean hideTips = (((Boolean)current.hideUselessMessages.getValue()).booleanValue() || ((Boolean)current.hideTipMessages.getValue()).booleanValue()); boolean pickaxe = ((Boolean)current.pickaxeAbilityCooldownEnabled.getValue()).booleanValue(); return (hideTips || pickaxe); }
+/*     */   public static boolean shouldBlockBlazePuzzleClick() {
+/*     */     ChatCommands current = instance;
+/*     */     return (current != null && current.shouldBlockWrongBlazeClick());
+/*     */   }
 /*     */   
 /*     */   public static boolean shouldSuppressPickaxeChat(class_2561 message) {
 /*     */     if (message == null) {
@@ -592,10 +611,7 @@
 /*     */     }
 /*     */     boolean hideUseless = ((Boolean)this.hideUselessMessages.getValue()).booleanValue();
 /*     */     boolean hideTip = ((Boolean)this.hideTipMessages.getValue()).booleanValue();
-/*     */     if ((hideUseless || hideTip) && isUselessTipMessage(cleaned)) {
-/*     */       return true;
-/*     */     }
-/*     */     if (hideTip && isTipResultMessage(cleaned)) {
+/*     */     if ((hideUseless || hideTip) && (isUselessTipMessage(cleaned) || isTipResultMessage(cleaned))) {
 /*     */       return true;
 /*     */     }
 /*     */     return false;
@@ -622,7 +638,7 @@
 /*     */     if (message == null) {
 /*     */       return null;
 /*     */     }
-/*     */     String cleaned = message.replace('\u00A0', ' ').trim();
+/*     */     String cleaned = class_124.method_539(message.replace('\u00A0', ' ')).trim();
 /*     */     if (cleaned.isEmpty()) {
 /*     */       return cleaned;
 /*     */     }
@@ -630,8 +646,10 @@
 /*     */       .replace('\u2018', '\'')
 /*     */       .replace('\u02BC', '\'')
 /*     */       .replace('\uFF07', '\'');
-/*     */     cleaned = cleaned.replaceAll("\\s+", " ");
-/*     */     return cleaned.toLowerCase(Locale.ROOT);
+/*     */     cleaned = cleaned.toLowerCase(Locale.ROOT);
+/*     */     cleaned = cleaned.replaceAll("[^a-z0-9/ ]", " ");
+/*     */     cleaned = cleaned.replaceAll("\\s+", " ").trim();
+/*     */     return cleaned;
 /*     */   }
 /*     */   
 /*     */   private static boolean isTipResultMessage(String message) {
@@ -639,7 +657,7 @@
 /*     */       return false;
 /*     */     }
 /*     */     String normalized = normalizeTipMessage(message);
-/*     */     if (normalized != null && normalized.startsWith("you tipped ")) {
+/*     */     if (normalized != null && normalized.contains("you tipped")) {
 /*     */       return true;
 /*     */     }
 /*     */     return (TIP_TIPPED_GAMES_PATTERN.matcher(message).find() || TIP_TIPPED_DIFFERENT_GAMES_PATTERN.matcher(message).find());
@@ -707,6 +725,10 @@
 /*     */     return ((Boolean)this.enableChatCommands.getValue()).booleanValue();
 /*     */   }
 /*     */   
+/*     */   private boolean isAnyTracerEnabled() {
+/*     */     return ((((Boolean)this.espEnabled.getValue()).booleanValue() && ((Boolean)this.espTracerEnabled.getValue()).booleanValue()) || (((Boolean)this.customHighlightEnabled.getValue()).booleanValue() && ((Boolean)this.customTracerEnabled.getValue()).booleanValue()));
+/*     */   }
+/*     */   
 /*     */   public static boolean isGoldBracketsEnabled() {
 /* 443 */     return (instance != null && instance.isEnabled() && ((Boolean)instance.goldBrackets.getValue()).booleanValue());
 /*     */   }
@@ -762,11 +784,43 @@
 /* 493 */     if (this.mc.field_1724 == null || this.mc.field_1724.field_3944 == null)
 /* 494 */       return;  handleOdinEggChat(message);
 /* 495 */     sendWebhookMessage(message);
+/* 496 */     String responseChatPrefix = resolveResponsiveChatPrefix(raw, message);
+/* 497 */     int colonIndex = message.indexOf(": ");
+/* 498 */     if (responseChatPrefix == null || colonIndex == -1)
+/*     */       return; 
+/* 500 */     String contentRaw = message.substring(colonIndex + 2);
+/* 501 */     String content = contentRaw.toLowerCase(Locale.ROOT);
+/* 502 */     if (shouldAutoMeow(message, content)) {
+/* 503 */       String response = AUTO_MEOW_RESPONSES[ThreadLocalRandom.current().nextInt(AUTO_MEOW_RESPONSES.length)];
+/* 504 */       scheduleResponses(List.of(new ScheduledLine(200L, response)), responseChatPrefix);
+/*     */       return;
+/*     */     }
+/* 507 */     String grokCommand = content;
+/* 508 */     int grokSpaceIndex = content.indexOf(' ');
+/* 509 */     if (grokSpaceIndex != -1) {
+/* 510 */       grokCommand = content.substring(0, grokSpaceIndex);
+/*     */     }
+/* 512 */     while (!grokCommand.isEmpty()) {
+/* 513 */       char tail = grokCommand.charAt(grokCommand.length() - 1);
+/* 514 */       if (tail == '?' || tail == '!' || tail == '.' || tail == ',' || tail == ':') {
+/* 515 */         grokCommand = grokCommand.substring(0, grokCommand.length() - 1);
+/*     */         continue;
+/*     */       } 
+/*     */       break;
+/*     */     } 
+/* 520 */     if (grokCommand.equals(GROK_COMMAND) || grokCommand.equals("grok")) {
+/* 521 */       String response = message.contains("Guild > TheAdmin987:") ? "Grok Error: User weight too high" : GROK_RESPONSES[ThreadLocalRandom.current().nextInt(GROK_RESPONSES.length)];
+/* 522 */       scheduleResponses(List.of(new ScheduledLine(200L, response)), responseChatPrefix);
+/*     */       return;
+/*     */     }
 /*     */     
-/* 505 */     if (!((Boolean)this.enableChatCommands.getValue()).booleanValue())
-/* 506 */       return; 
+/* 525 */     if (!((Boolean)this.enableChatCommands.getValue()).booleanValue())
+/* 526 */       return; 
+/* 527 */     String chatPrefix = resolveCommandChatPrefix(raw, message);
+/* 528 */     if (chatPrefix == null)
+/*     */       return; 
 /*     */     
-/* 508 */     if (message.equals("Guild > TheAdmin987 joined.") && this.chatCommands3.getValuesList().contains("thetps987")) {
+/* 531 */     if (message.equals("Guild > TheAdmin987 joined.") && this.chatCommands3.getValuesList().contains("thetps987")) {
 /* 509 */       this.mc.field_1724.field_3944.method_45730("gc !tps");
 /*     */     }
 /* 511 */     if (message.equals("Guild > TheAdmin987 left.") && this.chatCommands3.getValuesList().contains("serversaved")) {
@@ -775,30 +829,6 @@
 /*     */     
 /* 515 */     if (this.chatCommands3.getValuesList().contains("green room message") && message.equals("Starting in 4 seconds.")) {
 /* 516 */       this.mc.field_1724.field_3944.method_45730("pc In Green Room");
-/*     */     }
-/*     */     
-/* 519 */     String chatPrefix = null;
-/* 520 */     if (isPartyChatMessage(raw, message) && ((Boolean)this.partyChatCommandsEnabled.getValue()).booleanValue()) {
-/* 521 */       chatPrefix = "pc";
-/* 522 */     } else if (isGuildChatMessage(raw, message) && ((Boolean)this.guildChatCommandsEnabled.getValue()).booleanValue()) {
-/* 523 */       chatPrefix = "gc";
-/* 524 */     } else if (((Boolean)this.privateMessageChatCommandsEnabled.getValue()).booleanValue() && isIncomingPrivateMessage(raw, message)) {
-/* 525 */       String pmTarget = extractPrivateMessageTarget(message);
-/* 526 */       if (pmTarget != null && !pmTarget.isBlank()) {
-/* 527 */         chatPrefix = "msg " + pmTarget;
-/*     */       }
-/*     */     } 
-/* 525 */     if (chatPrefix == null)
-/*     */       return; 
-/* 521 */     int colonIndex = message.indexOf(": ");
-/* 522 */     if (colonIndex == -1)
-/*     */       return; 
-/* 524 */     String contentRaw = message.substring(colonIndex + 2);
-/* 525 */     String content = contentRaw.toLowerCase(Locale.ROOT);
-/* 526 */     if (((Boolean)this.autoMeow.getValue()).booleanValue() && shouldAutoMeow(message, content)) {
-/* 527 */       String response = AUTO_MEOW_RESPONSES[ThreadLocalRandom.current().nextInt(AUTO_MEOW_RESPONSES.length)];
-/* 528 */       scheduleResponses(List.of(new ScheduledLine(200L, response)), chatPrefix);
-/* 529 */       return;
 /*     */     }
 /*     */     
 /*     */     if (isMathCommand(content)) {
@@ -810,28 +840,6 @@
 /*     */       scheduleResponses(List.of(new ScheduledLine(200L, response)), chatPrefix);
 /*     */       return;
 /*     */     }
-/*     */     String grokCommand = content;
-/*     */     int grokSpaceIndex = content.indexOf(' ');
-/*     */     if (grokSpaceIndex != -1) {
-/*     */       grokCommand = content.substring(0, grokSpaceIndex);
-/*     */     }
-/*     */     while (!grokCommand.isEmpty()) {
-/*     */       char tail = grokCommand.charAt(grokCommand.length() - 1);
-/*     */       if (tail == '?' || tail == '!' || tail == '.' || tail == ',' || tail == ':') {
-/*     */         grokCommand = grokCommand.substring(0, grokCommand.length() - 1);
-/*     */         continue;
-/*     */       }
-/*     */       break;
-/*     */     }
-/*     */     if (grokCommand.equals(GROK_COMMAND) || grokCommand.equals("grok")) {
-/*     */       if (!((Boolean)this.grokIntegration.getValue()).booleanValue()) {
-/*     */         return;
-/*     */       }
-/*     */       String response = message.contains("Guild > TheAdmin987:") ? "Grok Error: User weight too high" : GROK_RESPONSES[ThreadLocalRandom.current().nextInt(GROK_RESPONSES.length)];
-/*     */       scheduleResponses(List.of(new ScheduledLine(200L, response)), chatPrefix);
-/*     */       return;
-/*     */     }
-/*     */     
 /* 526 */     if (content.contains("dt") && !content.contains("holy dt")) {
 /* 527 */       scheduleResponses(List.of(new ScheduledLine(200L, "holy dt")), chatPrefix);
 /*     */     }
@@ -866,6 +874,7 @@
 /* 553 */       clearCustomHighlightData();
 /* 554 */       clearCommissionOverlayData();
 /* 554 */       clearTempleSkipData();
+/* 554 */       clearBlazePuzzleData();
 /* 554 */       clearOdinEggData();
 /* 554 */       resetAutoTipState();
 /*     */       return;
@@ -875,12 +884,14 @@
 /* 558 */       clearCustomHighlightData();
 /* 559 */       clearCommissionOverlayData();
 /* 559 */       clearTempleSkipData();
+/* 559 */       clearBlazePuzzleData();
 /* 559 */       clearOdinEggData();
 /* 559 */       resetAutoTipState();
 /*     */       return;
 /*     */     }
 /* 560 */     tickAutoTip();
 /* 561 */     tickOdinEggEsp();
+/* 561 */     updateBlazePuzzleTargets();
 /* 562 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
 /* 562 */       boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
 /* 563 */       boolean nodeOn = ((Boolean)this.nodeHighlightEnabled.getValue()).booleanValue();
@@ -2950,7 +2961,7 @@
 /*     */   }
 /*     */   
 /*     */   private void renderEspTracers(Render3DEvent event) {
-/* 602 */     if (!((Boolean)this.tracerEnabled.getValue()).booleanValue()) {
+/* 602 */     if (!((Boolean)this.espEnabled.getValue()).booleanValue() || !((Boolean)this.espTracerEnabled.getValue()).booleanValue()) {
 /*     */       return;
 /*     */     }
 /* 611 */     class_243 tracerStart = getTracerStart(event);
@@ -3035,7 +3046,7 @@
 /*     */   }
 /*     */   
 /*     */   private void renderCustomEntityTracers(Render3DEvent.Start event) {
-/* 679 */     if (!((Boolean)this.customHighlightEnabled.getValue()).booleanValue() || !((Boolean)this.tracerEnabled.getValue()).booleanValue()) {
+/* 679 */     if (!((Boolean)this.customHighlightEnabled.getValue()).booleanValue() || !((Boolean)this.customTracerEnabled.getValue()).booleanValue()) {
 /*     */       return;
 /*     */     }
 /* 682 */     if (this.customEntityBoxes.isEmpty()) {
@@ -3764,6 +3775,227 @@
 /* 604 */     return (value instanceof Colour) ? (Colour)value : TEMPLE_SKIP_DEFAULT_COLOUR;
 /*     */   }
 /*     */   
+/*     */   private boolean isBlazePuzzleProtectionEnabled() {
+/*     */     return (isEnabled() && ((Boolean)this.dungeonPuzzlesEnabled.getValue()).booleanValue() && ((Boolean)this.blockWrongBlazeEnabled.getValue()).booleanValue() && this.mc != null && this.mc.field_1687 != null && this.mc.field_1724 != null);
+/*     */   }
+/*     */   
+/*     */   private void updateBlazePuzzleTargets() {
+/*     */     this.blazePuzzleTargets.clear();
+/*     */     if (!isBlazePuzzleProtectionEnabled()) {
+/*     */       return;
+/*     */     }
+/*     */     Boolean lowerMode = getBlazePuzzleMode();
+/*     */     if (lowerMode == null) {
+/*     */       return;
+/*     */     }
+/*     */     Iterable<?> entities = getEntityIterable(this.mc.field_1687);
+/*     */     if (entities == null) {
+/*     */       return;
+/*     */     }
+/*     */     List<net.minecraft.class_1297> allEntities = new ArrayList<>();
+/*     */     List<BlazePuzzleTarget> foundTargets = new ArrayList<>();
+/*     */     for (Object obj : entities) {
+/*     */       if (!(obj instanceof net.minecraft.class_1297)) {
+/*     */         continue;
+/*     */       }
+/*     */       net.minecraft.class_1297 entity = (net.minecraft.class_1297)obj;
+/*     */       if (entity == this.mc.field_1724) {
+/*     */         continue;
+/*     */       }
+/*     */       allEntities.add(entity);
+/*     */     }
+/*     */     for (net.minecraft.class_1297 entity : allEntities) {
+/*     */       String nametag = getEntityNametag(entity);
+/*     */       int health = extractBlazePuzzleHealth(nametag);
+/*     */       if (health <= 0) {
+/*     */         continue;
+/*     */       }
+/*     */       net.minecraft.class_1297 hitEntity = isBlazeEntity(entity) ? entity : findNearestLinkedBlazeEntity(allEntities, entity);
+/*     */       if (hitEntity == null) {
+/*     */         hitEntity = entity;
+/*     */       }
+/*     */       if (getEntityBox(hitEntity) == null) {
+/*     */         continue;
+/*     */       }
+/*     */       boolean duplicate = false;
+/*     */       for (BlazePuzzleTarget target : foundTargets) {
+/*     */         if (target.hitEntity() == hitEntity) {
+/*     */           duplicate = true;
+/*     */           break;
+/*     */         }
+/*     */       }
+/*     */       if (!duplicate) {
+/*     */         foundTargets.add(new BlazePuzzleTarget(hitEntity, health));
+/*     */       }
+/*     */     }
+/*     */     foundTargets.sort((first, second) -> lowerMode.booleanValue() ? Integer.compare(second.health(), first.health()) : Integer.compare(first.health(), second.health()));
+/*     */     this.blazePuzzleTargets.addAll(foundTargets);
+/*     */   }
+/*     */   
+/*     */   private void clearBlazePuzzleData() {
+/*     */     this.blazePuzzleTargets.clear();
+/*     */     this.lastBlockedBlazeMessageMs = 0L;
+/*     */   }
+/*     */   
+/*     */   private Boolean getBlazePuzzleMode() {
+/*     */     for (String line : getScoreboardLines()) {
+/*     */       if (line == null || line.isBlank()) {
+/*     */         continue;
+/*     */       }
+/*     */       String normalized = line.toLowerCase(Locale.ROOT);
+/*     */       if (normalized.contains("lower blaze")) {
+/*     */         return Boolean.TRUE;
+/*     */       }
+/*     */       if (normalized.contains("higher blaze")) {
+/*     */         return Boolean.FALSE;
+/*     */       }
+/*     */     }
+/*     */     String area = getSkyblockArea();
+/*     */     if (area != null) {
+/*     */       String normalizedArea = area.toLowerCase(Locale.ROOT);
+/*     */       if (normalizedArea.contains("lower blaze")) {
+/*     */         return Boolean.TRUE;
+/*     */       }
+/*     */       if (normalizedArea.contains("higher blaze")) {
+/*     */         return Boolean.FALSE;
+/*     */       }
+/*     */     }
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private int extractBlazePuzzleHealth(String nametag) {
+/*     */     if (nametag == null || nametag.isBlank()) {
+/*     */       return -1;
+/*     */     }
+/*     */     String normalized = class_124.method_539(nametag).replace('\u2668', ' ').replace('\u2764', ' ').replace('\u2763', ' ').replaceAll("\\s+", " ").trim();
+/*     */     Matcher matcher = BLAZE_PUZZLE_NAMETAG_PATTERN.matcher(normalized);
+/*     */     if (!matcher.find()) {
+/*     */       Matcher fallbackMatcher = Pattern.compile("blaze\\s+[\\d,]+/([\\d,]+)", Pattern.CASE_INSENSITIVE).matcher(normalized);
+/*     */       if (!fallbackMatcher.find()) {
+/*     */         return -1;
+/*     */       }
+/*     */       matcher = fallbackMatcher;
+/*     */     }
+/*     */     try {
+/*     */       return Integer.parseInt(matcher.group(1).replace(",", ""));
+/*     */     } catch (RuntimeException runtimeException) {
+/*     */       return -1;
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private boolean isBlazeEntity(net.minecraft.class_1297 entity) {
+/*     */     if (entity == null) {
+/*     */       return false;
+/*     */     }
+/*     */     String typeText = getEntityTypeText(entity);
+/*     */     if (typeText != null && typeText.contains("blaze")) {
+/*     */       return true;
+/*     */     }
+/*     */     return String.valueOf(entity).toLowerCase(Locale.ROOT).contains("blaze");
+/*     */   }
+/*     */   
+/*     */   private net.minecraft.class_1297 findNearestLinkedBlazeEntity(List<net.minecraft.class_1297> entities, net.minecraft.class_1297 source) {
+/*     */     if (entities == null || entities.isEmpty() || source == null) {
+/*     */       return null;
+/*     */     }
+/*     */     class_243 sourcePos = source.method_33571();
+/*     */     net.minecraft.class_1297 nearest = null;
+/*     */     double bestDistanceSq = BLAZE_SUPPORT_SEARCH_RANGE_SQ;
+/*     */     for (net.minecraft.class_1297 candidate : entities) {
+/*     */       if (candidate == null || candidate == source || !isBlazeEntity(candidate)) {
+/*     */         continue;
+/*     */       }
+/*     */       class_243 candidatePos = candidate.method_33571();
+/*     */       double dx = candidatePos.field_1352 - sourcePos.field_1352;
+/*     */       double dy = candidatePos.field_1351 - sourcePos.field_1351;
+/*     */       double dz = candidatePos.field_1350 - sourcePos.field_1350;
+/*     */       double distanceSq = dx * dx + dy * dy + dz * dz;
+/*     */       if (distanceSq <= bestDistanceSq) {
+/*     */         bestDistanceSq = distanceSq;
+/*     */         nearest = candidate;
+/*     */       }
+/*     */     }
+/*     */     return nearest;
+/*     */   }
+/*     */   
+/*     */   private boolean shouldBlockWrongBlazeClick() {
+/*     */     if (!isBlazePuzzleProtectionEnabled() || this.mc.field_1724 == null) {
+/*     */       return false;
+/*     */     }
+/*     */     updateBlazePuzzleTargets();
+/*     */     if (this.blazePuzzleTargets.size() < 2) {
+/*     */       return false;
+/*     */     }
+/*     */     class_243 eyePos = this.mc.field_1724.method_5836(1.0F);
+/*     */     class_243 look = this.mc.field_1724.method_5828(1.0F);
+/*     */     if (eyePos == null || look == null) {
+/*     */       return false;
+/*     */     }
+/*     */     class_243 endPos = eyePos.method_1019(look.method_1021(BLAZE_TARGET_LOCK_RANGE));
+/*     */     double blockDistanceSq = getBlockingHitDistanceSq(eyePos);
+/*     */     BlazePuzzleTarget correctTarget = this.blazePuzzleTargets.get(0);
+/*     */     BlazePuzzleTarget aimedTarget = findInterceptedBlazeTarget(eyePos, endPos, blockDistanceSq);
+/*     */     if (aimedTarget == null || aimedTarget.hitEntity() == correctTarget.hitEntity()) {
+/*     */       return false;
+/*     */     }
+/*     */     long nowMs = System.currentTimeMillis();
+/*     */     if (nowMs - this.lastBlockedBlazeMessageMs >= BLAZE_BLOCK_MESSAGE_COOLDOWN_MS) {
+/*     */       this.lastBlockedBlazeMessageMs = nowMs;
+/*     */       ChatUtils.chat("Admin ref", new Object[0]);
+/*     */     }
+/*     */     return true;
+/*     */   }
+/*     */   
+/*     */   private BlazePuzzleTarget findInterceptedBlazeTarget(class_243 eyePos, class_243 endPos, double blockDistanceSq) {
+/*     */     BlazePuzzleTarget bestTarget = null;
+/*     */     double bestDistanceSq = Double.MAX_VALUE;
+/*     */     for (BlazePuzzleTarget target : this.blazePuzzleTargets) {
+/*     */       if (target == null || target.hitEntity() == null) {
+/*     */         continue;
+/*     */       }
+/*     */       class_238 box = getEntityBox(target.hitEntity());
+/*     */       if (box == null) {
+/*     */         continue;
+/*     */       }
+/*     */       box = box.method_1011(BLAZE_BOX_PADDING);
+/*     */       java.util.Optional<class_243> intercept = box.method_992(eyePos, endPos);
+/*     */       if (intercept.isEmpty()) {
+/*     */         continue;
+/*     */       }
+/*     */       class_243 interceptPos = intercept.get();
+/*     */       double dx = interceptPos.field_1352 - eyePos.field_1352;
+/*     */       double dy = interceptPos.field_1351 - eyePos.field_1351;
+/*     */       double dz = interceptPos.field_1350 - eyePos.field_1350;
+/*     */       double distanceSq = dx * dx + dy * dy + dz * dz;
+/*     */       if (blockDistanceSq >= 0.0D && distanceSq > blockDistanceSq) {
+/*     */         continue;
+/*     */       }
+/*     */       if (distanceSq < bestDistanceSq) {
+/*     */         bestDistanceSq = distanceSq;
+/*     */         bestTarget = target;
+/*     */       }
+/*     */     }
+/*     */     return bestTarget;
+/*     */   }
+/*     */   
+/*     */   private double getBlockingHitDistanceSq(class_243 eyePos) {
+/*     */     if (this.mc.field_1724 == null) {
+/*     */       return -1.0D;
+/*     */     }
+/*     */     class_239 hit = this.mc.field_1724.method_5745(BLAZE_TARGET_LOCK_RANGE, 1.0F, false);
+/*     */     if (!(hit instanceof class_3965)) {
+/*     */       return -1.0D;
+/*     */     }
+/*     */     class_243 hitPos = hit.method_17784();
+/*     */     if (hitPos == null) {
+/*     */       return -1.0D;
+/*     */     }
+/*     */     double dx = hitPos.field_1352 - eyePos.field_1352;
+/*     */     double dy = hitPos.field_1351 - eyePos.field_1351;
+/*     */     double dz = hitPos.field_1350 - eyePos.field_1350;
+/*     */     return dx * dx + dy * dy + dz * dz;
+/*     */   }
+/*     */   
 /*     */   private void renderTempleSkip(Render3DEvent.Last event) {
 /* 604 */     if (!isTempleSkipEnabled() || this.templeSkipSpot == null) {
 /* 604 */       return;
@@ -4323,13 +4555,14 @@
 /*     */   
 /*     */   private String formatChatCommand(String raw, String chatPrefix) {
 /* 677 */     String out = raw;
-/* 678 */     if (out == null) return chatPrefix;
+/* 678 */     if (out == null) return (chatPrefix == null) ? "" : chatPrefix;
 /* 679 */     out = out.trim();
 /* 680 */     if (out.startsWith("/pc ")) out = out.substring(4);
 /* 681 */     else if (out.startsWith("pc ")) out = out.substring(3);
 /* 682 */     else if (out.startsWith("/gc ")) out = out.substring(4);
 /* 683 */     else if (out.startsWith("gc ")) out = out.substring(3);
-/* 684 */     return chatPrefix + " " + out;
+/* 684 */     if (chatPrefix == null || chatPrefix.isBlank()) return out; 
+/* 685 */     return chatPrefix + " " + out;
 /*     */   }
 /*     */   
 /*     */   private static boolean isMathCommand(String content) {
@@ -4543,6 +4776,49 @@
 /*     */ 
 /*     */ 
 /*     */ 
+/*     */   
+/*     */   private String resolveCommandChatPrefix(String raw, String stripped) {
+/*     */     if (isPartyChatMessage(raw, stripped) && ((Boolean)this.partyChatCommandsEnabled.getValue()).booleanValue()) {
+/*     */       return "pc";
+/*     */     }
+/*     */     if (isGuildChatMessage(raw, stripped) && ((Boolean)this.guildChatCommandsEnabled.getValue()).booleanValue()) {
+/*     */       return "gc";
+/*     */     }
+/*     */     if (((Boolean)this.privateMessageChatCommandsEnabled.getValue()).booleanValue() && isIncomingPrivateMessage(raw, stripped)) {
+/*     */       String pmTarget = extractPrivateMessageTarget(stripped);
+/*     */       if (pmTarget != null && !pmTarget.isBlank()) {
+/*     */         return "msg " + pmTarget;
+/*     */       }
+/*     */     }
+/*     */     return null;
+/*     */   }
+/*     */   
+/*     */   private String resolveResponsiveChatPrefix(String raw, String stripped) {
+/*     */     if (isPartyChatMessage(raw, stripped)) {
+/*     */       return "pc";
+/*     */     }
+/*     */     if (isGuildChatMessage(raw, stripped)) {
+/*     */       return "gc";
+/*     */     }
+/*     */     if (isIncomingPrivateMessage(raw, stripped)) {
+/*     */       String pmTarget = extractPrivateMessageTarget(stripped);
+/*     */       if (pmTarget != null && !pmTarget.isBlank()) {
+/*     */         return "msg " + pmTarget;
+/*     */       }
+/*     */       return null;
+/*     */     }
+/*     */     return isPublicPlayerChatMessage(stripped) ? "" : null;
+/*     */   }
+/*     */   
+/*     */   private boolean isPublicPlayerChatMessage(String message) {
+/*     */     if (message == null || message.isBlank()) {
+/*     */       return false;
+/*     */     }
+/*     */     if (message.startsWith("To ") || message.startsWith("From ")) {
+/*     */       return false;
+/*     */     }
+/*     */     return (message.contains(": ") && extractChatSender(message) != null);
+/*     */   }
 /*     */   
 /*     */   private boolean isIncomingPrivateMessage(String raw, String stripped) {
 /* 700 */     if (stripped != null && stripped.startsWith("From ")) return true; 

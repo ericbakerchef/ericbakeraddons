@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.util.IdentityHashMap;
 import java.util.List;
 import net.minecraft.class_2561;
+import net.minecraft.class_303;
 import net.minecraft.class_338;
 import net.minecraft.class_332;
 import net.minecraft.class_408;
@@ -44,6 +45,36 @@ public class ChatHudPickaxeSuppressMixin {
 
     @Inject(method = {"method_44811(Lnet/minecraft/class_2561;Lnet/minecraft/class_7469;Lnet/minecraft/class_7591;)V"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void suppressPickaxeMessageSigned(class_2561 message, class_7469 signature, class_7591 indicator, CallbackInfo ci) {
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
+            markPurgeNeeded();
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = {"method_45027(Lnet/minecraft/class_303;)V"}, at = @At("HEAD"), cancellable = true, require = 0)
+    private void suppressPickaxeChatLog(class_303 line, CallbackInfo ci) {
+        class_2561 message = line == null ? null : line.comp_893();
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
+            markPurgeNeeded();
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = {"method_1815(Lnet/minecraft/class_303;)V"}, at = @At("HEAD"), cancellable = true, require = 0)
+    private void suppressPickaxeChatSplit(class_303 line, CallbackInfo ci) {
+        class_2561 message = line == null ? null : line.comp_893();
+        if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
+            ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
+            markPurgeNeeded();
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = {"method_58744(Lnet/minecraft/class_303;)V"}, at = @At("HEAD"), cancellable = true, require = 0)
+    private void suppressPickaxeChatStore(class_303 line, CallbackInfo ci) {
+        class_2561 message = line == null ? null : line.comp_893();
         if (ChatCommandsBridge.shouldSuppressPickaxeChat(message)) {
             ChatCommandsBridge.handleSuppressedPickaxeMessage(message);
             markPurgeNeeded();
@@ -168,6 +199,10 @@ public class ChatHudPickaxeSuppressMixin {
         if (entry instanceof class_2561) {
             return ((class_2561) entry).getString();
         }
+        if (entry instanceof class_303) {
+            class_2561 message = ((class_303) entry).comp_893();
+            return message == null ? null : message.getString();
+        }
         try {
             Method method = entry.getClass().getMethod("getString", new Class[0]);
             Object value = method.invoke(entry, new Object[0]);
@@ -214,19 +249,25 @@ public class ChatHudPickaxeSuppressMixin {
             return ((class_2561)line).getString();
         }
         try {
-            Method method = line.getClass().getMethod("method_73207", new Class[0]);
-            Object value = method.invoke(line, new Object[0]);
-            if (value instanceof String) {
-                return (String)value;
-            }
-        } catch (ReflectiveOperationException reflectiveOperationException) {}
-        try {
             Method method = line.getClass().getMethod("getString", new Class[0]);
             Object value = method.invoke(line, new Object[0]);
             if (value instanceof String) {
                 return (String)value;
             }
         } catch (ReflectiveOperationException reflectiveOperationException) {}
+        for (Field field : line.getClass().getDeclaredFields()) {
+            try {
+                field.setAccessible(true);
+                Object value = field.get(line);
+                if (value instanceof class_2561) {
+                    return ((class_2561)value).getString();
+                }
+                if (value instanceof String) {
+                    return (String)value;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
         return line.toString();
     }
 }

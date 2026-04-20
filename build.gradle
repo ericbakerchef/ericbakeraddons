@@ -24,8 +24,10 @@ dependencies {
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     // Keep Mojang-named classes available for API signatures from external mods.
-    compileOnly fileTree("${projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft") {
-        include "minecraft-merged-*/*/minecraft-merged-*.jar"
+    // The project-local Loom cache only exposes intermediary jars, but RSM's command
+    // API was compiled against Mojang names like ClientSuggestionProvider.
+    compileOnly fileTree("${gradle.gradleUserHomeDir}/caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-merged") {
+        include "**/minecraft-merged-*.jar"
     }
     // Decomp source uses intermediary names (class_*/method_*), so use intermediary as the merge namespace.
     mappings loom.layered {
