@@ -79,6 +79,10 @@ java {
 jar {
 	inputs.property "archivesName", project.base.archivesName
 
+	exclude("com/example/mixins/**")
+	exclude("com/example/mixinmod/**")
+	exclude("exampleaddon.mixins.json")
+
 	from("LICENSE") {
 		rename { "${it}_${inputs.properties.archivesName}"}
 	}
@@ -101,4 +105,32 @@ tasks.register("mixinModJar", Jar) {
 	}
 }
 
+tasks.register("syncPrismSkyblockMods", Copy) {
+	group = "build"
+	description = "Copies the runtime addon jars to the Prism skyblock mods folder."
+
+	def prismModsDir = file("C:/Users/TheFa/AppData/Roaming/PrismLauncher/instances/skyblock/minecraft/mods")
+
+	dependsOn tasks.remapJar, tasks.mixinModJar
+
+	from(tasks.remapJar.archiveFile) {
+		rename { "${project.archives_base_name}-${project.version}.jar" }
+	}
+
+	from(tasks.mixinModJar.archiveFile) {
+		rename { "${project.archives_base_name}-mixins-${project.version}.jar" }
+	}
+
+	into(prismModsDir)
+
+	doFirst {
+		delete(
+			new File(prismModsDir, "${project.archives_base_name}-${project.version}-sources.jar"),
+			new File(prismModsDir, "${project.archives_base_name}-sources-${project.version}.jar"),
+			new File(prismModsDir, "${project.archives_base_name}-mixins-${project.version}-sources.jar")
+		)
+	}
+}
+
 tasks.assemble.dependsOn tasks.mixinModJar
+tasks.assemble.dependsOn tasks.remapJar
