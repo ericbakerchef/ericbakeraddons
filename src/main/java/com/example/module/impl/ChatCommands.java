@@ -27,6 +27,7 @@
 /*     */ import com.ricedotwho.rsm.utils.ChatUtils;
 /*     */ import com.ricedotwho.rsm.utils.render.render2d.Gradient;
 /*     */ import com.ricedotwho.rsm.utils.render.render2d.NVGUtils;
+/*     */ import com.example.mixinmod.ChatCommandsBridge;
 /*     */ import com.example.mixinmod.LevelPrefixState;
 /*     */ import com.example.mixinmod.ScrollableTooltipState;
 /*     */ import com.example.mixinmod.TextShadowState;
@@ -885,6 +886,7 @@
 /* 551 */     syncScrollableTooltipState();
 /* 551 */     syncTextShadowState();
 /* 551 */     syncLevelPrefixState();
+/* 551 */     ChatCommandsBridge.setShowOwnNameTagEnabled(isShowNameTagEnabled());
 /* 551 */     if (!isEnabled()) {
 /* 552 */       clearEspData();
 /* 553 */       clearCustomHighlightData();

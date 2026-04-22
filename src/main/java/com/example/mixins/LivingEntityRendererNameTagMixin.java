@@ -1,6 +1,6 @@
 package com.example.mixins;
 
-import com.example.module.impl.ChatCommands;
+import com.example.mixinmod.ChatCommandsBridge;
 import net.minecraft.class_1309;
 import net.minecraft.class_310;
 import net.minecraft.class_922;
@@ -19,7 +19,7 @@ public abstract class LivingEntityRendererNameTagMixin {
     )
     private void ericbakeraddons$showOwnNameTag(class_1309 entity, double distanceSquared, CallbackInfoReturnable<Boolean> cir) {
         class_310 client = class_310.method_1551();
-        if (entity == client.field_1724 && ChatCommands.isShowNameTagEnabled()) {
+        if (entity == client.field_1724 && ChatCommandsBridge.isShowOwnNameTagEnabled()) {
             cir.setReturnValue(class_310.method_1498());
         }
     }

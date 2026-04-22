@@ -5,6 +5,7 @@ import net.minecraft.class_2561;
 
 public final class ChatCommandsBridge {
     private static final String CHAT_COMMANDS_CLASS = "com.example.module.impl.ChatCommands";
+    private static volatile boolean showOwnNameTagEnabled;
     private static volatile boolean resolved;
     private static volatile boolean available;
     private static volatile Method shouldSuppressPickaxeChat;
@@ -73,6 +74,14 @@ public final class ChatCommandsBridge {
         } catch (Throwable ignored) {
             return false;
         }
+    }
+
+    public static void setShowOwnNameTagEnabled(boolean enabled) {
+        showOwnNameTagEnabled = enabled;
+    }
+
+    public static boolean isShowOwnNameTagEnabled() {
+        return showOwnNameTagEnabled;
     }
 
     private static boolean ensureResolved() {
