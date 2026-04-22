@@ -7,9 +7,12 @@
   },
   "client": [
     "ChatHudPickaxeSuppressMixin",
+    "ClientInteractionManagerBlazeBlockMixin",
     "DragSettingLoadMixin",
     "LevelPrefixChatHudMixin",
     "LevelPrefixDrawContextMixin",
+    "LivingEntityRendererNameTagMixin",
+    "MinecraftClientBlazeBlockMixin",
     "MessageHandlerPickaxeSuppressMixin",
     "PlayerInfoDisplayNameMixin",
     "PlayerSendMessageMixin",

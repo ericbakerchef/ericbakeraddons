@@ -79,6 +79,10 @@ java {
 jar {
 	inputs.property "archivesName", project.base.archivesName
 
+	exclude("com/example/mixins/**")
+	exclude("com/example/mixinmod/**")
+	exclude("exampleaddon.mixins.json")
+
 	from("LICENSE") {
 		rename { "${it}_${inputs.properties.archivesName}"}
 	}

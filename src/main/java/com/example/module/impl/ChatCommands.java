@@ -1,5 +1,7 @@
 /*     */ package com.example.module.impl;
 /*     */ 
+/*     */ import com.mojang.authlib.GameProfile;
+/*     */ import com.mojang.authlib.properties.Property;
 /*     */ import com.ricedotwho.rsm.component.impl.Renderer3D;
 /*     */ import com.ricedotwho.rsm.data.Colour;
 /*     */ import com.ricedotwho.rsm.event.api.SubscribeEvent;
@@ -85,6 +87,8 @@
 /*     */ import net.minecraft.class_640;
 /*     */ import net.minecraft.class_8646;
 /*     */ import net.minecraft.class_9015;
+/*     */ import net.minecraft.class_9296;
+/*     */ import net.minecraft.class_9334;
 /*     */ import net.minecraft.class_5250;
 /*     */ import org.joml.Vector2d;
 /*     */ 
@@ -226,6 +230,16 @@
 /*     */       if (stack == null || stack.method_7960()) {
 /*     */         return null;
 /*     */       }
+/*     */       String textureValue = getSkullTextureValue(stack);
+/*     */       if (!textureValue.isBlank()) {
+/*     */         String textureValueLower = textureValue.toLowerCase(Locale.ROOT);
+/*     */         String textureUrlLower = decodeTextureUrl(textureValue).toLowerCase(Locale.ROOT);
+/*     */         for (OdinEggKind kind : values()) {
+/*     */           if (textureValueLower.contains(kind.textureValueLower) || (!kind.textureUrlLower.isBlank() && textureUrlLower.contains(kind.textureUrlLower))) {
+/*     */             return kind;
+/*     */           }
+/*     */         }
+/*     */       }
 /*     */       String search = (String.valueOf(stack) + ' ' + String.valueOf(stack.method_57353()) + ' ' + String.valueOf(stack.method_58658())).toLowerCase(Locale.ROOT);
 /*     */       for (OdinEggKind kind : values()) {
 /*     */         if (search.contains(kind.textureValueLower) || (!kind.textureUrlLower.isBlank() && search.contains(kind.textureUrlLower))) {
@@ -307,6 +321,7 @@
 /*  91 */   private final BooleanSetting hideUselessMessages = new BooleanSetting("- Hide useless messages", false, () -> ((Boolean)this.autoTipEnabled.getValue()).booleanValue()); public BooleanSetting getHideUselessMessages() { return this.hideUselessMessages; }
 /*  91 */   private final BooleanSetting hideTipMessages = new BooleanSetting("- Hide Tip Messages", false, () -> ((Boolean)this.autoTipEnabled.getValue()).booleanValue()); public BooleanSetting getHideTipMessages() { return this.hideTipMessages; }
 /*  91 */   private final BooleanSetting odinEggEspEnabled = new BooleanSetting("Odin Egg ESP", false); public BooleanSetting getOdinEggEspEnabled() { return this.odinEggEspEnabled; }
+/*  91 */   private final BooleanSetting showNameTag = new BooleanSetting("Show name tag", false); public BooleanSetting getShowNameTag() { return this.showNameTag; }
 /*  91 */   private Object commissionPeekKeybind;
 /*  91 */   private final List<String> commissionOverlayLines = new ArrayList<>();
 /*  91 */   private final LinkedHashMap<String, Double> commissionProgressTargets = new LinkedHashMap<>();
@@ -502,7 +517,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.scrollableTooltips, (Setting)this.removeTextShadow, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.scrollableTooltips, (Setting)this.removeTextShadow, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.showNameTag, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espRangeChunks, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.espTracerEnabled, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx });
 /* 425 */     this.dungeonsGroup.add(new Setting[] { (Setting)this.dungeonPuzzlesEnabled, (Setting)this.blockWrongBlazeEnabled });
 /* 426 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
@@ -517,6 +532,7 @@
 /* 435 */   public static boolean isLevelPrefixEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.levelPrefixEnable.getValue()).booleanValue()); }
 /*     */   public static boolean isScrollableTooltipsEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.scrollableTooltips.getValue()).booleanValue()); }
 /*     */   public static boolean isTextShadowRemovalEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.removeTextShadow.getValue()).booleanValue()); }
+/*     */   public static boolean isShowNameTagEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.showNameTag.getValue()).booleanValue()); }
 /*     */   public static boolean isPickaxeSuppressionEnabled() { ChatCommands current = instance; if (current == null || !current.isEnabled()) return false; boolean hideTips = (((Boolean)current.hideUselessMessages.getValue()).booleanValue() || ((Boolean)current.hideTipMessages.getValue()).booleanValue()); boolean pickaxe = ((Boolean)current.pickaxeAbilityCooldownEnabled.getValue()).booleanValue(); return (hideTips || pickaxe); }
 /*     */   public static boolean shouldBlockBlazePuzzleClick() {
 /*     */     ChatCommands current = instance;
@@ -1189,6 +1205,23 @@
 /*     */     double centerZ = (entityBox.field_1321 + entityBox.field_1324) * 0.5D;
 /*     */     double baseY = entityBox.field_1322;
 /*     */     return new class_238(centerX - ODIN_EGG_BOX_HALF_WIDTH, baseY + ODIN_EGG_BOX_MIN_Y, centerZ - ODIN_EGG_BOX_HALF_WIDTH, centerX + ODIN_EGG_BOX_HALF_WIDTH, baseY + ODIN_EGG_BOX_MAX_Y, centerZ + ODIN_EGG_BOX_HALF_WIDTH);
+/*     */   }
+/*     */ 
+/*     */   private static String getSkullTextureValue(class_1799 stack) {
+/*     */     class_9296 profile = (class_9296)stack.method_57381(class_9334.field_49617);
+/*     */     if (profile == null) {
+/*     */       return "";
+/*     */     }
+/*     */     GameProfile gameProfile = profile.method_73313();
+/*     */     if (gameProfile == null || gameProfile.properties() == null) {
+/*     */       return "";
+/*     */     }
+/*     */     for (Property property : gameProfile.properties().get("textures")) {
+/*     */       if (property != null && property.value() != null && !property.value().isBlank()) {
+/*     */         return property.value();
+/*     */       }
+/*     */     }
+/*     */     return "";
 /*     */   }
 /*     */ 
 /*     */   private static String decodeTextureUrl(String textureValue) {

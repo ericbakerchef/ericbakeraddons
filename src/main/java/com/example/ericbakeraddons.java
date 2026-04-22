@@ -1,7 +1,6 @@
 package com.example;
 import com.example.chat.ChatRewriter;
 import com.example.module.impl.ChatCommands;
-import com.example.module.impl.WaypointsModule;
 import com.ricedotwho.rsm.addon.Addon;
 import com.ricedotwho.rsm.command.Command;
 import com.ricedotwho.rsm.component.api.ModComponent;
@@ -18,7 +17,7 @@ public void onUnload() {
 ChatUtils.chat("ericbakeraddons unloaded, you're saved", new Object[0]);
 }
 public List<Class<? extends Module>> getModules() {
-return (List)List.of(ChatCommands.class, WaypointsModule.class);
+return (List)List.of(ChatCommands.class);
 }
 public List<Class<? extends ModComponent>> getComponents() {
 return List.of();
