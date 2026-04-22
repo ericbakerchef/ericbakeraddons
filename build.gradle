@@ -107,15 +107,12 @@ tasks.register("mixinModJar", Jar) {
 
 tasks.register("syncPrismSkyblockMods", Copy) {
 	group = "build"
-	description = "Copies the runtime addon jars to the Prism skyblock mods folder."
+	description = "Copies the mixin mod to Prism mods and the main addon jar to the RSM addons folder."
 
 	def prismModsDir = file("C:/Users/TheFa/AppData/Roaming/PrismLauncher/instances/skyblock/minecraft/mods")
+	def prismRsmAddonsDir = file("C:/Users/TheFa/AppData/Roaming/PrismLauncher/instances/skyblock/minecraft/config/rsm/addons")
 
 	dependsOn tasks.remapJar, tasks.mixinModJar
-
-	from(tasks.remapJar.archiveFile) {
-		rename { "${project.archives_base_name}-${project.version}.jar" }
-	}
 
 	from(tasks.mixinModJar.archiveFile) {
 		rename { "${project.archives_base_name}-mixins-${project.version}.jar" }
@@ -125,11 +122,38 @@ tasks.register("syncPrismSkyblockMods", Copy) {
 
 	doFirst {
 		delete(
+			new File(prismModsDir, "${project.archives_base_name}-${project.version}.jar"),
 			new File(prismModsDir, "${project.archives_base_name}-${project.version}-sources.jar"),
 			new File(prismModsDir, "${project.archives_base_name}-sources-${project.version}.jar"),
 			new File(prismModsDir, "${project.archives_base_name}-mixins-${project.version}-sources.jar")
 		)
 	}
+}
+
+tasks.register("syncPrismSkyblockAddon", Copy) {
+	group = "build"
+	description = "Copies the main addon jar to the Prism RSM addons folder."
+
+	def prismRsmAddonsDir = file("C:/Users/TheFa/AppData/Roaming/PrismLauncher/instances/skyblock/minecraft/config/rsm/addons")
+
+	dependsOn tasks.remapJar
+
+	from(tasks.remapJar.archiveFile) {
+		rename { "${project.archives_base_name}-${project.version}.jar" }
+	}
+
+	into(prismRsmAddonsDir)
+
+	doFirst {
+		delete(
+			new File(prismRsmAddonsDir, "${project.archives_base_name}-${project.version}-sources.jar"),
+			new File(prismRsmAddonsDir, "${project.archives_base_name}-sources-${project.version}.jar")
+		)
+	}
+}
+
+tasks.named("syncPrismSkyblockMods").configure {
+	finalizedBy tasks.named("syncPrismSkyblockAddon")
 }
 
 tasks.assemble.dependsOn tasks.mixinModJar
