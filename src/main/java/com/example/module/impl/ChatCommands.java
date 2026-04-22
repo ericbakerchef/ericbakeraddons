@@ -102,7 +102,12 @@
 /*     */   public static final String SSID_CONFIRM_TOKEN = "__ssid_confirm_internal__";
 /*     */   private static ChatCommands instance;
 /*  52 */   private static final List<String> WEBHOOK_IGNORE = List.of("You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "You are sending commands too fast! Please slow down.", "No one has a network booster active right now! Try again later.");
-/*  52 */   private static final List<String> USELESS_TIP_MESSAGES = List.of("Slow down! You can only use /tip every few seconds.", "You are sending commands too fast! Please slow down.", "You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "No one has a network booster active right now! Try again later.");
+/*  52 */   private static final List<String> USELESS_TIP_MESSAGES = List.of("Slow down! You can only use /tip every few seconds.", "Slow down! You can only use /tip all every few seconds.", "You are sending commands too fast! Please slow down.", "You already tipped everyone that has boosters active, so there isn't anybody to be tipped right now!", "No one has a network booster active right now! Try again later.");
+/*  52 */   private static final List<Pattern> USELESS_TIP_MESSAGE_PATTERNS = List.of(
+/*  52 */       Pattern.compile("^slow down you can only use /tip(?: all)? every few seconds$", Pattern.CASE_INSENSITIVE),
+/*  52 */       Pattern.compile("^you are sending commands too fast please slow down$", Pattern.CASE_INSENSITIVE),
+/*  52 */       Pattern.compile("^you already tipped everyone that has boosters active so there(?: isn t| is not) anybody to be tipped right now$", Pattern.CASE_INSENSITIVE),
+/*  52 */       Pattern.compile("^no one has a network booster active right now try again later$", Pattern.CASE_INSENSITIVE));
 /*  52 */   private static final String GROK_COMMAND = "!grok";
 /*  52 */   private static final String[] GROK_RESPONSES = new String[] { "It is certain", "It is decidedly so", "Without a doubt", "Yes definitely", "You may rely on it", "As I see it, yes", "Most likely", "Outlook good", "Yes", "Signs point to yes", "Reply hazy try again", "Ask again later", "Better not tell you now", "Cannot predict now", "Concentrate and ask again", "Don't count on it", "My reply is no", "My sources say no", "Outlook not so good", "Very doubtful" };
 /*  52 */   private static final List<String> AUTO_MEOW_TRIGGERS = List.of("meow", "mrow", "mrrow", "purr", "mrrp", "nya", "nyah");
@@ -153,8 +158,8 @@
 /*  75 */   private static final Pattern PICKAXE_USED_CHAT_PATTERN = Pattern.compile("You used your\\s+(.+?)\\s+Pickaxe Ability!", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern PICKAXE_AVAILABLE_CHAT_PATTERN = Pattern.compile("Pickobulus\\s+is\\s+now\\s+available!", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern PICKAXE_AVAILABLE_GENERIC_CHAT_PATTERN = Pattern.compile("(?:Your\\s+)?(.+?)\\s+is\\s+now\\s+available!?", Pattern.CASE_INSENSITIVE);
-/*  75 */   private static final Pattern TIP_TIPPED_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+player\\(s\\)\\s+in\\s+\\d+\\s+game\\(s\\)!?", Pattern.CASE_INSENSITIVE);
-/*  75 */   private static final Pattern TIP_TIPPED_DIFFERENT_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+players\\s+in\\s+\\d+\\s+different\\s+games!?", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern TIP_TIPPED_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+player(?:\\(s\\)|s)?\\s+in\\s+\\d+\\s+game(?:\\(s\\)|s)!?", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern TIP_TIPPED_DIFFERENT_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+player(?:\\(s\\)|s)?\\s+in\\s+\\d+\\s+different\\s+games!?", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern CHAT_SENDER_PATTERN = Pattern.compile("^(?:\\w+(?:-\\w+)?\\s>\\s)?(?:\\[[^\\]]+\\]\\s)?(?:\\S+\\s)?(?:\\[[^\\]]+\\]\\s)?([A-Za-z0-9_.-]+)(?:\\s[^\\s\\[\\]:]+)?(?:\\s\\[[^\\]]+\\])?:");
 /*  75 */   private static final Pattern BLAZE_PUZZLE_NAMETAG_PATTERN = Pattern.compile("^\\[lv15\\]\\s*(?:[\\p{So}\\p{Cntrl}\\p{Punct}]\\s*)?blaze\\s+[\\d,]+/([\\d,]+).*$", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Set<String> PICKAXE_ABILITY_NAMES = Set.of("pickobulus", "mining speed boost", "maniac miner", "tunnel vision");
@@ -628,7 +633,10 @@
 /*     */     }
 /*     */     boolean hideUseless = ((Boolean)this.hideUselessMessages.getValue()).booleanValue();
 /*     */     boolean hideTip = ((Boolean)this.hideTipMessages.getValue()).booleanValue();
-/*     */     if ((hideUseless || hideTip) && (isUselessTipMessage(cleaned) || isTipResultMessage(cleaned))) {
+/*     */     if (hideUseless && isUselessTipMessage(cleaned)) {
+/*     */       return true;
+/*     */     }
+/*     */     if (hideTip && isTipResultMessage(cleaned)) {
 /*     */       return true;
 /*     */     }
 /*     */     return false;
@@ -645,6 +653,11 @@
 /*     */     for (String target : USELESS_TIP_MESSAGES) {
 /*     */       String normalizedTarget = normalizeTipMessage(target);
 /*     */       if (normalizedTarget != null && !normalizedTarget.isBlank() && normalized.contains(normalizedTarget)) {
+/*     */         return true;
+/*     */       }
+/*     */     }
+/*     */     for (Pattern pattern : USELESS_TIP_MESSAGE_PATTERNS) {
+/*     */       if (pattern.matcher(normalized).matches()) {
 /*     */         return true;
 /*     */       }
 /*     */     }
