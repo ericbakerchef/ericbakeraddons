@@ -5,19 +5,22 @@
   "injectors": {
     "defaultRequire": 1
   },
+  "mixins": [],
   "client": [
     "ChatHudPickaxeSuppressMixin",
+    "ClientInteractionManagerBlazeBlockMixin",
     "DragSettingLoadMixin",
     "LevelPrefixChatHudMixin",
     "LevelPrefixDrawContextMixin",
     "LivingEntityRendererNameTagMixin",
+    "MinecraftClientBlazeBlockMixin",
     "MessageHandlerPickaxeSuppressMixin",
-    "PlayerInfoDisplayNameMixin",
     "PlayerSendMessageMixin",
-    "ScreenClickMixin",
     "ScrollableTooltipContainerMixin",
     "ScrollableTooltipDrawContextMixin",
     "TabListNameMixin",
+    "PlayerInfoDisplayNameMixin",
+    "ScreenClickMixin",
     "TextRendererShadowMixin"
   ]
 }
