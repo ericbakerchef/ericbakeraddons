@@ -105,5 +105,4 @@ tasks.register("mixinModJar", Jar) {
 	}
 }
 
-tasks.assemble.dependsOn tasks.remapJar
 tasks.assemble.dependsOn tasks.mixinModJar
