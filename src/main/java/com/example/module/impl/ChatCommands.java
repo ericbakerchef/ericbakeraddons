@@ -480,6 +480,7 @@
 /* 357 */     registerCommand(3, "!darkref", new String[] { "pc ☠ Lyquidz fell to their death with help from Storm and became a ghost.", "pc PUZZLE FAIL! Lyquidz killed a Blaze in the wrong order! Yikes! (3)", "pc Team Score: 286 (S) (NEW RECORD!) ☠ Defeated Maxor, Storm, Goldor, and Necron in 07m 14s (NEW RECORD!) (died 5 times)", "pc top 2 f7 comp btw" });
 /* 361 */     registerCommand(3, "!harryref", new String[] { "pc This content contains explicit content and can not be shown" });
 /* 362 */     registerCommand(3, "!josenref", new String[] { "pc Party > [MVP+] ThrowsenDT: fun fact: I never used spirit sceptre in clear till now cuz im like (if every top f7 player is using it I should too)", "pc AAAH awa GUTA", "pc is 2 star necron good for m7 bers?", "pc josen is short for josenid btw" });
+/* 363 */     registerCommand(3, "!reneref", new String[] { "pc Guild > [VIP] MushroomProperty: we open the outcast onlyfan" });
 /* 363 */     this.category3Commands.add("green room message");
 /* 364 */     this.category3Commands.add("thetps987");
 /* 365 */     this.category3Commands.add("serversaved");
@@ -502,7 +503,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.privateMessageChatCommandsEnabled, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
+/* 381 */     this.chatCommandSettingsGroup.add(new Setting[] { (Setting)this.enableChatCommands, (Setting)this.partyChatCommandsEnabled, (Setting)this.guildChatCommandsEnabled, (Setting)this.privateMessageChatCommandsEnabled, (Setting)this.grokIntegration, (Setting)this.autoMeow, (Setting)this.chatCommands1, (Setting)this.chatCommands2, (Setting)this.chatCommands3, (Setting)this.enableAllButton, (Setting)this.disableAllButton });
 /*     */ 
 /*     */ 
 /*     */ 
@@ -820,7 +821,7 @@
 /*     */       return; 
 /* 500 */     String contentRaw = message.substring(colonIndex + 2);
 /* 501 */     String content = contentRaw.toLowerCase(Locale.ROOT);
-/* 502 */     if (shouldAutoMeow(message, content)) {
+/* 502 */     if (((Boolean)this.autoMeow.getValue()).booleanValue() && shouldAutoMeow(message, content)) {
 /* 503 */       String response = AUTO_MEOW_RESPONSES[ThreadLocalRandom.current().nextInt(AUTO_MEOW_RESPONSES.length)];
 /* 504 */       scheduleResponses(List.of(new ScheduledLine(200L, response)), responseChatPrefix);
 /*     */       return;
@@ -838,7 +839,7 @@
 /*     */       } 
 /*     */       break;
 /*     */     } 
-/* 520 */     if (grokCommand.equals(GROK_COMMAND) || grokCommand.equals("grok")) {
+/* 520 */     if (((Boolean)this.grokIntegration.getValue()).booleanValue() && (grokCommand.equals(GROK_COMMAND) || grokCommand.equals("grok"))) {
 /* 521 */       String response = message.contains("Guild > TheAdmin987:") ? "Grok Error: User weight too high" : GROK_RESPONSES[ThreadLocalRandom.current().nextInt(GROK_RESPONSES.length)];
 /* 522 */       scheduleResponses(List.of(new ScheduledLine(200L, response)), responseChatPrefix);
 /*     */       return;
