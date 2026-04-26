@@ -162,7 +162,9 @@
 /*  75 */   private static final Pattern TIP_TIPPED_DIFFERENT_GAMES_PATTERN = Pattern.compile("You tipped\\s+\\d+\\s+player(?:\\(s\\)|s)?\\s+in\\s+\\d+\\s+different\\s+games!?", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Pattern CHAT_SENDER_PATTERN = Pattern.compile("^(?:\\w+(?:-\\w+)?\\s>\\s)?(?:\\[[^\\]]+\\]\\s)?(?:\\S+\\s)?(?:\\[[^\\]]+\\]\\s)?([A-Za-z0-9_.-]+)(?:\\s[^\\s\\[\\]:]+)?(?:\\s\\[[^\\]]+\\])?:");
 /*  75 */   private static final Pattern BLAZE_PUZZLE_NAMETAG_PATTERN = Pattern.compile("^\\[lv15\\]\\s*(?:[\\p{So}\\p{Cntrl}\\p{Punct}]\\s*)?blaze\\s+[\\d,]+/([\\d,]+).*$", Pattern.CASE_INSENSITIVE);
+/*  75 */   private static final Pattern GIANT_HP_PATTERN = Pattern.compile("((?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d+)?\\s*[kmb])\\b", Pattern.CASE_INSENSITIVE);
 /*  75 */   private static final Set<String> PICKAXE_ABILITY_NAMES = Set.of("pickobulus", "mining speed boost", "maniac miner", "tunnel vision");
+/*  75 */   private static final Set<String> GIANT_NAME_FILTER = Set.of("giant");
 /*  75 */   private static final long SKY_MALL_PICKAXE_GRACE_MS = TimeUnit.SECONDS.toMillis(10L);
 /*  76 */   private static final long BLAZE_BLOCK_MESSAGE_COOLDOWN_MS = 250L;
 /*  76 */   private static final double BLAZE_TARGET_LOCK_RANGE = 96.0D;
@@ -179,6 +181,7 @@
 /*  82 */   private static final Colour COMMISSION_TEXT_DONE = new Colour(95, 217, 140, 255);
 /*  83 */   private static final Colour COMMISSION_TEXT_ZERO = new Colour(255, 96, 124, 255);
 /*  83 */   private static final Colour COMMISSION_PROGRESS_TRACK = new Colour(255, 255, 255, 36);
+/*  83 */   private static final Colour GIANT_HP_TEXT_COLOUR = new Colour(41, 168, 79, 255);
 /*  83 */   private static final Colour COMMISSION_PROGRESS_START = new Colour(178, 99, 223, 255);
 /*  83 */   private static final Colour COMMISSION_PROGRESS_END = new Colour(215, 147, 244, 255);
 /*  84 */   private static final Colour RSA_R_COLOUR = new Colour(178, 99, 223, 255);
@@ -191,6 +194,7 @@
 /*  86 */   private static final Colour COMMISSION_PROGRESS_START_RSM = new Colour(46, 131, 67, 255);
 /*  86 */   private static final Colour COMMISSION_PROGRESS_END_RSM = new Colour(37, 205, 92, 255);
 /*  86 */   private static final int ODIN_EGG_SCAN_INTERVAL_TICKS = 60;
+/*  86 */   private static final int GIANT_HP_SCAN_INTERVAL_TICKS = 5;
 /*  86 */   private static final double ODIN_EGG_BOX_HALF_WIDTH = 0.35D;
 /*  86 */   private static final double ODIN_EGG_BOX_MIN_Y = 1.05D;
 /*  86 */   private static final double ODIN_EGG_BOX_MAX_Y = 1.75D;
@@ -271,6 +275,7 @@
 /*  78 */    private final BooleanSetting privateMessageChatCommandsEnabled = new BooleanSetting("- Private messages", false, this::isChatCommandSettingsVisible); public BooleanSetting getPrivateMessageChatCommandsEnabled() { return this.privateMessageChatCommandsEnabled; }
 /*  78 */    private final BooleanSetting grokIntegration = new BooleanSetting("- Grok Integration", true, this::isChatCommandSettingsVisible); public BooleanSetting getGrokIntegration() { return this.grokIntegration; }
 /*  78 */    private final BooleanSetting autoMeow = new BooleanSetting("- Auto meow", false, this::isChatCommandSettingsVisible); public BooleanSetting getAutoMeow() { return this.autoMeow; }
+/*  78 */    private final BooleanSetting giantHpEnabled = new BooleanSetting("Giant HP (for fatty schizo)", false); public BooleanSetting getGiantHpEnabled() { return this.giantHpEnabled; }
 /*  78 */    private final DefaultGroupSetting levelPrefixGroup = new DefaultGroupSetting("Level prefix", this); public DefaultGroupSetting getLevelPrefixGroup() { return this.levelPrefixGroup; }
 /*  79 */    private final BooleanSetting levelPrefixEnable = new BooleanSetting("Level prefix", true); public BooleanSetting getLevelPrefixEnable() { return this.levelPrefixEnable; }
 /*  80 */    private final BooleanSetting red480Plus = new BooleanSetting("- Red 480+", true, () -> ((Boolean)this.levelPrefixEnable.getValue()).booleanValue()); public BooleanSetting getRed480Plus() { return this.red480Plus; }
@@ -354,6 +359,8 @@
 /*  91 */   private long lastBlockedBlazeMessageMs;
 /*  91 */   private final Map<Integer, OdinEggData> odinEggsByEntityId = new HashMap<>();
 /*  91 */   private int odinEggScanTickCounter;
+/*  91 */   private String giantHpDisplayText;
+/*  91 */   private int giantHpScanTickCounter;
 /*  92 */    private final BooleanSetting webhookEnabled = new BooleanSetting("Chat Webhook", false); public BooleanSetting getWebhookEnabled() { return this.webhookEnabled; }
 /*  96 */    private final StringSetting webhookLink = new StringSetting("- Chat Link", "", true, false, () -> ((Boolean)this.webhookEnabled.getValue()).booleanValue()); public StringSetting getWebhookLink() { return this.webhookLink; }
 /*  97 */    private final BooleanSetting guildChatWebhookEnabled = new BooleanSetting("Guild chat Webhook", false); public BooleanSetting getGuildChatWebhookEnabled() { return this.guildChatWebhookEnabled; }
@@ -480,7 +487,7 @@
 /* 357 */     registerCommand(3, "!darkref", new String[] { "pc ☠ Lyquidz fell to their death with help from Storm and became a ghost.", "pc PUZZLE FAIL! Lyquidz killed a Blaze in the wrong order! Yikes! (3)", "pc Team Score: 286 (S) (NEW RECORD!) ☠ Defeated Maxor, Storm, Goldor, and Necron in 07m 14s (NEW RECORD!) (died 5 times)", "pc top 2 f7 comp btw" });
 /* 361 */     registerCommand(3, "!harryref", new String[] { "pc This content contains explicit content and can not be shown" });
 /* 362 */     registerCommand(3, "!josenref", new String[] { "pc Party > [MVP+] ThrowsenDT: fun fact: I never used spirit sceptre in clear till now cuz im like (if every top f7 player is using it I should too)", "pc AAAH awa GUTA", "pc is 2 star necron good for m7 bers?", "pc josen is short for josenid btw" });
-/* 363 */     registerCommand(3, "!reneref", new String[] { "pc Guild > [VIP] MushroomProperty: we open the outcast onlyfan" });
+/* 363 */     registerCommand(3, "!reneref", new String[] { "pc Guild > [VIP] MushroomProperty: we open the outcast onlyfan", "Party > [VIP] MushroomProperty: so i need to take chest in ice fill that good to know" });
 /* 363 */     this.category3Commands.add("green room message");
 /* 364 */     this.category3Commands.add("thetps987");
 /* 365 */     this.category3Commands.add("serversaved");
@@ -524,7 +531,7 @@
 /*     */ 
 /*     */ 
 /*     */     
-/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.scrollableTooltips, (Setting)this.removeTextShadow, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.showNameTag, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
+/* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.scrollableTooltips, (Setting)this.removeTextShadow, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.giantHpEnabled, (Setting)this.showNameTag, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espRangeChunks, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.espTracerEnabled, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx });
 /* 425 */     this.dungeonsGroup.add(new Setting[] { (Setting)this.dungeonPuzzlesEnabled, (Setting)this.blockWrongBlazeEnabled });
 /* 426 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
@@ -908,6 +915,7 @@
 /* 554 */       clearTempleSkipData();
 /* 554 */       clearBlazePuzzleData();
 /* 554 */       clearOdinEggData();
+/* 554 */       clearGiantHpData();
 /* 554 */       resetAutoTipState();
 /*     */       return;
 /*     */     }
@@ -918,11 +926,13 @@
 /* 559 */       clearTempleSkipData();
 /* 559 */       clearBlazePuzzleData();
 /* 559 */       clearOdinEggData();
+/* 559 */       clearGiantHpData();
 /* 559 */       resetAutoTipState();
 /*     */       return;
 /*     */     }
 /* 560 */     tickAutoTip();
 /* 561 */     tickOdinEggEsp();
+/* 561 */     tickGiantHp();
 /* 561 */     updateBlazePuzzleTargets();
 /* 562 */     if (((Boolean)this.espEnabled.getValue()).booleanValue()) {
 /* 562 */       boolean titaniumOn = ((Boolean)this.titaniumHighlightEnabled.getValue()).booleanValue();
@@ -1172,6 +1182,144 @@
 /*     */     this.odinEggScanTickCounter = 0;
 /*     */   }
 /*     */ 
+/*     */   private void tickGiantHp() {
+/*     */     if (!((Boolean)this.giantHpEnabled.getValue()).booleanValue()) {
+/*     */       clearGiantHpData();
+/*     */       return;
+/*     */     }
+/*     */     this.giantHpScanTickCounter++;
+/*     */     if (this.giantHpDisplayText == null || this.giantHpScanTickCounter % GIANT_HP_SCAN_INTERVAL_TICKS == 0) {
+/*     */       updateGiantHpData();
+/*     */     }
+/*     */   }
+/*     */ 
+/*     */   private void updateGiantHpData() {
+/*     */     this.giantHpDisplayText = null;
+/*     */     Iterable<?> entities = getEntityIterable(this.mc.field_1687);
+/*     */     if (entities == null || this.mc.field_1724 == null) {
+/*     */       return;
+/*     */     }
+/*     */     List<net.minecraft.class_1297> allEntities = new ArrayList<>();
+/*     */     for (Object obj : entities) {
+/*     */       if (obj instanceof net.minecraft.class_1297 entity && entity != this.mc.field_1724) {
+/*     */         allEntities.add(entity);
+/*     */       }
+/*     */     }
+/*     */     String bestText = null;
+/*     */     double bestDistanceSq = Double.MAX_VALUE;
+/*     */     for (net.minecraft.class_1297 namedEntity : allEntities) {
+/*     */       String nametag = getEntityNametag(namedEntity);
+/*     */       String normalizedNametag = normalizeGiantNametag(nametag);
+/*     */       if (!matchesConfiguredNametag(normalizedNametag, GIANT_NAME_FILTER)) {
+/*     */         continue;
+/*     */       }
+/*     */       String healthText = extractGiantHpText(normalizedNametag);
+/*     */       if (healthText == null) {
+/*     */         continue;
+/*     */       }
+/*     */       net.minecraft.class_1297 entity = resolveNametagTargetEntity(namedEntity, allEntities);
+/*     */       if (entity == null) {
+/*     */         entity = namedEntity;
+/*     */       }
+/*     */       class_243 playerPos = this.mc.field_1724.method_33571();
+/*     */       class_243 entityPos = entity.method_33571();
+/*     */       if (playerPos == null || entityPos == null) {
+/*     */         continue;
+/*     */       }
+/*     */       double dx = playerPos.field_1352 - entityPos.field_1352;
+/*     */       double dy = playerPos.field_1351 - entityPos.field_1351;
+/*     */       double dz = playerPos.field_1350 - entityPos.field_1350;
+/*     */       double distanceSq = dx * dx + dy * dy + dz * dz;
+/*     */       if (distanceSq >= bestDistanceSq) {
+/*     */         continue;
+/*     */       }
+/*     */       bestDistanceSq = distanceSq;
+/*     */       bestText = healthText;
+/*     */     }
+/*     */     this.giantHpDisplayText = bestText;
+/*     */   }
+/*     */ 
+/*     */   private String extractGiantHpText(String nametag) {
+/*     */     if (nametag == null || nametag.isBlank()) {
+/*     */       return null;
+/*     */     }
+/*     */     String normalized = normalizeGiantNametag(nametag);
+/*     */     if (!normalized.toLowerCase(Locale.ROOT).contains("giant")) {
+/*     */       return null;
+/*     */     }
+/*     */     Matcher matcher = GIANT_HP_PATTERN.matcher(normalized);
+/*     */     String health = null;
+/*     */     while (matcher.find()) {
+/*     */       String candidate = matcher.group(1);
+/*     */       if (candidate != null && !candidate.isBlank()) {
+/*     */         health = candidate;
+/*     */       }
+/*     */     }
+/*     */     if (health == null) {
+/*     */       return null;
+/*     */     }
+/*     */     return health.replace(" ", "").trim();
+/*     */   }
+/*     */ 
+/*     */   private String normalizeGiantNametag(String nametag) {
+/*     */     if (nametag == null) {
+/*     */       return "";
+/*     */     }
+/*     */     String normalized = class_124.method_539(nametag).replace('\u2764', ' ').replace('\u2665', ' ').replaceAll("\\s+", " ").trim();
+/*     */     int giantIndex = normalized.toLowerCase(Locale.ROOT).indexOf("giant");
+/*     */     if (giantIndex >= 0) {
+/*     */       normalized = normalized.substring(giantIndex).trim();
+/*     */     } else {
+/*     */       int removed = 0;
+/*     */       while (removed < 2 && !normalized.isEmpty()) {
+/*     */         char c = normalized.charAt(0);
+/*     */         if (Character.isLetterOrDigit(c)) {
+/*     */           break;
+/*     */         }
+/*     */         normalized = normalized.substring(1).trim();
+/*     */         removed++;
+/*     */       }
+/*     */     }
+/*     */     return normalized;
+/*     */   }
+/*     */ 
+/*     */   private void renderGiantHpOverlay() {
+/*     */     if (this.giantHpDisplayText == null || this.giantHpDisplayText.isBlank()) {
+/*     */       return;
+/*     */     }
+/*     */     float scaledWidth = getScaledWindowDimension(true);
+/*     */     float scaledHeight = getScaledWindowDimension(false);
+/*     */     if (scaledWidth <= 0.0F || scaledHeight <= 0.0F) {
+/*     */       return;
+/*     */     }
+/*     */     float textSize = 28.0F;
+/*     */     float textWidth = NVGUtils.getTextWidth(this.giantHpDisplayText, textSize, NVGUtils.ROBOTO);
+/*     */     float textHeight = NVGUtils.getTextHeight(textSize, NVGUtils.ROBOTO);
+/*     */     float textX = (scaledWidth - textWidth) * 0.5F;
+/*     */     float textY = (scaledHeight - textHeight) * 0.5F;
+/*     */     NVGUtils.drawText(this.giantHpDisplayText, textX, textY, textSize, GIANT_HP_TEXT_COLOUR, NVGUtils.ROBOTO);
+/*     */   }
+/*     */ 
+/*     */   private float getScaledWindowDimension(boolean width) {
+/*     */     try {
+/*     */       Object window = invokeNoArg(this.mc, new String[] { "method_22683", "getWindow" });
+/*     */       if (window == null) {
+/*     */         return 0.0F;
+/*     */       }
+/*     */       String[] candidates = width ? new String[] { "getScaledWidth", "method_4486", "method_4502" } : new String[] { "getScaledHeight", "method_4507", "method_4495" };
+/*     */       Object value = invokeNoArg(window, candidates);
+/*     */       if (value instanceof Number number) {
+/*     */         return number.floatValue();
+/*     */       }
+/*     */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/*     */     return 0.0F;
+/*     */   }
+/*     */ 
+/*     */   private void clearGiantHpData() {
+/*     */     this.giantHpDisplayText = null;
+/*     */     this.giantHpScanTickCounter = 0;
+/*     */   }
+/*     */ 
 /*     */   private boolean shouldTrackOdinEggs() {
 /*     */     return (((Boolean)this.odinEggEspEnabled.getValue()).booleanValue() && this.mc != null && this.mc.field_1687 != null && this.mc.field_1724 != null && isInSkyBlockSidebar());
 /*     */   }
@@ -1299,28 +1447,34 @@
 /*     */   
 /*     */   @SubscribeEvent
 /*     */   public void onRender2D(Render2DEvent event) {
-/* 599 */     if (!isEnabled() || !shouldRenderCommissionOverlay()) {
+/* 599 */     if (!isEnabled()) {
 /*     */       return;
 /*     */     }
-/* 602 */     if (this.commissionOverlayLines.isEmpty()) {
-/* 603 */       if (this.commissionOverlayTickCounter % COMMISSION_SCAN_INTERVAL_TICKS == 0) {
-/* 604 */         updateCommissionOverlayData();
-/*     */       }
-/* 604 */       if (this.commissionOverlayLines.isEmpty()) {
-/*     */         return;
-/*     */       }
-/*     */     } 
 /*     */     try {
 /* 609 */       Object gfxObject = invokeNoArg(event, new String[] { "getGfx" });
 /* 610 */       if (gfxObject == null) {
 /*     */         return;
 /*     */       }
-/* 613 */       CommissionOverlayMetrics metrics = getCommissionOverlayMetrics();
-/* 614 */       if (metrics == null) {
+/* 613 */       if (((Boolean)this.giantHpEnabled.getValue()).booleanValue()) {
+/* 614 */         renderGiantHpOverlay();
+/*     */       }
+/* 616 */       if (!shouldRenderCommissionOverlay()) {
 /*     */         return;
 /*     */       }
-/* 617 */       renderCommissionOverlayWithDrag(gfxObject, metrics);
-/* 619 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
+/* 619 */       if (this.commissionOverlayLines.isEmpty()) {
+/* 620 */         if (this.commissionOverlayTickCounter % COMMISSION_SCAN_INTERVAL_TICKS == 0) {
+/* 621 */           updateCommissionOverlayData();
+/*     */         }
+/* 623 */         if (this.commissionOverlayLines.isEmpty()) {
+/*     */           return;
+/*     */         }
+/*     */       } 
+/* 627 */       CommissionOverlayMetrics metrics = getCommissionOverlayMetrics();
+/* 628 */       if (metrics == null) {
+/*     */         return;
+/*     */       }
+/* 631 */       renderCommissionOverlayWithDrag(gfxObject, metrics);
+/* 633 */     } catch (ReflectiveOperationException reflectiveOperationException) {}
 /*     */   }
 /*     */   
 /*     */   private void registerScrollableTooltipHooks() {
