@@ -12,6 +12,7 @@
     "LevelPrefixChatHudMixin",
     "LevelPrefixDrawContextMixin",
     "LivingEntityRendererNameTagMixin",
+    "MinecraftClientBlazeBlockMixin",
     "PlayerInfoDisplayNameMixin",
     "RenderLayersCoalGlassMixin",
     "ScreenClickMixin",

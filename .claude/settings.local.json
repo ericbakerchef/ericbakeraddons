@@ -71,7 +71,15 @@
       "Bash(javap -p class_2338.class)",
       "Bash(javap -p 'class_4970$class_4971.class')",
       "Bash(javap -p 'class_2338$class_2339.class')",
-      "Bash(xargs -I {} unzip -p {} net/fabricmc/fabric/api/renderer/v1/model/FabricBlockStateModel.java)"
+      "Bash(xargs -I {} unzip -p {} net/fabricmc/fabric/api/renderer/v1/model/FabricBlockStateModel.java)",
+      "Bash(unzip -l \"C:/Users/TheFa/Downloads/Odin-0.1.8.jar\")",
+      "Bash(unzip -l \"C:/Users/TheFa/Downloads/odin-client-0.1.9-r2+1.21.10\\(1\\).jar\")",
+      "Bash(curl -sL \"https://github.com/leibnitz27/cfr/releases/download/0.152/cfr-0.152.jar\" -o /tmp/cfr.jar)",
+      "Bash(java -jar /tmp/cfr.jar --help)",
+      "Bash(java -jar /tmp/cfr.jar com/odtheking/odin/features/impl/dungeon/puzzlesolvers/BlazeSolver.class)",
+      "Bash(java -jar /tmp/cfr.jar starred/skies/odin/features/impl/cheats/Trajectories.class)",
+      "Bash(java -jar /tmp/cfr.jar 'starred/skies/odin/features/impl/cheats/Trajectories$1.class')",
+      "Bash(java -jar /tmp/cfr.jar 'starred/skies/odin/features/impl/cheats/Trajectories$2.class')"
     ]
   }
 }

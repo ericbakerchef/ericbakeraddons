@@ -4170,28 +4170,63 @@
 /*     */     if (!isBlazePuzzleProtectionEnabled() || this.mc.field_1724 == null) {
 /*     */       return false;
 /*     */     }
-/*     */     updateBlazePuzzleTargets();
-/*     */     if (this.blazePuzzleTargets.size() < 2) {
+/*     */     Boolean lowerMode = getBlazePuzzleMode();
+/*     */     if (lowerMode == null) {
 /*     */       return false;
 /*     */     }
-/*     */     class_243 eyePos = this.mc.field_1724.method_5836(1.0F);
-/*     */     class_243 look = this.mc.field_1724.method_5828(1.0F);
-/*     */     if (eyePos == null || look == null) {
+/*     */     net.minecraft.class_1297 correctBlaze = OdinBlazeSolver.getNextBlaze(this.mc, lowerMode);
+/*     */     if (correctBlaze == null) {
 /*     */       return false;
 /*     */     }
-/*     */     class_243 endPos = eyePos.method_1019(look.method_1021(BLAZE_TARGET_LOCK_RANGE));
-/*     */     double blockDistanceSq = getBlockingHitDistanceSq(eyePos);
-/*     */     BlazePuzzleTarget correctTarget = this.blazePuzzleTargets.get(0);
-/*     */     BlazePuzzleTarget aimedTarget = findInterceptedBlazeTarget(eyePos, endPos, blockDistanceSq);
-/*     */     if (aimedTarget == null || aimedTarget.hitEntity() == correctTarget.hitEntity()) {
+/*     */     net.minecraft.class_1799 held = this.mc.field_1724.method_6047();
+/*     */     boolean holdingBow = held != null && held.method_7909() instanceof net.minecraft.class_1753;
+/*     */     boolean isTerminator = holdingBow && isTerminatorItem(held);
+/*     */     net.minecraft.class_1297 aimed = null;
+/*     */     if (holdingBow) {
+/*     */       aimed = BowTrajectory.predictHitEntity(0.0F, 1.0F);
+/*     */       if (aimed == null && isTerminator) {
+/*     */         aimed = BowTrajectory.predictHitEntity(10.0F, 1.0F);
+/*     */         if (aimed == null) aimed = BowTrajectory.predictHitEntity(-10.0F, 1.0F);
+/*     */       } else if (aimed != null && aimed == correctBlaze && isTerminator) {
+/*     */         net.minecraft.class_1297 left = BowTrajectory.predictHitEntity(10.0F, 1.0F);
+/*     */         net.minecraft.class_1297 right = BowTrajectory.predictHitEntity(-10.0F, 1.0F);
+/*     */         if (left != null && left != correctBlaze) aimed = left;
+/*     */         else if (right != null && right != correctBlaze) aimed = right;
+/*     */       }
+/*     */     } else {
+/*     */       class_243 eyePos = this.mc.field_1724.method_5836(1.0F);
+/*     */       class_243 look = this.mc.field_1724.method_5828(1.0F);
+/*     */       if (eyePos == null || look == null) {
+/*     */         return false;
+/*     */       }
+/*     */       class_243 endPos = eyePos.method_1019(look.method_1021(BLAZE_TARGET_LOCK_RANGE));
+/*     */       double blockDistanceSq = getBlockingHitDistanceSq(eyePos);
+/*     */       updateBlazePuzzleTargets();
+/*     */       BlazePuzzleTarget aimedTarget = findInterceptedBlazeTarget(eyePos, endPos, blockDistanceSq);
+/*     */       aimed = aimedTarget == null ? null : aimedTarget.hitEntity();
+/*     */     }
+/*     */     if (aimed == null || aimed == correctBlaze) {
 /*     */       return false;
 /*     */     }
 /*     */     long nowMs = System.currentTimeMillis();
 /*     */     if (nowMs - this.lastBlockedBlazeMessageMs >= BLAZE_BLOCK_MESSAGE_COOLDOWN_MS) {
 /*     */       this.lastBlockedBlazeMessageMs = nowMs;
-/*     */       ChatUtils.chat("Admin ref", new Object[0]);
+/*     */       ChatUtils.chat("Blocked click", new Object[0]);
 /*     */     }
 /*     */     return true;
+/*     */   }
+/*     */
+/*     */   private boolean isTerminatorItem(net.minecraft.class_1799 stack) {
+/*     */     if (stack == null || stack.method_7960()) return false;
+/*     */     try {
+/*     */       String name = stack.method_7964() == null ? "" : stack.method_7964().getString();
+/*     */       if (name != null && name.toLowerCase(Locale.ROOT).contains("terminator")) return true;
+/*     */     } catch (Throwable ignored) {}
+/*     */     try {
+/*     */       String dump = String.valueOf(stack.method_57353()).toLowerCase(Locale.ROOT);
+/*     */       if (dump.contains("terminator")) return true;
+/*     */     } catch (Throwable ignored) {}
+/*     */     return false;
 /*     */   }
 /*     */   
 /*     */   private BlazePuzzleTarget findInterceptedBlazeTarget(class_243 eyePos, class_243 endPos, double blockDistanceSq) {
