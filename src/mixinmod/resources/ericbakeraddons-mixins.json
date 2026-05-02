@@ -6,11 +6,14 @@
     "defaultRequire": 1
   },
   "client": [
+    "AbstractBlockStateCoalCullingMixin",
+    "BlockShouldDrawSideCoalMixin",
     "DragSettingLoadMixin",
     "LevelPrefixChatHudMixin",
     "LevelPrefixDrawContextMixin",
     "LivingEntityRendererNameTagMixin",
     "PlayerInfoDisplayNameMixin",
+    "RenderLayersCoalGlassMixin",
     "ScreenClickMixin",
     "ScrollableTooltipContainerMixin",
     "ScrollableTooltipDrawContextMixin",

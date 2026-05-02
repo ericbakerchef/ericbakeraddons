@@ -5,12 +5,18 @@
   "name": "ericbakeraddons-mixins",
   "description": "Mixin bootstrap for ericbakeraddons",
   "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.example.mixinmod.MixinModClient"
+    ]
+  },
   "mixins": [
     "ericbakeraddons-mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.17.3",
     "minecraft": "~1.21.10",
-    "java": ">=21"
+    "java": ">=21",
+    "fabric-api": "*"
   }
 }

@@ -28,6 +28,7 @@
 /*     */ import com.ricedotwho.rsm.utils.render.render2d.Gradient;
 /*     */ import com.ricedotwho.rsm.utils.render.render2d.NVGUtils;
 /*     */ import com.example.mixinmod.ChatCommandsBridge;
+/*     */ import com.example.mixinmod.FuckCoalState;
 /*     */ import com.example.mixinmod.LevelPrefixState;
 /*     */ import com.example.mixinmod.ScrollableTooltipState;
 /*     */ import com.example.mixinmod.TextShadowState;
@@ -317,6 +318,11 @@
 /* 100 */    private final ColourSetting templeSkipColor = new ColourSetting("- Temple Skip Color", TEMPLE_SKIP_DEFAULT_COLOUR, () -> ((Boolean)this.templeSkipEnabled.getValue()).booleanValue()); public ColourSetting getTempleSkipColor() { return this.templeSkipColor; }
 /* 100 */    private final BooleanSetting dungeonPuzzlesEnabled = new BooleanSetting("Puzzles", false); public BooleanSetting getDungeonPuzzlesEnabled() { return this.dungeonPuzzlesEnabled; }
 /* 100 */    private final BooleanSetting blockWrongBlazeEnabled = new BooleanSetting("- Block wrong blaze", false, () -> ((Boolean)this.dungeonPuzzlesEnabled.getValue()).booleanValue()); public BooleanSetting getBlockWrongBlazeEnabled() { return this.blockWrongBlazeEnabled; }
+/* 100 */    private final BooleanSetting fuckCoalEnabled = new BooleanSetting("Fuck Coal", false); public BooleanSetting getFuckCoalEnabled() { return this.fuckCoalEnabled; }
+/* 100 */    private final BooleanSetting witherDoorsEnabled = new BooleanSetting("- Wither Doors", true, () -> ((Boolean)this.fuckCoalEnabled.getValue()).booleanValue()); public BooleanSetting getWitherDoorsEnabled() { return this.witherDoorsEnabled; }
+/* 100 */    private final BooleanSetting bloodDoorEnabled = new BooleanSetting("- Blood Door", true, () -> ((Boolean)this.fuckCoalEnabled.getValue()).booleanValue()); public BooleanSetting getBloodDoorEnabled() { return this.bloodDoorEnabled; }
+/* 100 */    private final BooleanSetting entranceDoorEnabled = new BooleanSetting("- Entrance Door", true, () -> ((Boolean)this.fuckCoalEnabled.getValue()).booleanValue()); public BooleanSetting getEntranceDoorEnabled() { return this.entranceDoorEnabled; }
+/*     */    private int lastFuckCoalSnapshot = -1;
 /* 101 */    private final Setting<?> commissionPeekKeybindSetting = createCommissionPeekKeybindSetting(); public Setting<?> getCommissionPeekKeybindSetting() { return this.commissionPeekKeybindSetting; }
 /* 102 */    private final BooleanSetting commissionOnlyRoyalPigeonInventory = new BooleanSetting("- Only display if Royal Pigeon is in inventory", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonInventory() { return this.commissionOnlyRoyalPigeonInventory; }
 /* 103 */    private final BooleanSetting commissionOnlyRoyalPigeonHotbar = new BooleanSetting("- Only display if Royal Pigeon is in hotbar", false, () -> ((Boolean)this.commissionOverlayEnabled.getValue()).booleanValue()); public BooleanSetting getCommissionOnlyRoyalPigeonHotbar() { return this.commissionOnlyRoyalPigeonHotbar; }
@@ -480,7 +486,7 @@
 /* 319 */     registerCommand(3, "!dexref", new String[] { "pc my cute little ekitten", "pc maxdragonis i4 ee2 core", "pc isnt 49s storm wr", "pc diivaks is no longer ready!", "pc diivaks was killed by Withermancer and became a ghost. (4)" });
 /* 326 */     registerCommandWithDelays(3, "!67", new long[] { 200L, 600L, 1000L, 1400L }, new String[] { "pc 6767676767676767676767676767676767", "pc 6767676767676767676767676767676767", "pc 6767676767676767676767676767676767", "pc 6767676767676767676767676767676767" });
 /* 335 */     registerCommand(3, "!cataholicref", new String[] { "pc best player", "pc no debate", "pc impossible for him to have a ref", "pc 67" });
-/* 341 */     registerCommand(3, "!thearef", new String[] { "pc look tic tac toe is hard", "pc you cant blame me", "pc sorry i ratted you it was an accident i swear", "pc my pb is 4 days withou a ban" });
+/* 341 */     registerCommand(3, "!thearef", new String[] { "pc look tic tac toe is hard", "pc you cant blame me", "pc sorry i ratted you it was an accident i swear", "pc my pb is 4 days without a ban" });
 /* 347 */     registerCommand(3, "!stenoref", new String[] { "pc spring boots?", "pc i thought jerry gun was still meta for crystals", "pc is 35s maxor bad?" });
 /* 352 */     registerCommand(3, "!hozoniref", new String[] { "pc how can hozoni have a ref", "pc he's too nonchalant for that shit" });
 /* 356 */     registerCommand(3, "!melonref", new String[] { "pc melon roles", "pc 15 second p3", "pc sub 4:20 cas" });
@@ -533,7 +539,7 @@
 /*     */     
 /* 422 */     this.miscGroup.add(new Setting[] { (Setting)this.scrollableTooltips, (Setting)this.removeTextShadow, (Setting)this.autoTipEnabled, (Setting)this.autoTipIntervalSeconds, (Setting)this.hideUselessMessages, (Setting)this.hideTipMessages, (Setting)this.odinEggEspEnabled, (Setting)this.giantHpEnabled, (Setting)this.showNameTag, (Setting)this.levelPrefixEnable, (Setting)this.red480Plus, (Setting)this.goldBrackets, (Setting)this.diamondBrackets, (Setting)this.copyMinecraftSsidButton });
 /* 423 */     this.espGroup.add(new Setting[] { (Setting)this.espEnabled, (Setting)this.espRangeChunks, (Setting)this.titaniumHighlightEnabled, (Setting)this.nodeHighlightEnabled, (Setting)this.chestHighlightEnabled, (Setting)this.hideonleafHighlightEnabled, (Setting)this.automatonHighlightEnabled, (Setting)this.espTracerEnabled, (Setting)this.customHighlightEnabled, (Setting)this.customHighlightNames, (Setting)this.customIgnoreZeroHealth, (Setting)this.customTracerEnabled, (Setting)this.tracerClosestOnly, (Setting)this.tracerThicknessPx });
-/* 425 */     this.dungeonsGroup.add(new Setting[] { (Setting)this.dungeonPuzzlesEnabled, (Setting)this.blockWrongBlazeEnabled });
+/* 425 */     this.dungeonsGroup.add(new Setting[] { (Setting)this.dungeonPuzzlesEnabled, (Setting)this.blockWrongBlazeEnabled, (Setting)this.fuckCoalEnabled, (Setting)this.witherDoorsEnabled, (Setting)this.bloodDoorEnabled, (Setting)this.entranceDoorEnabled });
 /* 426 */     this.commissionOverlayGroup.add(new Setting[] { (Setting)this.commissionOverlayEnabled, (Setting)this.commissionOverlayTheme, (Setting)this.commissionOverlayCustomBorder, (Setting)this.commissionOverlayCustomProgressStart, (Setting)this.commissionOverlayCustomProgressEnd, (Setting)this.commissionOverlayCustomText, (Setting)this.commissionOverlayCustomTextColour, (Setting)this.commissionOverlayPosition, (Setting)this.commissionPeekEnabled, (Setting)this.commissionPeekKeybindSetting, (Setting)this.commissionOnlyRoyalPigeonInventory, (Setting)this.commissionOnlyRoyalPigeonHotbar, (Setting)this.commissionRoundProgressNumbers, (Setting)this.templeSkipEnabled, (Setting)this.templeSkipColor });
 /*     */     registerScrollableTooltipHooks(); }
 /*     */   public ButtonSetting getCopyMinecraftSsidButton() { return this.copyMinecraftSsidButton; }
@@ -547,6 +553,10 @@
 /*     */   public static boolean isScrollableTooltipsEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.scrollableTooltips.getValue()).booleanValue()); }
 /*     */   public static boolean isTextShadowRemovalEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.removeTextShadow.getValue()).booleanValue()); }
 /*     */   public static boolean isShowNameTagEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.showNameTag.getValue()).booleanValue()); }
+/*     */   public static boolean isFuckCoalEnabled() { return (instance != null && instance.isEnabled() && ((Boolean)instance.fuckCoalEnabled.getValue()).booleanValue()); }
+/*     */   public static boolean isWitherDoorsEnabled() { return isFuckCoalEnabled() && ((Boolean)instance.witherDoorsEnabled.getValue()).booleanValue(); }
+/*     */   public static boolean isBloodDoorEnabled() { return isFuckCoalEnabled() && ((Boolean)instance.bloodDoorEnabled.getValue()).booleanValue(); }
+/*     */   public static boolean isEntranceDoorEnabled() { return isFuckCoalEnabled() && ((Boolean)instance.entranceDoorEnabled.getValue()).booleanValue(); }
 /*     */   public static boolean isPickaxeSuppressionEnabled() { ChatCommands current = instance; if (current == null || !current.isEnabled()) return false; boolean hideTips = (((Boolean)current.hideUselessMessages.getValue()).booleanValue() || ((Boolean)current.hideTipMessages.getValue()).booleanValue()); boolean pickaxe = ((Boolean)current.pickaxeAbilityCooldownEnabled.getValue()).booleanValue(); return (hideTips || pickaxe); }
 /*     */   public static boolean shouldBlockBlazePuzzleClick() {
 /*     */     ChatCommands current = instance;
@@ -907,6 +917,7 @@
 /* 551 */     syncScrollableTooltipState();
 /* 551 */     syncTextShadowState();
 /* 551 */     syncLevelPrefixState();
+/* 551 */     syncFuckCoalState();
 /* 551 */     ChatCommandsBridge.setShowOwnNameTagEnabled(isShowNameTagEnabled());
 /* 551 */     if (!isEnabled()) {
 /* 552 */       clearEspData();
@@ -992,6 +1003,40 @@
 /*     */     } catch (Throwable throwable) {}
 /*     */   }
 /*     */   
+/*     */   private void syncFuckCoalState() {
+/*     */     boolean enabled = isFuckCoalEnabled();
+/*     */     boolean wither = isWitherDoorsEnabled();
+/*     */     boolean blood = isBloodDoorEnabled();
+/*     */     boolean entrance = isEntranceDoorEnabled();
+/*     */     try {
+/*     */       FuckCoalState.setSettings(enabled, wither, blood, entrance);
+/*     */     } catch (Throwable throwable) {}
+/*     */     int snapshot = (enabled ? 1 : 0) | (wither ? 2 : 0) | (blood ? 4 : 0) | (entrance ? 8 : 0);
+/*     */     if (snapshot != this.lastFuckCoalSnapshot) {
+/*     */       this.lastFuckCoalSnapshot = snapshot;
+/*     */       reloadCoalChunks();
+/*     */     }
+/*     */   }
+/*     */
+/*     */   private void reloadCoalChunks() {
+/*     */     if (this.mc == null || this.mc.field_1769 == null || this.mc.field_1724 == null) {
+/*     */       return;
+/*     */     }
+/*     */     class_2338 pos = this.mc.field_1724.method_24515();
+/*     */     int radius = 64;
+/*     */     int vertical = 32;
+/*     */     try {
+/*     */       this.mc.field_1769.method_18146(
+/*     */         pos.method_10263() - radius,
+/*     */         pos.method_10264() - vertical,
+/*     */         pos.method_10260() - radius,
+/*     */         pos.method_10263() + radius,
+/*     */         pos.method_10264() + vertical,
+/*     */         pos.method_10260() + radius
+/*     */       );
+/*     */     } catch (Throwable throwable) {}
+/*     */   }
+/*     */
 /*     */   private void syncLevelPrefixState() {
 /*     */     boolean enabled = isLevelPrefixEnabled();
 /*     */     boolean red = isRed480PlusEnabled();
